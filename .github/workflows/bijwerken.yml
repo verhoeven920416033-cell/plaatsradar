@@ -1,0 +1,59 @@
+name: PlaatsRadar bijwerken
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"   # elke 30 minuten (UTC); GitHub kan bij drukte enkele minuten later starten
+  workflow_dispatch:          # handmatig: tab Actions → "Run workflow"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Cache (straatnamen, gelezen publicaties) herstellen
+        uses: actions/cache@v6
+        with:
+          path: .cache
+          key: radar-${{ github.run_id }}
+          restore-keys: radar-
+
+      - name: Parsertests
+        run: |
+          python3 tests/test_gemeenteblad.py
+          python3 tests/test_ndw.py
+
+      - name: Data ophalen (NDW + Gemeenteblad + markten)
+        run: python3 scripts/ophalen.py
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5
