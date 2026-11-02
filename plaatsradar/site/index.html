@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PlaatsRadar — wegwerk, evenementen, kermissen & markten</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+:root{--navy:#001f3f;--navy2:#003366;--red:#c8102e;--bg:#f3f5f8;--card:#fff;--ink:#1a2330;--mut:#5b6878;--line:#dde3ea;
+--weg:#c8102e;--markt:#1f7a4d;--kermis:#a0398f;--evenement:#1f5fa8}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:16px 20px 14px;border-bottom:4px solid var(--red)}
+header h1{margin:0;font-size:22px}
+header p{margin:3px 0 0;opacity:.85;font-size:13px}
+.src{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.src span{font-size:12px;background:rgba(255,255,255,.12);border-radius:999px;padding:2px 9px}
+.src .bad{background:var(--red)}
+main{max-width:1150px;margin:0 auto;padding:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.lbl{font-size:12px;font-weight:700;color:var(--navy2);text-transform:uppercase;letter-spacing:.4px;margin-right:4px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;user-select:none}
+.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+select,input[type=search]{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
+input[type=search]{flex:1 1 200px}
+.btn{border:0;border-radius:8px;padding:8px 14px;font:600 13px system-ui,sans-serif;cursor:pointer;background:#e8eef6;color:var(--navy)}
+.btn.pri{background:var(--red);color:#fff}
+.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;min-width:100px}
+.kpi b{display:block;font-size:22px;color:var(--navy)}.kpi span{font-size:12px;color:var(--mut)}
+.kpi.alert b{color:var(--red)}
+#map{height:380px;border-radius:10px;border:1px solid var(--line);margin-bottom:12px}
+.place{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden;break-inside:avoid}
+.place h2{margin:0;padding:9px 14px;font-size:17px;background:#eef2f7;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.place h2 small{font-weight:500;color:var(--mut);font-size:12px}
+.item{display:grid;grid-template-columns:120px 1fr auto;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);align-items:start}
+.item:last-child{border-bottom:0}
+.when{font-size:13px;font-weight:600;color:var(--navy)}.when small{display:block;font-weight:400;color:var(--mut)}
+.now{display:inline-block;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:1px}
+.ttl{font-weight:600}
+.meta{font-size:12.5px;color:var(--mut)}.meta a{color:var(--navy2)}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;border-radius:4px;padding:2px 6px;margin-right:6px;vertical-align:1px;text-transform:uppercase;letter-spacing:.3px}
+.sub{display:inline-block;font-size:10.5px;font-weight:600;border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-right:6px;color:var(--mut)}
+.h{font-size:11px;font-weight:700;border-radius:4px;padding:3px 8px;white-space:nowrap}
+.h-hoog{background:var(--red);color:#fff}.h-middel{background:#f3b23c;color:#3a2600}.h-laag{background:#e3e8ee;color:#3c4856}
+.empty{padding:12px 14px;color:var(--mut)}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:9px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:2000}
+.toast.on{opacity:1}
+footer{max-width:1150px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color:var(--mut)}
+footer a{color:var(--mut)}
+.err{background:#fdecee;border:1px solid #f1a3ad;border-radius:8px;padding:10px 12px;margin-bottom:12px}
+@media(max-width:640px){.item{grid-template-columns:1fr auto}.item .when{grid-column:1/-1}#map{height:280px}}
+@media print{header{background:none;color:#000;border-bottom:2px solid #000}.src span{background:none;border:1px solid #999}
+ .panel,#map,.btn,.toast{display:none!important}body{background:#fff}.place,.kpi{border-color:#999}.h-hoog{border:1px solid #000}
+ .item{grid-template-columns:110px 1fr auto;font-size:12px;padding:5px 10px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>PlaatsRadar</h1>
+  <p id="sub">Wegwerk, afsluitingen, evenementen, kermissen en markten — laden…</p>
+  <div class="src" id="src"></div>
+</header>
+<main>
+  <div id="err" class="err" hidden></div>
+  <section class="panel">
+    <div class="row" style="margin-bottom:8px">
+      <span class="lbl">Periode</span>
+      <select id="per">
+        <option value="0">Vandaag</option><option value="1">Vandaag + morgen</option><option value="2">Komende 3 dagen</option>
+        <option value="6" selected>Komende 7 dagen</option><option value="13">Komende 14 dagen</option><option value="29">Komende 30 dagen</option>
+      </select>
+      <input type="search" id="q" placeholder="Zoek straat, evenement…">
+    </div>
+    <div class="row" style="margin-bottom:8px"><span class="lbl">Plaats</span><span id="pl" class="row"></span></div>
+    <div class="row" style="margin-bottom:8px"><span class="lbl">Soort</span><span id="cats" class="row"></span></div>
+    <div class="row">
+      <span class="chip" id="fHoog">Alleen hoge hinder</span>
+      <span class="chip" id="fNu">Nu actief</span>
+      <span class="chip on" id="fSnel">Incl. snelwegen</span>
+      <span class="chip" id="fFiets">Incl. fiets-/voetpaden</span>
+      <span class="chip" id="fKaart">Kaart</span>
+      <span style="flex:1"></span>
+      <button class="btn" id="cpBrief">Kopieer briefing</button>
+      <button class="btn" id="cpCsv">Kopieer CSV</button>
+      <button class="btn pri" id="print">Print</button>
+    </div>
+  </section>
+  <div class="kpis">
+    <div class="kpi"><b id="kTot">–</b><span>totaal</span></div>
+    <div class="kpi alert"><b id="kHoog">–</b><span>hoge hinder</span></div>
+    <div class="kpi"><b id="kWeg">–</b><span>wegwerk</span></div>
+    <div class="kpi"><b id="kEv">–</b><span>evenement/kermis</span></div>
+    <div class="kpi"><b id="kMarkt">–</b><span>marktdagen</span></div>
+  </div>
+  <div id="map" hidden></div>
+  <div id="list"></div>
+</main>
+<footer>
+  Bronnen: NDW open data (CC0) · Officiële bekendmakingen / Gemeenteblad via KOOP (CC0) · marktreglementen gemeenten · straatnamen © OpenStreetMap-bijdragers (ODbL).
+  Automatisch bijgewerkt; altijd de bron controleren vóór operationele beslissingen.<br>
+  Casper Verhoeven — Supervisor, Brinks Geld &amp; Waardetransport.
+</footer>
+<div class="toast" id="toast"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+(() => {
+const CATS = {weg:["Wegwerk","var(--weg)"],evenement:["Evenement","var(--evenement)"],kermis:["Kermis","var(--kermis)"],markt:["Markt","var(--markt)"]};
+const HO = {hoog:0,middel:1,laag:2};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LS = "plaatsradar.site.v1";
+let D = null, map = null, layer = null;
+let S = {per:"6", plaatsen:null, cats:Object.keys(CATS), hoog:false, snel:true, fiets:false, nu:false, kaart:false, q:""};
+try { Object.assign(S, JSON.parse(localStorage.getItem(LS) || "{}")); } catch {}
+const save = () => { try { localStorage.setItem(LS, JSON.stringify({...S, q:""})); } catch {} };
+
+const pad = n => String(n).padStart(2,"0");
+const isoD = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fmtD = s => { if (!s) return ""; const d = new Date(s.length > 10 ? s : s+"T00:00"); if (isNaN(d)) return s; const jr = d.getFullYear() !== new Date().getFullYear(); return d.toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short",...(jr?{year:"numeric"}:{})}); };
+const fmtT = s => s && s.length > 10 ? s.slice(11,16) : "";
+
+function windowRange(){
+  const a = new Date(); a.setHours(0,0,0,0);
+  const b = new Date(a); b.setDate(b.getDate() + +S.per);
+  return [isoD(a), isoD(b)];
+}
+function visible(){
+  if (!D) return [];
+  const [ws, we] = windowRange(); const q = S.q.trim().toLowerCase();
+  return D.items.filter(x => {
+    if (S.plaatsen && !S.plaatsen.includes(x.plaats)) return false;
+    if (!S.cats.includes(x.cat)) return false;
+    if (S.hoog && x.hinder !== "hoog") return false;
+    if (!S.snel && x.snelweg) return false;
+    if (!S.fiets && x.fiets) return false;
+    if (S.nu && !isNow(x)) return false;
+    if (x.perioden) {
+      if (!x.perioden.some(([s,e]) => s.slice(0,10) <= we && e.slice(0,10) >= ws)) return false;
+    } else if (x.start) {
+      const s = x.start.slice(0,10), e = (x.eind || (x.cat === "weg" ? "9999" : x.start)).slice(0,10);
+      if (s > we || e < ws) return false;
+    }
+    if (q && !(`${x.titel} ${x.locatie} ${x.toelichting} ${x.bron}`.toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+const CP = {weg:0,kermis:1,evenement:2,markt:3};
+const byDate = (x,y) => String(x.start||"0").localeCompare(String(y.start||"0"));
+const sortI = a => a.slice().sort((x,y) => (x.cat==="markt")-(y.cat==="markt") || (x.cat==="markt" ? byDate(x,y) : (HO[x.hinder]-HO[y.hinder]) || (CP[x.cat]-CP[y.cat]) || byDate(x,y)));
+const DAGNAAM = {ma:"maandag",di:"dinsdag",wo:"woensdag",do:"donderdag",vr:"vrijdag",za:"zaterdag",zo:"zondag"};
+function groupMarkets(it){
+  const out = [], g = {};
+  it.forEach(x => {
+    if (x.cat !== "markt") { out.push(x); return; }
+    const k = x.titel;
+    if (!g[k]) { g[k] = {...x, _n:0, _dates:[]}; out.push(g[k]); }
+    g[k]._n++; g[k]._dates.push(x.start);
+  });
+  return out;
+}
+const volgende = x => { if (!x.perioden) return null; const n = isoNow(); return x.perioden.find(([,e]) => e >= n) || null; };
+const isoNow = () => { const n = new Date(); return `${isoD(n)}T${pad(n.getHours())}:${pad(n.getMinutes())}`; };
+const isNow = x => { if (x.perioden) { const n = isoNow(); return x.perioden.some(([s,e]) => s <= n && e >= n); }
+  if (!x.start) return false; const n = new Date(); const s = new Date(x.start.length>10?x.start:x.start+"T00:00"); const e = x.eind ? new Date(x.eind.length>10?x.eind:x.eind+"T23:59") : null; return s <= n && (!e || e >= n); };
+
+function whenHtml(x){
+  if (!x.start) return `datum onbekend`;
+  if (x.cat === "markt") return x._n > 1 ? `elke ${DAGNAAM[x.dag]||x.dag}<small>${esc(x.tijd||"")} · ${x._n}× (vanaf ${fmtD(x.start)})</small>` : `${fmtD(x.start)}<small>${esc(x.tijd||"")}</small>`;
+  const vol = volgende(x);
+  if (vol) {
+    const tt = (s, hide) => fmtT(s) && fmtT(s) !== hide ? ` ${fmtT(s)}` : "";
+    let h = fmtD(vol[0]) + tt(vol[0], "00:00");
+    h += `<small>${vol[1].slice(0,10) !== vol[0].slice(0,10) ? "t/m " + fmtD(vol[1]) + tt(vol[1], "23:59") : "tot " + fmtT(vol[1])}${x.perioden.length > 1 ? ` · ${x.perioden.length} vensters` : ""}</small>`;
+    return h + (isNow(x) ? '<span class="now">NU</span>' : "");
+  }
+  let h = fmtD(x.start) + (fmtT(x.start) && fmtT(x.start) !== "00:00" ? ` ${fmtT(x.start)}` : "");
+  if (x.eind && x.eind.slice(0,10) !== x.start.slice(0,10)) h += `<small>t/m ${fmtD(x.eind)}${fmtT(x.eind) && fmtT(x.eind)!=="23:59" ? " "+fmtT(x.eind) : ""}</small>`;
+  else if (!x.eind && x.cat === "weg") h += `<small>einde onbekend</small>`;
+  return h + (isNow(x) ? '<span class="now">NU</span>' : "");
+}
+
+function render(){
+  const v = visible();
+  $("#kTot").textContent = v.length;
+  $("#kHoog").textContent = v.filter(x => x.hinder === "hoog").length;
+  $("#kWeg").textContent = v.filter(x => x.cat === "weg").length;
+  $("#kEv").textContent = v.filter(x => x.cat === "evenement" || x.cat === "kermis").length;
+  $("#kMarkt").textContent = v.filter(x => x.cat === "markt").length;
+  const names = D.plaatsen.map(p => p.naam).filter(n => !S.plaatsen || S.plaatsen.includes(n));
+  $("#list").innerHTML = names.map(n => {
+    const it = groupMarkets(sortI(v.filter(x => x.plaats === n)));
+    const cnt = it.filter(x => x.hinder === "hoog").length;
+    return `<div class="place"><h2>${esc(n)} <small>${(m=>m+(m===1?" melding":" meldingen"))(it.filter(x=>x.cat!=="markt").length)} · ${it.filter(x=>x.cat==="markt").length} markten${cnt ? ` · <b style="color:var(--red)">${cnt} hoge hinder</b>` : ""}</small></h2>` +
+      (it.length ? it.map(x => `<div class="item"><div class="when">${whenHtml(x)}</div>
+        <div><div class="ttl"><span class="badge" style="background:${CATS[x.cat][1]}">${CATS[x.cat][0]}</span><span class="sub">${esc(x.label)}</span>${x.snelweg?'<span class="sub">snelweg</span>':""}${esc(x.titel)}</div>
+        <div class="meta">${[x.titel.includes(x.locatie)?"":x.locatie, x.toelichting].filter(Boolean).map(esc).join(" · ")}${(x.locatie&&!x.titel.includes(x.locatie))||x.toelichting?" · ":""}${esc(x.bron)}${x.url ? ` · <a href="${esc(x.url)}" target="_blank" rel="noopener">${x.bron_type==="NDW"?"kaart":"bron"}</a>` : ""}${x.info ? ` · <a href="${esc(x.info)}" target="_blank" rel="noopener">meer info</a>` : ""}</div></div>
+        <span class="h h-${x.hinder}">${x.hinder}</span></div>`).join("")
+      : `<div class="empty">Geen meldingen in deze periode.</div>`) + `</div>`;
+  }).join("");
+  if (S.kaart) drawMap(v);
+}
+
+function drawMap(v){
+  if (typeof L === "undefined") { $("#map").innerHTML = '<div class="empty">Kaart kon niet laden.</div>'; return; }
+  if (!map) {
+    map = L.map("map");
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:"© OpenStreetMap"}).addTo(map);
+    layer = L.layerGroup().addTo(map);
+  }
+  layer.clearLayers();
+  const col = {hoog:"#c8102e", middel:"#f3b23c", laag:"#7a8796"};
+  const pts = [];
+  v.filter(x => x.lat).forEach(x => {
+    pts.push([x.lat, x.lon]);
+    L.circleMarker([x.lat, x.lon], {radius:7, color:"#fff", weight:1.5, fillColor:col[x.hinder], fillOpacity:.95})
+      .bindPopup(`<b>${esc(x.titel)}</b><br>${esc(x.label)} · ${esc(x.bron)}<br>${x.start?fmtD(x.start):"datum onbekend"}${x.eind?" t/m "+fmtD(x.eind):""}${x.url?`<br><a href="${esc(x.url)}" target="_blank" rel="noopener">${x.bron_type==="NDW"?"kaart":"bron"}</a>`:""}`).addTo(layer);
+  });
+  D.plaatsen.filter(p => !S.plaatsen || S.plaatsen.includes(p.naam)).forEach(p => L.circle([p.lat,p.lon], {radius:p.straal_km*1000, color:"#003366", weight:1, fill:false, dashArray:"4 4"}).addTo(layer));
+  if (pts.length) map.fitBounds(pts, {padding:[20,20], maxZoom:14});
+  else { const p = D.plaatsen[0]; map.setView([p.lat,p.lon], 11); }
+  setTimeout(() => map.invalidateSize(), 50);
+}
+
+function controls(){
+  $("#per").value = S.per;
+  $("#pl").innerHTML = D.plaatsen.map(p => `<span class="chip ${!S.plaatsen||S.plaatsen.includes(p.naam)?"on":""}" data-p="${esc(p.naam)}">${esc(p.naam)}</span>`).join("");
+  $("#cats").innerHTML = Object.entries(CATS).map(([k,[l]]) => `<span class="chip ${S.cats.includes(k)?"on":""}" data-c="${k}">${l}</span>`).join("");
+  $("#fHoog").classList.toggle("on", S.hoog); $("#fNu").classList.toggle("on", S.nu); $("#fFiets").classList.toggle("on", S.fiets); $("#fSnel").classList.toggle("on", S.snel); $("#fKaart").classList.toggle("on", S.kaart);
+  $("#map").hidden = !S.kaart;
+}
+function upd(){ save(); controls(); render(); }
+
+$("#per").addEventListener("change", e => { S.per = e.target.value; upd(); });
+$("#q").addEventListener("input", e => { S.q = e.target.value; render(); });
+$("#pl").addEventListener("click", e => { const n = e.target.dataset.p; if (!n) return;
+  const all = D.plaatsen.map(p => p.naam); let cur = S.plaatsen || all.slice();
+  cur = cur.includes(n) ? cur.filter(x => x !== n) : [...cur, n];
+  S.plaatsen = cur.length === all.length || !cur.length ? null : cur; upd(); });
+$("#cats").addEventListener("click", e => { const c = e.target.dataset.c; if (!c) return;
+  S.cats = S.cats.includes(c) ? S.cats.filter(x => x !== c) : [...S.cats, c]; if (!S.cats.length) S.cats = Object.keys(CATS); upd(); });
+$("#fHoog").addEventListener("click", () => { S.hoog = !S.hoog; upd(); });
+$("#fSnel").addEventListener("click", () => { S.snel = !S.snel; upd(); });
+$("#fNu").addEventListener("click", () => { S.nu = !S.nu; upd(); });
+$("#fFiets").addEventListener("click", () => { S.fiets = !S.fiets; upd(); });
+$("#fKaart").addEventListener("click", () => { S.kaart = !S.kaart; upd(); });
+$("#print").addEventListener("click", () => window.print());
+
+function toast(t){ const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("on"), 1800); }
+async function copy(t, m){ try { await navigator.clipboard.writeText(t); toast(m); } catch { toast("Kopiëren geblokkeerd door browser"); } }
+$("#cpBrief").addEventListener("click", () => {
+  const [ws, we] = windowRange(), v = visible();
+  const L2 = [`PLAATSRADAR ${fmtD(ws)}${ws!==we?" t/m "+fmtD(we):""} (stand ${D.gegenereerd.slice(11,16)})`, ""];
+  D.plaatsen.map(p => p.naam).filter(n => !S.plaatsen || S.plaatsen.includes(n)).forEach(n => {
+    const it = groupMarkets(sortI(v.filter(x => x.plaats === n && (x.hinder !== "laag" || x.cat !== "markt"))));
+    L2.push(`▶ ${n.toUpperCase()}${it.length ? "" : " — geen bijzonderheden"}`);
+    it.forEach(x => L2.push(`${x.hinder==="hoog"?"🔴":x.hinder==="middel"?"🟠":"⚪"} [${CATS[x.cat][0]}] ${x.titel}${x.locatie?" – "+x.locatie:""} (${x.perioden&&volgende(x)?(isNow(x)?"nu, ":"")+fmtD(volgende(x)[0]):x._n>1?"elke "+(DAGNAAM[x.dag]||x.dag):x.start?fmtD(x.start):"datum?"}${x.eind&&x.cat!=="markt"&&x.eind.slice(0,10)!==(x.start||"").slice(0,10)?" t/m "+fmtD(x.eind):""}${x.tijd?", "+x.tijd:""})`));
+    L2.push("");
+  });
+  L2.push("Bron: NDW / Gemeenteblad / marktreglementen — bij twijfel bron checken.");
+  copy(L2.join("\n"), "Briefing gekopieerd");
+});
+$("#cpCsv").addEventListener("click", () => {
+  const c = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
+  const rows = [["plaats","soort","label","titel","start","eind","tijd","locatie","hinder","snelweg","toelichting","bron","url"].join(";")]
+    .concat(sortI(visible()).map(x => [x.plaats,CATS[x.cat][0],x.label,x.titel,x.start,x.eind,x.tijd,x.locatie,x.hinder,x.snelweg?"ja":"",x.toelichting,x.bron,x.url].map(c).join(";")));
+  copy(rows.join("\n"), "CSV gekopieerd — plak in Excel");
+});
+
+fetch("data.json?t=" + Date.now()).then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then(d => {
+  D = d;
+  const age = (Date.now() - new Date(d.gegenereerd)) / 60000;
+  $("#sub").textContent = `Bijgewerkt ${new Date(d.gegenereerd).toLocaleString("nl-NL",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · vooruitkijken ${d.horizon_dagen} dagen`;
+  const st = d.status, chips = [];
+  chips.push(st.ndw.ok ? `<span>NDW ✓ ${st.ndw.items}</span>` : `<span class="bad">NDW ✗</span>`);
+  Object.entries(st.gemeenteblad || {}).forEach(([g,s]) => chips.push(s.ok ? `<span>${esc(g.split(",")[0])} ✓ ${s.relevant}</span>` : `<span class="bad">${esc(g.split(",")[0])} ✗</span>`));
+  if (age > 180) chips.push(`<span class="bad">Data ${Math.round(age/60)} uur oud</span>`);
+  $("#src").innerHTML = chips.join("");
+  if (S.plaatsen) S.plaatsen = S.plaatsen.filter(n => d.plaatsen.some(p => p.naam === n)); if (S.plaatsen && !S.plaatsen.length) S.plaatsen = null;
+  controls(); render();
+}).catch(e => { const el = $("#err"); el.hidden = false; el.textContent = "Data laden mislukt (" + e.message + "). Probeer later opnieuw."; });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+{
+ "_uitleg": "Pas hier plaatsen en markten aan. Plaatsen: 'gemeente' = exacte gemeentenaam zoals in het Gemeenteblad; lat/lon = centrum; straal_km = zoekgebied wegwerk. Markten: dag 0=maandag ... 6=zondag.",
+ "horizon_dagen": 30,
+ "plaatsen": [
+  {
+   "naam": "Eindhoven",
+   "gemeente": "Eindhoven",
+   "lat": 51.4416,
+   "lon": 5.4697,
+   "straal_km": 6.0
+  },
+  {
+   "naam": "Helmond",
+   "gemeente": "Helmond",
+   "lat": 51.4793,
+   "lon": 5.657,
+   "straal_km": 4.0
+  },
+  {
+   "naam": "Veldhoven",
+   "gemeente": "Veldhoven",
+   "lat": 51.4182,
+   "lon": 5.4024,
+   "straal_km": 3.0
+  },
+  {
+   "naam": "Best",
+   "gemeente": "Best",
+   "lat": 51.5075,
+   "lon": 5.39,
+   "straal_km": 3.0
+  },
+  {
+   "naam": "Geldrop",
+   "gemeente": "Geldrop-Mierlo",
+   "lat": 51.421,
+   "lon": 5.559,
+   "straal_km": 3.5
+  },
+  {
+   "naam": "Nuenen",
+   "gemeente": "Nuenen, Gerwen en Nederwetten",
+   "lat": 51.472,
+   "lon": 5.552,
+   "straal_km": 3.0
+  }
+ ],
+ "markten": [
+  {
+   "plaats": "Eindhoven",
+   "dag": 1,
+   "van": "09:00",
+   "tot": "16:00",
+   "locatie": "Centrum (Markt / 18 Septemberplein)",
+   "bron": "Marktreglement Eindhoven 2022"
+  },
+  {
+   "plaats": "Eindhoven",
+   "dag": 2,
+   "van": "09:00",
+   "tot": "12:00",
+   "locatie": "Winkelcentrum Woensel",
+   "bron": "Marktreglement Eindhoven 2022"
+  },
+  {
+   "plaats": "Eindhoven",
+   "dag": 4,
+   "van": "12:00",
+   "tot": "16:30",
+   "locatie": "Sint Gerardusplein",
+   "bron": "Marktreglement Eindhoven 2022"
+  },
+  {
+   "plaats": "Eindhoven",
+   "dag": 5,
+   "van": "10:00",
+   "tot": "17:00",
+   "locatie": "Woenselse Markt",
+   "bron": "Marktreglement Eindhoven 2022"
+  },
+  {
+   "plaats": "Eindhoven",
+   "dag": 0,
+   "van": "12:00",
+   "tot": "16:30",
+   "locatie": "Tarwelaan",
+   "bron": "Marktreglement Eindhoven 2022"
+  },
+  {
+   "plaats": "Eindhoven",
+   "dag": 2,
+   "van": "13:00",
+   "tot": "16:30",
+   "locatie": "Kastelenplein",
+   "bron": "Marktreglement Eindhoven 2022"
+  },
+  {
+   "plaats": "Eindhoven",
+   "dag": 3,
+   "van": "09:00",
+   "tot": "12:00",
+   "locatie": "Tongelresestraat / Rietvinkstraat",
+   "bron": "Marktreglement Eindhoven 2022"
+  },
+  {
+   "plaats": "Eindhoven",
+   "dag": 3,
+   "van": "13:00",
+   "tot": "16:30",
+   "locatie": "Sint Trudoplein",
+   "bron": "Marktreglement Eindhoven 2022"
+  },
+  {
+   "plaats": "Eindhoven",
+   "dag": 4,
+   "van": "10:00",
+   "tot": "15:00",
+   "locatie": "Acht",
+   "bron": "Marktreglement Eindhoven 2022"
+  },
+  {
+   "plaats": "Eindhoven",
+   "dag": 5,
+   "van": "10:00",
+   "tot": "18:00",
+   "locatie": "Catharinaplein (Catharinamarket)",
+   "bron": "Marktreglement Eindhoven 2022"
+  },
+  {
+   "plaats": "Eindhoven",
+   "dag": 5,
+   "van": "10:00",
+   "tot": "16:00",
+   "locatie": "Wilhelminaplein (Duurzame Weekmarkt)",
+   "bron": "Marktreglement Eindhoven 2022"
+  },
+  {
+   "plaats": "Helmond",
+   "dag": 5,
+   "van": "08:30",
+   "tot": "15:00",
+   "locatie": "Centrum, Markt / Ameidewal",
+   "bron": "VisitBrabant / Omroep Brabant"
+  },
+  {
+   "plaats": "Helmond",
+   "dag": 4,
+   "van": "08:30",
+   "tot": "12:30",
+   "locatie": "Brouwhuis, winkelcentrum Brouwhorst",
+   "bron": "Omroep Brabant"
+  },
+  {
+   "plaats": "Veldhoven",
+   "dag": 0,
+   "van": "10:30",
+   "tot": "16:30",
+   "locatie": "Plein Meiveld",
+   "bron": "Marktreglement Veldhoven (gmb-2025-472005)"
+  },
+  {
+   "plaats": "Best",
+   "dag": 5,
+   "van": "08:00",
+   "tot": "13:00",
+   "locatie": "Rondom het gemeentehuis",
+   "bron": "Marktregeling Best 2016 (gmb-2019-218112)"
+  },
+  {
+   "plaats": "Geldrop",
+   "dag": 2,
+   "van": "12:30",
+   "tot": "17:00",
+   "locatie": "Geldrop, de Heuvel",
+   "bron": "Marktverordening Geldrop-Mierlo 2011"
+  },
+  {
+   "plaats": "Geldrop",
+   "dag": 3,
+   "van": "09:00",
+   "tot": "12:30",
+   "locatie": "Mierlo, centrum",
+   "bron": "Marktverordening Geldrop-Mierlo 2011"
+  },
+  {
+   "plaats": "Nuenen",
+   "dag": 0,
+   "van": "10:00",
+   "tot": "15:00",
+   "locatie": "Park (bij de kiosk)",
+   "bron": "gemeente Nuenen"
+  }
+ ]
+}
