@@ -32,8 +32,5 @@ Gratis dashboard met actuele **wegwerkzaamheden en afsluitingen, evenementen, ke
 - NDW kent aparte uitvoeringsvensters (bijv. alleen 's nachts). "NU" en **Nu actief** kijken naar die vensters, niet naar de hele projectduur.
 - Contactpersonen uit de NDW-opmerkingen worden bewust niet overgenomen.
 - Kleine evenementen zonder vergunning staan niet in het Gemeenteblad.
-- Het Brinks-netwerk blokkeert externe sites waarschijnlijk. Gebruik de site dan op je telefoon.
 - Lokaal testen: `python3 tests/test_gemeenteblad.py && python3 tests/test_ndw.py`, dan `python3 scripts/ophalen.py` en daarna `python3 -m http.server -d site` openen op http://localhost:8000.
 - De eerste run leest tot 80 publicaties per gemeente (±1 min per gemeente); daarna komt alles uit de cache.
-
-Casper Verhoeven — Supervisor, Brinks Geld & Waardetransport.
