@@ -1,49 +1,13 @@
 {
- "_uitleg": "Pas hier plaatsen en markten aan. Plaatsen: 'gemeente' = exacte gemeentenaam zoals in het Gemeenteblad; lat/lon = centrum; straal_km = zoekgebied wegwerk. Markten: dag 0=maandag ... 6=zondag.",
+ "_uitleg": "favorieten = gemeenten die standaard openstaan op de site. Markten: plaats = exacte gemeentenaam, dag 0=maandag ... 6=zondag. Alle gemeenten staan in gemeenten.json.",
  "horizon_dagen": 30,
- "plaatsen": [
-  {
-   "naam": "Eindhoven",
-   "gemeente": "Eindhoven",
-   "lat": 51.4416,
-   "lon": 5.4697,
-   "straal_km": 6.0
-  },
-  {
-   "naam": "Helmond",
-   "gemeente": "Helmond",
-   "lat": 51.4793,
-   "lon": 5.657,
-   "straal_km": 4.0
-  },
-  {
-   "naam": "Veldhoven",
-   "gemeente": "Veldhoven",
-   "lat": 51.4182,
-   "lon": 5.4024,
-   "straal_km": 3.0
-  },
-  {
-   "naam": "Best",
-   "gemeente": "Best",
-   "lat": 51.5075,
-   "lon": 5.39,
-   "straal_km": 3.0
-  },
-  {
-   "naam": "Geldrop",
-   "gemeente": "Geldrop-Mierlo",
-   "lat": 51.421,
-   "lon": 5.559,
-   "straal_km": 3.5
-  },
-  {
-   "naam": "Nuenen",
-   "gemeente": "Nuenen, Gerwen en Nederwetten",
-   "lat": 51.472,
-   "lon": 5.552,
-   "straal_km": 3.0
-  }
+ "favorieten": [
+  "Eindhoven",
+  "Helmond",
+  "Veldhoven",
+  "Best",
+  "Geldrop-Mierlo",
+  "Nuenen, Gerwen en Nederwetten"
  ],
  "markten": [
   {
@@ -167,7 +131,7 @@
    "bron": "Marktregeling Best 2016 (gmb-2019-218112)"
   },
   {
-   "plaats": "Geldrop",
+   "plaats": "Geldrop-Mierlo",
    "dag": 2,
    "van": "12:30",
    "tot": "17:00",
@@ -175,7 +139,7 @@
    "bron": "Marktverordening Geldrop-Mierlo 2011"
   },
   {
-   "plaats": "Geldrop",
+   "plaats": "Geldrop-Mierlo",
    "dag": 3,
    "van": "09:00",
    "tot": "12:30",
@@ -183,7 +147,7 @@
    "bron": "Marktverordening Geldrop-Mierlo 2011"
   },
   {
-   "plaats": "Nuenen",
+   "plaats": "Nuenen, Gerwen en Nederwetten",
    "dag": 0,
    "van": "10:00",
    "tot": "15:00",

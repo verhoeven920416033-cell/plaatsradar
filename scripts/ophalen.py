@@ -107,8 +107,9 @@ class Cache:
             self.d = {}
         self.d.setdefault("geo", {})
         self.d.setdefault("gmb", {})
-        if self.d.get("v") != 2:  # oude cache had geen omschrijving/afsluiting-info
-            self.d.update(v=2, gmb={})
+        self.d.setdefault("sru", {})
+        if self.d.get("v") != 3:  # oude cache had geen omschrijving/afsluiting-info
+            self.d.update(v=3, gmb={}, sru={})
 
     def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -131,6 +132,7 @@ DICHT = {"roadClosed", "carriagewayClosures", "closedPermanentlyForTheWinter", "
 BEPERKING = {"laneClosures", "narrowLanes", "singleAlternateLineTraffic", "contraflow", "lanesDeviated",
              "temporaryTrafficLights", "trafficLightsNotWorking", "intermittentShortTermClosures",
              "carriagewayDeviated", "useOfSpecifiedLanesOrCarriagewaysAllowed", "doNotUseSpecifiedLanesOrCarriageways"}
+MAX_KM = 15  # verder van elk gemeentecentrum = buiten de drie provincies
 MOTOR = {"car", "van", "lorry", "bus", "carWithTrailer", "articulatedVehicle"}
 SLIP = {"entrySlipRoad", "exitSlipRoad", "connectingCarriageway"}
 RUIM = {"betweenTenMinutesAndThirtyMinutes", "betweenThirtyMinutesAndOneHour", "overOneHour", "longerThanOneHour"}
@@ -262,9 +264,38 @@ def bepaal_hinder(closed, slip, zacht, beperkt, alleen_snelheid, klasse, delay, 
     return ("middel" if klasse is not None and klasse >= 2 else "laag"), "Werkzaamheden"
 
 
-def parse_ndw(stream, plaatsen, now, horizon_end, stats):
+def maak_zoeker(gemeenten):
+    """Wijst een situatie toe aan een gemeente: eerst op bron ('Gemeente Arnhem'), anders dichtstbijzijnde centrum."""
+    per_naam = {g["naam"].lower(): g for g in gemeenten}
+    la0, la1 = min(g["lat"] for g in gemeenten) - 0.2, max(g["lat"] for g in gemeenten) + 0.2
+    lo0, lo1 = min(g["lon"] for g in gemeenten) - 0.3, max(g["lon"] for g in gemeenten) + 0.3
+    cosl = math.cos(math.radians((la0 + la1) / 2))
+
+    def afstand2(g, pt):  # snelle benadering: 13.000 situaties x 138 gemeenten
+        return (g["lat"] - pt[0]) ** 2 + ((g["lon"] - pt[1]) * cosl) ** 2
+
+    def zoek(pts, bron):
+        pt = pts[len(pts) // 2]
+        if not (la0 < pt[0] < la1 and lo0 < pt[1] < lo1):
+            return None
+        m = re.match(r"(gemeente|provincie)\s+(.+)", bron.strip(), re.I)
+        soort, naam = (m[1].lower(), m[2].strip().lower()) if m else ("", "")
+        if soort == "gemeente" and naam in per_naam:
+            g = per_naam[naam]
+            return g, km(g["lat"], g["lon"], *pt)
+        if soort == "provincie" and naam not in {g["provincie"].lower() for g in gemeenten} | {"gelderland", "limburg", "noord-brabant"}:
+            return None
+        g = min(gemeenten, key=lambda x: afstand2(x, pt))
+        d = km(g["lat"], g["lon"], *pt)
+        # andere gemeente als bron = waarschijnlijk net over de provinciegrens
+        return (g, d) if d <= (8 if soort == "gemeente" else MAX_KM) else None
+    return zoek
+
+
+def parse_ndw(stream, gemeenten, now, horizon_end, stats):
     """Streamt de NDW-feed; geeft situaties in het zoekgebied met een uitvoeringsvenster in [now, horizon_end]."""
     out = []
+    zoek = maak_zoeker(gemeenten)
     for _ev, elem in ET.iterparse(stream, events=("end",)):
         if ln(elem.tag) != "situation":
             continue
@@ -280,12 +311,7 @@ def parse_ndw(stream, plaatsen, now, horizon_end, stats):
             if not pts:
                 stats["zonder_locatie"] += 1
                 continue
-            sample = pts[:: max(1, len(pts) // 60)] + [pts[-1]]
-            best = None
-            for p in plaatsen:
-                d = min(km(p["lat"], p["lon"], la, lo) for la, lo in sample)
-                if d <= p["straal_km"] and (best is None or d < best[1]):
-                    best = (p, d)
+            best = zoek(pts, first_text(recs[0], "value") or "")
             if not best:
                 continue
             stats["in_gebied"] += 1
@@ -442,7 +468,7 @@ def finish_ndw(items):
             "titel": g["titel"], "locatie": "" if loc.lower() in g["titel"].lower() else loc,
             "start": local_iso(ramen[0][0]), "eind": local_iso(g["eind"] or ramen[-1][1]) if (g["eind"] or len(ramen)) else None,
             "tijd": None, "hinder": g["hinder"], "snelweg": g["snelweg"], "fiets": g["fiets"],
-            "perioden": [[local_iso(s), local_iso(e)] for s, e in ramen[:40]],
+            "perioden": [[local_iso(s), local_iso(e)] for s, e in ramen[:12]],
             "toelichting": " · ".join(g["uitleg"])[:300],
             "bron": g["bron"] or "NDW", "bron_type": "NDW", "info": g["info"],
             "url": f"https://www.openstreetmap.org/?mlat={g['lat']}&mlon={g['lon']}#map=17/{g['lat']}/{g['lon']}",
@@ -656,14 +682,21 @@ def ontdubbel(items):
     return res
 
 
-def fetch_gmb(plaatsen, today: dt.date, horizon_end: dt.date, cache: Cache, status: dict, max_text=80):
+def fetch_gmb(gemeenten, today: dt.date, horizon_end: dt.date, cache: Cache, status: dict, max_text=250, nu=None, ttl_uur=6):
+    """max_text is per run over alle gemeenten: de rest volgt in de volgende runs (cache)."""
     since = (today - dt.timedelta(days=120)).isoformat()
+    nu = nu or time.time()
     items = []
-    for p in plaatsen:
-        g = p["gemeente"]
+    fetched = 0
+    for p in gemeenten:
+        g = p["naam"]
         st = status.setdefault(g, {"ok": False, "gevonden": 0, "relevant": 0})
         rub_clause = " OR ".join(f'dt.type="{r}"' for r in RUBRIEKEN)
+        bewaard = cache.d["sru"].get(g)
         try:
+            # Gemeenteblad verschijnt hooguit dagelijks: niet elke 30 min 138 gemeenten bevragen
+            if bewaard and nu - bewaard["t"] < ttl_uur * 3600:
+                raise LookupError
             total, diag, recs = sru_alles(sru_query(g, since, f'(dt.title any "{KW_QUERY}" OR {rub_clause})'))
             if total is None:  # 'any' niet geaccepteerd → per trefwoord
                 log(f"  {g}: 'any' afgewezen ({'; '.join(diag)[:120]}) → per trefwoord")
@@ -680,13 +713,21 @@ def fetch_gmb(plaatsen, today: dt.date, horizon_end: dt.date, cache: Cache, stat
                 total = len(recs)
             elif diag:
                 log(f"  {g}: diagnostic {diag[:2]}")
+            cache.d["sru"][g] = {"t": nu, "n": total, "recs": [
+                {k: (v if k != "itemUrl" else {"html": v.get("html")}) for k, v in r.items()
+                 if k not in ("modified", "date")} for r in recs]}
+            time.sleep(0.5)
+        except LookupError:
+            total, recs = bewaard["n"], bewaard["recs"]
         except Exception as e:
-            st["fout"] = str(e)[:200]
-            log(f"  {g}: FOUT {e}")
-            continue
+            log(f"  {g}: FOUT {str(e)[:160]}")
+            if not bewaard:
+                st["fout"] = str(e)[:200]
+                continue
+            st["oud"] = True  # laatste goede antwoord gebruiken
+            total, recs = bewaard["n"], bewaard["recs"]
         st["ok"] = True
         st["gevonden"] = total
-        fetched = 0
         eigen = []
         for r in recs:
             title = re.sub(r"\s+", " ", r.get("title", "")).strip()
@@ -755,8 +796,7 @@ def fetch_gmb(plaatsen, today: dt.date, horizon_end: dt.date, cache: Cache, stat
         eigen = ontdubbel(eigen)
         st["relevant"] = len(eigen)
         items += eigen
-        log(f"  {g}: {total} treffers, {st['relevant']} relevant, {fetched} teksten gelezen")
-        time.sleep(0.5)
+    log(f"  {sum(s['ok'] for s in status.values())}/{len(gemeenten)} gemeenten, {len(items)} relevant, {fetched} teksten gelezen")
     return items
 
 
@@ -783,6 +823,7 @@ def build_markets(cfg, today: dt.date, horizon_end: dt.date):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=str(ROOT / "config.json"))
+    ap.add_argument("--gemeenten", default=str(ROOT / "gemeenten.json"))
     ap.add_argument("--uit", default=str(ROOT / "site" / "data.json"))
     ap.add_argument("--cache", default=str(ROOT / ".cache" / "cache.json"))
     ap.add_argument("--ndw", help="lokaal NDW-bestand (.xml of .xml.gz) i.p.v. downloaden")
@@ -792,7 +833,7 @@ def main():
     a = ap.parse_args()
 
     cfg = json.loads(Path(a.config).read_text("utf-8"))
-    plaatsen = cfg["plaatsen"]
+    plaatsen = json.loads(Path(a.gemeenten).read_text("utf-8"))["gemeenten"]
     horizon = int(cfg.get("horizon_dagen", 30))
     now = dt.datetime.fromisoformat(a.nu).astimezone(dt.timezone.utc) if a.nu else dt.datetime.now(dt.timezone.utc)
     today = now.astimezone(TZ).date()
@@ -835,7 +876,8 @@ def main():
     out = {
         "gegenereerd": now.astimezone(TZ).isoformat(timespec="minutes"),
         "horizon_dagen": horizon,
-        "plaatsen": [{k: p[k] for k in ("naam", "gemeente", "lat", "lon", "straal_km")} for p in plaatsen],
+        "plaatsen": [{k: p[k] for k in ("naam", "provincie", "lat", "lon")} for p in plaatsen],
+        "favorieten": cfg.get("favorieten", []),
         "status": status,
         "items": items,
     }

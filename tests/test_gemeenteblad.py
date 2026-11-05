@@ -58,13 +58,13 @@ def fake_get(url, timeout=0, tries=0):
 O.http_get = fake_get
 O.time.sleep = lambda s: None
 today = dt.date(2026, 11, 2)
-P = [{"naam": "Eindhoven", "gemeente": "Eindhoven", "lat": 0, "lon": 0, "straal_km": 1}]
+P = [{"naam": "Eindhoven", "provincie": "Noord-Brabant", "lat": 51.45, "lon": 5.46}]
 
 for MODE in ("ok", "diag"):
     calls.clear()
     st = {}
     cache = O.Cache(Path("/tmp/_t_cache.json"))
-    cache.d = {"geo": {}, "gmb": {}}
+    cache.d = {"geo": {}, "gmb": {}, "sru": {}}
     items = O.fetch_gmb(P, today, today + dt.timedelta(days=30), cache, st)
     ids = {i["id"]: i for i in items}
     assert set(ids) == {"gmb-2026-1", "gmb-2026-4"}, (MODE, sorted(ids))
@@ -145,8 +145,23 @@ SRU_OK = f'<?xml version="1.0"?><sru:searchRetrieveResponse {NS}><sru:numberOfRe
 TEXT_9 = b"<html><body><p>Gepubliceerd op 2026-10-29</p><p>Omschrijving: Brainport FANzone Datum evenement: 8 november 2026 Locatie: Philips Stadion</p></body></html>"
 _oud = O.http_get
 O.http_get = lambda url, timeout=0, tries=0: TEXT_9 if "gmb-2026-9" in url else SRU_OK.encode()
-st, cache.d = {}, {"geo": {}, "gmb": {}}
+st, cache.d = {}, {"geo": {}, "gmb": {}, "sru": {}}
 items = O.fetch_gmb(P, today, today + dt.timedelta(days=30), cache, st)
 assert [i["id"] for i in items] == ["gmb-2026-9"] and items[0]["start"] == "2026-11-08", items
 assert items[0]["titel"] == "Brainport FANzone, Philips Stadion", items
 print("verleden/rubriek OK")
+
+# cache: binnen 6 uur geen nieuwe SRU-vraag; bij fout het laatste goede antwoord
+n = len(calls)
+sru_calls = []
+O.http_get = lambda url, timeout=0, tries=0: (sru_calls.append(url), TEXT_9 if "gmb-2026-9" in url else SRU_OK.encode())[1]
+st = {}
+O.fetch_gmb(P, today, today + dt.timedelta(days=30), cache, st, nu=cache.d["sru"]["Eindhoven"]["t"] + 3600)
+assert not [u for u in sru_calls if "/sru?" in u] and st["Eindhoven"]["relevant"] == 1, (sru_calls, st)
+def kapot(url, timeout=0, tries=0):
+    raise RuntimeError("stuk")
+O.http_get = kapot
+st = {}
+O.fetch_gmb(P, today, today + dt.timedelta(days=30), cache, st, nu=cache.d["sru"]["Eindhoven"]["t"] + 99999)
+assert st["Eindhoven"]["ok"] and st["Eindhoven"].get("oud") and st["Eindhoven"]["relevant"] == 1, st
+print("sru-cache OK")

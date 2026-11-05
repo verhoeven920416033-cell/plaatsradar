@@ -1,0 +1,833 @@
+{
+"_uitleg": "Alle gemeenten in Gelderland, Limburg en Noord-Brabant (bron: PDOK Locatieserver, nov 2026). 'naam' is exact zoals in het Gemeenteblad.",
+"gemeenten": [
+{
+"naam": "Aalten",
+"provincie": "Gelderland",
+"lat": 51.9217,
+"lon": 6.5606
+},
+{
+"naam": "Apeldoorn",
+"provincie": "Gelderland",
+"lat": 52.1899,
+"lon": 5.9219
+},
+{
+"naam": "Arnhem",
+"provincie": "Gelderland",
+"lat": 52.0011,
+"lon": 5.8926
+},
+{
+"naam": "Barneveld",
+"provincie": "Gelderland",
+"lat": 52.1683,
+"lon": 5.6419
+},
+{
+"naam": "Berg en Dal",
+"provincie": "Gelderland",
+"lat": 51.8199,
+"lon": 5.9498
+},
+{
+"naam": "Berkelland",
+"provincie": "Gelderland",
+"lat": 52.1009,
+"lon": 6.5707
+},
+{
+"naam": "Beuningen",
+"provincie": "Gelderland",
+"lat": 51.8628,
+"lon": 5.7403
+},
+{
+"naam": "Bronckhorst",
+"provincie": "Gelderland",
+"lat": 52.0452,
+"lon": 6.303
+},
+{
+"naam": "Brummen",
+"provincie": "Gelderland",
+"lat": 52.109,
+"lon": 6.1185
+},
+{
+"naam": "Buren",
+"provincie": "Gelderland",
+"lat": 51.9383,
+"lon": 5.4036
+},
+{
+"naam": "Culemborg",
+"provincie": "Gelderland",
+"lat": 51.9458,
+"lon": 5.2104
+},
+{
+"naam": "Doesburg",
+"provincie": "Gelderland",
+"lat": 52.0187,
+"lon": 6.1469
+},
+{
+"naam": "Doetinchem",
+"provincie": "Gelderland",
+"lat": 51.9608,
+"lon": 6.2867
+},
+{
+"naam": "Druten",
+"provincie": "Gelderland",
+"lat": 51.875,
+"lon": 5.6121
+},
+{
+"naam": "Duiven",
+"provincie": "Gelderland",
+"lat": 51.9465,
+"lon": 6.0182
+},
+{
+"naam": "Ede",
+"provincie": "Gelderland",
+"lat": 52.0764,
+"lon": 5.728
+},
+{
+"naam": "Elburg",
+"provincie": "Gelderland",
+"lat": 52.4132,
+"lon": 5.849
+},
+{
+"naam": "Epe",
+"provincie": "Gelderland",
+"lat": 52.3255,
+"lon": 5.955
+},
+{
+"naam": "Ermelo",
+"provincie": "Gelderland",
+"lat": 52.2882,
+"lon": 5.6662
+},
+{
+"naam": "Harderwijk",
+"provincie": "Gelderland",
+"lat": 52.3413,
+"lon": 5.6442
+},
+{
+"naam": "Hattem",
+"provincie": "Gelderland",
+"lat": 52.4748,
+"lon": 6.0533
+},
+{
+"naam": "Heerde",
+"provincie": "Gelderland",
+"lat": 52.4061,
+"lon": 6.0503
+},
+{
+"naam": "Heumen",
+"provincie": "Gelderland",
+"lat": 51.7779,
+"lon": 5.8185
+},
+{
+"naam": "Lingewaard",
+"provincie": "Gelderland",
+"lat": 51.9015,
+"lon": 5.9422
+},
+{
+"naam": "Lochem",
+"provincie": "Gelderland",
+"lat": 52.1795,
+"lon": 6.3469
+},
+{
+"naam": "Maasdriel",
+"provincie": "Gelderland",
+"lat": 51.7763,
+"lon": 5.2969
+},
+{
+"naam": "Montferland",
+"provincie": "Gelderland",
+"lat": 51.9169,
+"lon": 6.2138
+},
+{
+"naam": "Neder-Betuwe",
+"provincie": "Gelderland",
+"lat": 51.9159,
+"lon": 5.5869
+},
+{
+"naam": "Nijkerk",
+"provincie": "Gelderland",
+"lat": 52.2121,
+"lon": 5.4844
+},
+{
+"naam": "Nijmegen",
+"provincie": "Gelderland",
+"lat": 51.8385,
+"lon": 5.8368
+},
+{
+"naam": "Nunspeet",
+"provincie": "Gelderland",
+"lat": 52.3393,
+"lon": 5.7862
+},
+{
+"naam": "Oldebroek",
+"provincie": "Gelderland",
+"lat": 52.4569,
+"lon": 5.9371
+},
+{
+"naam": "Oost Gelre",
+"provincie": "Gelderland",
+"lat": 52.0098,
+"lon": 6.5757
+},
+{
+"naam": "Oude IJsselstreek",
+"provincie": "Gelderland",
+"lat": 51.9078,
+"lon": 6.4095
+},
+{
+"naam": "Overbetuwe",
+"provincie": "Gelderland",
+"lat": 51.9243,
+"lon": 5.7783
+},
+{
+"naam": "Putten",
+"provincie": "Gelderland",
+"lat": 52.2439,
+"lon": 5.5827
+},
+{
+"naam": "Renkum",
+"provincie": "Gelderland",
+"lat": 51.9896,
+"lon": 5.7848
+},
+{
+"naam": "Rheden",
+"provincie": "Gelderland",
+"lat": 52.0335,
+"lon": 6.0513
+},
+{
+"naam": "Rozendaal",
+"provincie": "Gelderland",
+"lat": 52.0425,
+"lon": 5.9679
+},
+{
+"naam": "Scherpenzeel",
+"provincie": "Gelderland",
+"lat": 52.0893,
+"lon": 5.5005
+},
+{
+"naam": "Tiel",
+"provincie": "Gelderland",
+"lat": 51.8851,
+"lon": 5.4069
+},
+{
+"naam": "Voorst",
+"provincie": "Gelderland",
+"lat": 52.2256,
+"lon": 6.0991
+},
+{
+"naam": "Wageningen",
+"provincie": "Gelderland",
+"lat": 51.9735,
+"lon": 5.6635
+},
+{
+"naam": "West Betuwe",
+"provincie": "Gelderland",
+"lat": 51.8616,
+"lon": 5.2094
+},
+{
+"naam": "West Maas en Waal",
+"provincie": "Gelderland",
+"lat": 51.8516,
+"lon": 5.4966
+},
+{
+"naam": "Westervoort",
+"provincie": "Gelderland",
+"lat": 51.9575,
+"lon": 5.9707
+},
+{
+"naam": "Wijchen",
+"provincie": "Gelderland",
+"lat": 51.8167,
+"lon": 5.7019
+},
+{
+"naam": "Winterswijk",
+"provincie": "Gelderland",
+"lat": 51.9699,
+"lon": 6.7259
+},
+{
+"naam": "Zaltbommel",
+"provincie": "Gelderland",
+"lat": 51.7923,
+"lon": 5.1584
+},
+{
+"naam": "Zevenaar",
+"provincie": "Gelderland",
+"lat": 51.9241,
+"lon": 6.0852
+},
+{
+"naam": "Zutphen",
+"provincie": "Gelderland",
+"lat": 52.1363,
+"lon": 6.234
+},
+{
+"naam": "Beek",
+"provincie": "Limburg",
+"lat": 50.9309,
+"lon": 5.8091
+},
+{
+"naam": "Beekdaelen",
+"provincie": "Limburg",
+"lat": 50.9367,
+"lon": 5.8971
+},
+{
+"naam": "Beesel",
+"provincie": "Limburg",
+"lat": 51.2692,
+"lon": 6.069
+},
+{
+"naam": "Bergen (L)",
+"provincie": "Limburg",
+"lat": 51.5919,
+"lon": 6.0894
+},
+{
+"naam": "Brunssum",
+"provincie": "Limburg",
+"lat": 50.9429,
+"lon": 5.978
+},
+{
+"naam": "Echt-Susteren",
+"provincie": "Limburg",
+"lat": 51.085,
+"lon": 5.9082
+},
+{
+"naam": "Eijsden-Margraten",
+"provincie": "Limburg",
+"lat": 50.8011,
+"lon": 5.7737
+},
+{
+"naam": "Gennep",
+"provincie": "Limburg",
+"lat": 51.6993,
+"lon": 5.9871
+},
+{
+"naam": "Gulpen-Wittem",
+"provincie": "Limburg",
+"lat": 50.8023,
+"lon": 5.9001
+},
+{
+"naam": "Heerlen",
+"provincie": "Limburg",
+"lat": 50.8933,
+"lon": 5.9694
+},
+{
+"naam": "Horst aan de Maas",
+"provincie": "Limburg",
+"lat": 51.4449,
+"lon": 6.0416
+},
+{
+"naam": "Kerkrade",
+"provincie": "Limburg",
+"lat": 50.8718,
+"lon": 6.051
+},
+{
+"naam": "Landgraaf",
+"provincie": "Limburg",
+"lat": 50.9064,
+"lon": 6.033
+},
+{
+"naam": "Leudal",
+"provincie": "Limburg",
+"lat": 51.2394,
+"lon": 5.8848
+},
+{
+"naam": "Maasgouw",
+"provincie": "Limburg",
+"lat": 51.1616,
+"lon": 5.8824
+},
+{
+"naam": "Maastricht",
+"provincie": "Limburg",
+"lat": 50.853,
+"lon": 5.6995
+},
+{
+"naam": "Meerssen",
+"provincie": "Limburg",
+"lat": 50.9013,
+"lon": 5.7563
+},
+{
+"naam": "Mook en Middelaar",
+"provincie": "Limburg",
+"lat": 51.7474,
+"lon": 5.8997
+},
+{
+"naam": "Nederweert",
+"provincie": "Limburg",
+"lat": 51.2944,
+"lon": 5.7733
+},
+{
+"naam": "Peel en Maas",
+"provincie": "Limburg",
+"lat": 51.3363,
+"lon": 5.9948
+},
+{
+"naam": "Roerdalen",
+"provincie": "Limburg",
+"lat": 51.1457,
+"lon": 6.0411
+},
+{
+"naam": "Roermond",
+"provincie": "Limburg",
+"lat": 51.2012,
+"lon": 6.0115
+},
+{
+"naam": "Simpelveld",
+"provincie": "Limburg",
+"lat": 50.8288,
+"lon": 5.9866
+},
+{
+"naam": "Sittard-Geleen",
+"provincie": "Limburg",
+"lat": 51.0049,
+"lon": 5.8282
+},
+{
+"naam": "Stein",
+"provincie": "Limburg",
+"lat": 50.969,
+"lon": 5.7637
+},
+{
+"naam": "Vaals",
+"provincie": "Limburg",
+"lat": 50.7743,
+"lon": 5.9758
+},
+{
+"naam": "Valkenburg aan de Geul",
+"provincie": "Limburg",
+"lat": 50.8607,
+"lon": 5.8239
+},
+{
+"naam": "Venlo",
+"provincie": "Limburg",
+"lat": 51.391,
+"lon": 6.1591
+},
+{
+"naam": "Venray",
+"provincie": "Limburg",
+"lat": 51.5154,
+"lon": 5.9629
+},
+{
+"naam": "Voerendaal",
+"provincie": "Limburg",
+"lat": 50.8694,
+"lon": 5.9165
+},
+{
+"naam": "Weert",
+"provincie": "Limburg",
+"lat": 51.2336,
+"lon": 5.6917
+},
+{
+"naam": "'s-Hertogenbosch",
+"provincie": "Noord-Brabant",
+"lat": 51.7168,
+"lon": 5.3519
+},
+{
+"naam": "Alphen-Chaam",
+"provincie": "Noord-Brabant",
+"lat": 51.5014,
+"lon": 4.8874
+},
+{
+"naam": "Altena",
+"provincie": "Noord-Brabant",
+"lat": 51.7657,
+"lon": 4.9459
+},
+{
+"naam": "Asten",
+"provincie": "Noord-Brabant",
+"lat": 51.3864,
+"lon": 5.7792
+},
+{
+"naam": "Baarle-Nassau",
+"provincie": "Noord-Brabant",
+"lat": 51.439,
+"lon": 4.8931
+},
+{
+"naam": "Bergeijk",
+"provincie": "Noord-Brabant",
+"lat": 51.3101,
+"lon": 5.34
+},
+{
+"naam": "Bergen op Zoom",
+"provincie": "Noord-Brabant",
+"lat": 51.5035,
+"lon": 4.2883
+},
+{
+"naam": "Bernheze",
+"provincie": "Noord-Brabant",
+"lat": 51.6847,
+"lon": 5.5207
+},
+{
+"naam": "Best",
+"provincie": "Noord-Brabant",
+"lat": 51.5141,
+"lon": 5.3965
+},
+{
+"naam": "Bladel",
+"provincie": "Noord-Brabant",
+"lat": 51.3723,
+"lon": 5.2387
+},
+{
+"naam": "Boekel",
+"provincie": "Noord-Brabant",
+"lat": 51.6067,
+"lon": 5.6937
+},
+{
+"naam": "Boxtel",
+"provincie": "Noord-Brabant",
+"lat": 51.5812,
+"lon": 5.324
+},
+{
+"naam": "Breda",
+"provincie": "Noord-Brabant",
+"lat": 51.5851,
+"lon": 4.7614
+},
+{
+"naam": "Cranendonck",
+"provincie": "Noord-Brabant",
+"lat": 51.2863,
+"lon": 5.5962
+},
+{
+"naam": "Deurne",
+"provincie": "Noord-Brabant",
+"lat": 51.4362,
+"lon": 5.827
+},
+{
+"naam": "Dongen",
+"provincie": "Noord-Brabant",
+"lat": 51.6359,
+"lon": 4.9554
+},
+{
+"naam": "Drimmelen",
+"provincie": "Noord-Brabant",
+"lat": 51.7001,
+"lon": 4.7588
+},
+{
+"naam": "Eersel",
+"provincie": "Noord-Brabant",
+"lat": 51.3965,
+"lon": 5.3146
+},
+{
+"naam": "Eindhoven",
+"provincie": "Noord-Brabant",
+"lat": 51.4502,
+"lon": 5.4585
+},
+{
+"naam": "Etten-Leur",
+"provincie": "Noord-Brabant",
+"lat": 51.5783,
+"lon": 4.645
+},
+{
+"naam": "Geertruidenberg",
+"provincie": "Noord-Brabant",
+"lat": 51.6971,
+"lon": 4.8816
+},
+{
+"naam": "Geldrop-Mierlo",
+"provincie": "Noord-Brabant",
+"lat": 51.4313,
+"lon": 5.5876
+},
+{
+"naam": "Gemert-Bakel",
+"provincie": "Noord-Brabant",
+"lat": 51.5407,
+"lon": 5.7543
+},
+{
+"naam": "Gilze en Rijen",
+"provincie": "Noord-Brabant",
+"lat": 51.5596,
+"lon": 4.9186
+},
+{
+"naam": "Goirle",
+"provincie": "Noord-Brabant",
+"lat": 51.5123,
+"lon": 5.0331
+},
+{
+"naam": "Halderberge",
+"provincie": "Noord-Brabant",
+"lat": 51.5905,
+"lon": 4.5231
+},
+{
+"naam": "Heeze-Leende",
+"provincie": "Noord-Brabant",
+"lat": 51.3609,
+"lon": 5.5672
+},
+{
+"naam": "Helmond",
+"provincie": "Noord-Brabant",
+"lat": 51.4762,
+"lon": 5.657
+},
+{
+"naam": "Heusden",
+"provincie": "Noord-Brabant",
+"lat": 51.6968,
+"lon": 5.1602
+},
+{
+"naam": "Hilvarenbeek",
+"provincie": "Noord-Brabant",
+"lat": 51.4795,
+"lon": 5.1455
+},
+{
+"naam": "Laarbeek",
+"provincie": "Noord-Brabant",
+"lat": 51.5309,
+"lon": 5.6118
+},
+{
+"naam": "Land van Cuijk",
+"provincie": "Noord-Brabant",
+"lat": 51.6555,
+"lon": 5.8591
+},
+{
+"naam": "Loon op Zand",
+"provincie": "Noord-Brabant",
+"lat": 51.6406,
+"lon": 5.0475
+},
+{
+"naam": "Maashorst",
+"provincie": "Noord-Brabant",
+"lat": 51.6868,
+"lon": 5.6555
+},
+{
+"naam": "Meierijstad",
+"provincie": "Noord-Brabant",
+"lat": 51.5922,
+"lon": 5.5064
+},
+{
+"naam": "Moerdijk",
+"provincie": "Noord-Brabant",
+"lat": 51.6626,
+"lon": 4.5355
+},
+{
+"naam": "Nuenen, Gerwen en Nederwetten",
+"provincie": "Noord-Brabant",
+"lat": 51.4786,
+"lon": 5.5495
+},
+{
+"naam": "Oirschot",
+"provincie": "Noord-Brabant",
+"lat": 51.4926,
+"lon": 5.2898
+},
+{
+"naam": "Oisterwijk",
+"provincie": "Noord-Brabant",
+"lat": 51.5625,
+"lon": 5.2045
+},
+{
+"naam": "Oosterhout",
+"provincie": "Noord-Brabant",
+"lat": 51.6378,
+"lon": 4.8641
+},
+{
+"naam": "Oss",
+"provincie": "Noord-Brabant",
+"lat": 51.7816,
+"lon": 5.5264
+},
+{
+"naam": "Reusel-De Mierden",
+"provincie": "Noord-Brabant",
+"lat": 51.3783,
+"lon": 5.1478
+},
+{
+"naam": "Roosendaal",
+"provincie": "Noord-Brabant",
+"lat": 51.5132,
+"lon": 4.4245
+},
+{
+"naam": "Rucphen",
+"provincie": "Noord-Brabant",
+"lat": 51.5227,
+"lon": 4.5586
+},
+{
+"naam": "Sint-Michielsgestel",
+"provincie": "Noord-Brabant",
+"lat": 51.6571,
+"lon": 5.3781
+},
+{
+"naam": "Someren",
+"provincie": "Noord-Brabant",
+"lat": 51.3787,
+"lon": 5.6914
+},
+{
+"naam": "Son en Breugel",
+"provincie": "Noord-Brabant",
+"lat": 51.5164,
+"lon": 5.4825
+},
+{
+"naam": "Steenbergen",
+"provincie": "Noord-Brabant",
+"lat": 51.5999,
+"lon": 4.3236
+},
+{
+"naam": "Tilburg",
+"provincie": "Noord-Brabant",
+"lat": 51.5834,
+"lon": 5.0774
+},
+{
+"naam": "Valkenswaard",
+"provincie": "Noord-Brabant",
+"lat": 51.3238,
+"lon": 5.4492
+},
+{
+"naam": "Veldhoven",
+"provincie": "Noord-Brabant",
+"lat": 51.4119,
+"lon": 5.3832
+},
+{
+"naam": "Vught",
+"provincie": "Noord-Brabant",
+"lat": 51.6504,
+"lon": 5.2426
+},
+{
+"naam": "Waalre",
+"provincie": "Noord-Brabant",
+"lat": 51.3873,
+"lon": 5.4649
+},
+{
+"naam": "Waalwijk",
+"provincie": "Noord-Brabant",
+"lat": 51.6923,
+"lon": 5.0118
+},
+{
+"naam": "Woensdrecht",
+"provincie": "Noord-Brabant",
+"lat": 51.4083,
+"lon": 4.3423
+},
+{
+"naam": "Zundert",
+"provincie": "Noord-Brabant",
+"lat": 51.4798,
+"lon": 4.6426
+}
+]
+}

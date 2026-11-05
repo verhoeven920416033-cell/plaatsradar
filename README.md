@@ -1,6 +1,6 @@
 # PlaatsRadar
 
-Gratis dashboard met actuele **wegwerkzaamheden en afsluitingen, evenementen, kermissen en weekmarkten** per plaats. Het dashboard wordt elke 30 minuten automatisch bijgewerkt en draait op een gratis GitHub-account, zonder server, sleutels of abonnementen.
+Gratis dashboard met actuele **wegwerkzaamheden en afsluitingen, evenementen, kermissen en weekmarkten** voor alle 138 gemeenten in **Noord-Brabant, Gelderland en Limburg**. Het dashboard wordt elke 30 minuten automatisch bijgewerkt en draait op een gratis GitHub-account, zonder server, sleutels of abonnementen.
 
 ## Bronnen
 | Soort | Bron | Licentie |
@@ -8,6 +8,7 @@ Gratis dashboard met actuele **wegwerkzaamheden en afsluitingen, evenementen, ke
 | Wegwerk, afsluitingen, evenement-afsluitingen | NDW open data – `planningsfeed_wegwerkzaamheden_en_evenementen` | CC0 |
 | Evenementenvergunningen en -meldingen, kermissen, braderieën, tijdelijke verkeersbesluiten | Gemeenteblad via de KOOP SRU-API (`repository.overheid.nl/sru`), op titel én rubriek | CC0 |
 | Weekmarkten | Vast rooster in `config.json`, overgenomen uit de marktreglementen | — |
+| Plaatsen zoeken (in je browser) | PDOK Locatieserver | CC0 |
 | Straatnamen bij wegwerk zonder omschrijving | OpenStreetMap Nominatim (gecachet) | ODbL |
 
 ## Eenmalig installeren (± 10 minuten)
@@ -19,11 +20,11 @@ Gratis dashboard met actuele **wegwerkzaamheden en afsluitingen, evenementen, ke
 5. Ga naar het tabblad **Actions**, kies **PlaatsRadar bijwerken** en klik op **Run workflow**. Na ongeveer 2 minuten staat de site op `https://<gebruikersnaam>.github.io/plaatsradar/`.
 
 ## Aanpassen
-- **Plaatsen**: pas `config.json` aan via het potloodje in GitHub en commit. De workflow draait dan meteen opnieuw.
-  - `gemeente` moet exact de gemeentenaam zijn zoals die in het Gemeenteblad staat (bijv. `Geldrop-Mierlo`, `Nuenen, Gerwen en Nederwetten`).
-  - `lat`/`lon` is het centrum van de plaats. Je vindt het via rechtermuisklik in Google Maps.
-  - `straal_km` bepaalt hoe ver om het centrum heen naar wegwerk wordt gezocht.
-- **Markten**: in `config.json` staat `dag` als 0 = maandag t/m 6 = zondag.
+- **Op de site**: klik een provincie aan, typ een plaats (ook dorpen, bijv. Lierop) of vink gemeenten aan onder **Alle gemeenten per provincie**. Je keuze wordt in je browser onthouden. **Mijn regio** zet de favorieten terug.
+- **Losse plaats** = alles binnen de gekozen straal rond dat dorp. Publicaties zonder coördinaten komen via de gemeente mee.
+- **Favorieten**: `favorieten` in `config.json` zijn de gemeenten die standaard openstaan.
+- **Gemeenten**: `gemeenten.json`. Pas alleen aan bij een gemeentelijke herindeling. `naam` moet exact de naam in het Gemeenteblad zijn.
+- **Markten**: in `config.json` staat `dag` als 0 = maandag t/m 6 = zondag, `plaats` is de gemeentenaam. Alleen de ingevoerde markten staan op de site, dus nog niet heel Gelderland en Limburg.
 
 ## Goed om te weten
 - **GitHub zet geplande taken na 60 dagen zonder activiteit in de repo stil.** Je krijgt daar een mail over. Klik dan in Actions op **Enable workflow**, of doe af en toe een kleine wijziging in `config.json`.
@@ -33,4 +34,5 @@ Gratis dashboard met actuele **wegwerkzaamheden en afsluitingen, evenementen, ke
 - Contactpersonen uit de NDW-opmerkingen worden bewust niet overgenomen.
 - Kleine evenementen zonder vergunning staan niet in het Gemeenteblad.
 - Lokaal testen: `python3 tests/test_gemeenteblad.py && python3 tests/test_ndw.py`, dan `python3 scripts/ophalen.py` en daarna `python3 -m http.server -d site` openen op http://localhost:8000.
-- De eerste run leest tot 80 publicaties per gemeente (±1 min per gemeente); daarna komt alles uit de cache.
+- De eerste runs lezen 250 publicaties per run; tot die klaar zijn kan bij sommige evenementen "datum onbekend" staan. Het Gemeenteblad wordt per gemeente elke 6 uur bevraagd, NDW elke run.
+- Gemeente-indeling NDW: op de bron ("Gemeente Arnhem"), anders dichtstbijzijnde gemeentecentrum (max. 15 km). Bij RWS-wegen op een gemeentegrens kan een melding bij de buurgemeente staan.

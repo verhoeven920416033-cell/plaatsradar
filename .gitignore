@@ -1,0 +1,5 @@
+.cache/
+site/data.json
+__pycache__/
+*.xml
+*.xml.gz

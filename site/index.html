@@ -45,6 +45,19 @@ input[type=search]{flex:1 1 200px}
 .h{font-size:11px;font-weight:700;border-radius:4px;padding:3px 8px;white-space:nowrap}
 .h-hoog{background:var(--red);color:#fff}.h-middel{background:#f3b23c;color:#3a2600}.h-laag{background:#e3e8ee;color:#3c4856}
 .empty{padding:12px 14px;color:var(--mut)}
+.zoek{position:relative;flex:1 1 240px}.zoek input{width:100%}
+#sug{position:absolute;z-index:1500;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.14);overflow:hidden}
+#sug button{display:block;width:100%;text-align:left;background:none;border:0;padding:8px 10px;font:inherit;cursor:pointer}
+#sug button:hover,#sug button.on{background:#eef2f7}#sug small{color:var(--mut);margin-left:6px}#sug div{padding:8px 10px;color:var(--mut)}
+.chip .x{margin-left:6px;opacity:.75}
+#lijstIn{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:2px 14px;margin-top:8px}
+#lijstIn h4{grid-column:1/-1;margin:8px 0 2px;font-size:13px;color:var(--navy2)}
+#lijstIn label{font-size:13px;cursor:pointer}
+.provkop{margin:16px 2px 8px;font-size:15px;color:var(--navy2)}
+details.place summary{cursor:pointer;list-style:none}details.place summary::-webkit-details-marker{display:none}
+details.place h2{justify-content:flex-start;align-items:baseline}details.place h2 small{margin-left:auto}
+details.place h2::before{content:"▸";color:var(--mut)}details.place[open] h2::before{content:"▾"}
+details.place:not([open]) h2{border-bottom:0}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:9px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:2000}
 .toast.on{opacity:1}
 footer{max-width:1150px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color:var(--mut)}
@@ -59,7 +72,7 @@ footer a{color:var(--mut)}
 <body>
 <header>
   <h1>PlaatsRadar</h1>
-  <p id="sub">Wegwerk, afsluitingen, evenementen, kermissen en markten — laden…</p>
+  <p id="sub">Wegwerk, afsluitingen, evenementen, kermissen en markten in Noord-Brabant, Gelderland en Limburg — laden…</p>
   <div class="src" id="src"></div>
 </header>
 <main>
@@ -73,7 +86,14 @@ footer a{color:var(--mut)}
       </select>
       <input type="search" id="q" placeholder="Zoek straat, evenement…">
     </div>
-    <div class="row" style="margin-bottom:8px"><span class="lbl">Plaats</span><span id="pl" class="row"></span></div>
+    <div class="row" style="margin-bottom:8px"><span class="lbl">Provincie</span><span id="prov" class="row"></span></div>
+    <div class="row" style="margin-bottom:8px"><span class="lbl">Plaats</span>
+      <div class="zoek"><input type="search" id="plaatsIn" placeholder="Typ een plaats of gemeente, bijv. Lierop of Roermond" autocomplete="off" aria-label="Plaats toevoegen"><div id="sug" hidden></div></div>
+      <label class="meta">straal <select id="straal"><option>2</option><option>5</option><option>10</option><option>15</option><option>25</option></select> km</label>
+      <button class="btn" id="mijn">Mijn regio</button><button class="btn" id="wis">Wis</button>
+    </div>
+    <div class="row" id="pl" style="margin-bottom:8px"></div>
+    <details id="lijst" style="margin-bottom:8px"><summary class="meta">Alle gemeenten per provincie</summary><div id="lijstIn"></div></details>
     <div class="row" style="margin-bottom:8px"><span class="lbl">Soort</span><span id="cats" class="row"></span></div>
     <div class="row">
       <span class="chip" id="fHoog">Alleen hoge hinder</span>
@@ -98,7 +118,7 @@ footer a{color:var(--mut)}
   <div id="list"></div>
 </main>
 <footer>
-  Bronnen: NDW open data (CC0) · Officiële bekendmakingen / Gemeenteblad via KOOP (CC0) · marktreglementen gemeenten · straatnamen © OpenStreetMap-bijdragers (ODbL).
+  Bronnen: NDW open data (CC0) · Officiële bekendmakingen / Gemeenteblad via KOOP (CC0) · plaatsnamen PDOK Locatieserver (CC0) · marktreglementen gemeenten · straatnamen © OpenStreetMap-bijdragers (ODbL).
   Automatisch bijgewerkt; altijd de bron controleren vóór operationele beslissingen.
 </footer>
 <div class="toast" id="toast"></div>
@@ -109,9 +129,9 @@ const CATS = {weg:["Wegwerk","var(--weg)"],evenement:["Evenement","var(--eveneme
 const HO = {hoog:0,middel:1,laag:2};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const LS = "plaatsradar.site.v1";
+const LS = "plaatsradar.site.v2";
 let D = null, map = null, layer = null;
-let S = {per:"6", plaatsen:null, cats:Object.keys(CATS), hoog:false, snel:true, fiets:false, nu:false, kaart:false, q:""};
+let S = {per:"6", prov:[], gem:null, los:[], km:5, cats:Object.keys(CATS), hoog:false, snel:true, fiets:false, nu:false, kaart:false, q:""};
 try { Object.assign(S, JSON.parse(localStorage.getItem(LS) || "{}")); } catch {}
 const save = () => { try { localStorage.setItem(LS, JSON.stringify({...S, q:""})); } catch {} };
 
@@ -120,6 +140,19 @@ const isoD = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}
 const fmtD = s => { if (!s) return ""; const d = new Date(s.length > 10 ? s : s+"T00:00"); if (isNaN(d)) return s; const jr = d.getFullYear() !== new Date().getFullYear(); return d.toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short",...(jr?{year:"numeric"}:{})}); };
 const fmtT = s => s && s.length > 10 ? s.slice(11,16) : "";
 
+const dist = (a,b) => { const r = Math.PI/180, x = (b.lon-a.lon)*r*Math.cos((a.lat+b.lat)/2*r), y = (b.lat-a.lat)*r; return 6371*Math.hypot(x,y); };
+const provVan = n => (D.plaatsen.find(p => p.naam === n) || {}).provincie || "";
+const PROV = () => [...new Set(D.plaatsen.map(p => p.provincie))].sort();
+function gekozen(){ const g = new Set(S.gem || []); D.plaatsen.forEach(p => { if (S.prov.includes(p.provincie)) g.add(p.naam); }); return g; }
+// losse plaats: op afstand; publicaties zonder coördinaten via de gemeente
+const losVan = x => S.los.find(l => x.lat ? dist(l, x) <= S.km : x.plaats === l.gemeente);
+function secties(v){
+  const gs = gekozen(), los = new Map(S.los.map(l => [l.naam, []])), gem = new Map();
+  v.forEach(x => { if (gs.has(x.plaats)) { if (!gem.has(x.plaats)) gem.set(x.plaats, []); gem.get(x.plaats).push(x); } else los.get(losVan(x).naam).push(x); });
+  const res = S.los.filter(l => !gs.has(l.naam)).map(l => ({naam:`${l.naam} (${S.km} km)`, prov:l.provincie, items:los.get(l.naam)||[]}));
+  [...gs].sort((a,b) => provVan(a).localeCompare(provVan(b)) || a.localeCompare(b)).forEach(n => res.push({naam:n, prov:provVan(n), items:gem.get(n)||[]}));
+  return res;
+}
 function windowRange(){
   const a = new Date(); a.setHours(0,0,0,0);
   const b = new Date(a); b.setDate(b.getDate() + +S.per);
@@ -127,9 +160,9 @@ function windowRange(){
 }
 function visible(){
   if (!D) return [];
-  const [ws, we] = windowRange(); const q = S.q.trim().toLowerCase();
+  const [ws, we] = windowRange(); const q = S.q.trim().toLowerCase(); const gs = gekozen();
   return D.items.filter(x => {
-    if (S.plaatsen && !S.plaatsen.includes(x.plaats)) return false;
+    if (!gs.has(x.plaats) && !losVan(x)) return false;
     if (!S.cats.includes(x.cat)) return false;
     if (S.hoog && x.hinder !== "hoog") return false;
     if (!S.snel && x.snelweg) return false;
@@ -141,7 +174,7 @@ function visible(){
       const s = x.start.slice(0,10), e = (x.eind || (x.cat === "weg" ? "9999" : x.start)).slice(0,10);
       if (s > we || e < ws) return false;
     }
-    if (q && !(`${x.titel} ${x.locatie} ${x.toelichting} ${x.bron}`.toLowerCase().includes(q))) return false;
+    if (q && !(`${x.titel} ${x.locatie} ${x.toelichting} ${x.bron} ${x.plaats}`.toLowerCase().includes(q))) return false;
     return true;
   });
 }
@@ -180,6 +213,14 @@ function whenHtml(x){
   return h + (isNow(x) ? '<span class="now">NU</span>' : "");
 }
 
+function itemHtml(x){
+  return `<div class="item"><div class="when">${whenHtml(x)}</div>
+    <div><div class="ttl"><span class="badge" style="background:${CATS[x.cat][1]}">${CATS[x.cat][0]}</span><span class="sub">${esc(x.label)}</span>${x.snelweg?'<span class="sub">snelweg</span>':""}${esc(x.titel)}</div>
+    <div class="meta">${[x.titel.includes(x.locatie)?"":x.locatie, x.toelichting].filter(Boolean).map(esc).join(" · ")}${(x.locatie&&!x.titel.includes(x.locatie))||x.toelichting?" · ":""}${esc(x.bron)}${x.url ? ` · <a href="${esc(x.url)}" target="_blank" rel="noopener">${x.bron_type==="NDW"?"kaart":"bron"}</a>` : ""}${x.info ? ` · <a href="${esc(x.info)}" target="_blank" rel="noopener">meer info</a>` : ""}</div></div>
+    <span class="h h-${x.hinder}">${x.hinder}</span></div>`;
+}
+let SEC = [];
+const secInhoud = it => it.length ? it.map(itemHtml).join("") : `<div class="empty">Geen meldingen in deze periode.</div>`;
 function render(){
   const v = visible();
   $("#kTot").textContent = v.length;
@@ -187,24 +228,29 @@ function render(){
   $("#kWeg").textContent = v.filter(x => x.cat === "weg").length;
   $("#kEv").textContent = v.filter(x => x.cat === "evenement" || x.cat === "kermis").length;
   $("#kMarkt").textContent = v.filter(x => x.cat === "markt").length;
-  const names = D.plaatsen.map(p => p.naam).filter(n => !S.plaatsen || S.plaatsen.includes(n));
-  $("#list").innerHTML = names.map(n => {
-    const it = groupMarkets(sortI(v.filter(x => x.plaats === n)));
-    const cnt = it.filter(x => x.hinder === "hoog").length;
-    return `<div class="place"><h2>${esc(n)} <small>${(m=>m+(m===1?" melding":" meldingen"))(it.filter(x=>x.cat!=="markt").length)} · ${it.filter(x=>x.cat==="markt").length} markten${cnt ? ` · <b style="color:var(--red)">${cnt} hoge hinder</b>` : ""}</small></h2>` +
-      (it.length ? it.map(x => `<div class="item"><div class="when">${whenHtml(x)}</div>
-        <div><div class="ttl"><span class="badge" style="background:${CATS[x.cat][1]}">${CATS[x.cat][0]}</span><span class="sub">${esc(x.label)}</span>${x.snelweg?'<span class="sub">snelweg</span>':""}${esc(x.titel)}</div>
-        <div class="meta">${[x.titel.includes(x.locatie)?"":x.locatie, x.toelichting].filter(Boolean).map(esc).join(" · ")}${(x.locatie&&!x.titel.includes(x.locatie))||x.toelichting?" · ":""}${esc(x.bron)}${x.url ? ` · <a href="${esc(x.url)}" target="_blank" rel="noopener">${x.bron_type==="NDW"?"kaart":"bron"}</a>` : ""}${x.info ? ` · <a href="${esc(x.info)}" target="_blank" rel="noopener">meer info</a>` : ""}</div></div>
-        <span class="h h-${x.hinder}">${x.hinder}</span></div>`).join("")
-      : `<div class="empty">Geen meldingen in deze periode.</div>`) + `</div>`;
-  }).join("");
+  const alle = secties(v);
+  if (!alle.length) { $("#list").innerHTML = '<div class="empty panel">Kies een provincie of typ een plaats.</div>'; if (S.kaart) drawMap(v); return; }
+  const inklap = alle.length > 12, zonder = alle.filter(s => !s.items.length).length;
+  SEC = (inklap ? alle.filter(s => s.items.length) : alle).map(s => ({...s, items:groupMarkets(sortI(s.items))}));
+  const toonProv = new Set(SEC.map(s => s.prov)).size > 1;
+  let kop = "";
+  $("#list").innerHTML = SEC.map((s, i) => {
+    const it = s.items, cnt = it.filter(x => x.hinder === "hoog").length, mk = it.filter(x => x.cat === "markt").length, m = it.length - mk;
+    const h = `<h2>${esc(s.naam)} <small>${m} ${m===1?"melding":"meldingen"}${mk ? ` · ${mk} ${mk===1?"markt":"markten"}` : ""}${cnt ? ` · <b style="color:var(--red)">${cnt} hoge hinder</b>` : ""}</small></h2>`;
+    const pk = toonProv && s.prov !== kop ? `<h3 class="provkop">${esc(kop = s.prov)}</h3>` : "";
+    return pk + (inklap ? `<details class="place" data-i="${i}"><summary>${h}</summary></details>` : `<div class="place">${h}${secInhoud(it)}</div>`);
+  }).join("") + (inklap && zonder ? `<div class="empty">${zonder} ${zonder===1?"gemeente":"gemeenten"} zonder meldingen in deze periode.</div>` : "");
   if (S.kaart) drawMap(v);
 }
+// ingeklapte gemeenten pas vullen bij openen: drie provincies zijn duizenden regels
+const vul = d => { if (d.dataset.i != null && !d.dataset.klaar) { d.dataset.klaar = 1; d.insertAdjacentHTML("beforeend", secInhoud(SEC[+d.dataset.i].items)); } };
+$("#list").addEventListener("toggle", e => { if (e.target.matches("details.place") && e.target.open) vul(e.target); }, true);
+window.addEventListener("beforeprint", () => document.querySelectorAll("details.place").forEach(d => { vul(d); d.open = true; }));
 
 function drawMap(v){
   if (typeof L === "undefined") { $("#map").innerHTML = '<div class="empty">Kaart kon niet laden.</div>'; return; }
   if (!map) {
-    map = L.map("map");
+    map = L.map("map", {preferCanvas:true});
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:"© OpenStreetMap"}).addTo(map);
     layer = L.layerGroup().addTo(map);
   }
@@ -213,30 +259,89 @@ function drawMap(v){
   const pts = [];
   v.filter(x => x.lat).forEach(x => {
     pts.push([x.lat, x.lon]);
-    L.circleMarker([x.lat, x.lon], {radius:7, color:"#fff", weight:1.5, fillColor:col[x.hinder], fillOpacity:.95})
+    L.circleMarker([x.lat, x.lon], {radius:6, color:"#fff", weight:1.5, fillColor:col[x.hinder], fillOpacity:.95})
       .bindPopup(`<b>${esc(x.titel)}</b><br>${esc(x.label)} · ${esc(x.bron)}<br>${x.start?fmtD(x.start):"datum onbekend"}${x.eind?" t/m "+fmtD(x.eind):""}${x.url?`<br><a href="${esc(x.url)}" target="_blank" rel="noopener">${x.bron_type==="NDW"?"kaart":"bron"}</a>`:""}`).addTo(layer);
   });
-  D.plaatsen.filter(p => !S.plaatsen || S.plaatsen.includes(p.naam)).forEach(p => L.circle([p.lat,p.lon], {radius:p.straal_km*1000, color:"#003366", weight:1, fill:false, dashArray:"4 4"}).addTo(layer));
+  S.los.forEach(l => L.circle([l.lat,l.lon], {radius:S.km*1000, color:"#003366", weight:1, fill:false, dashArray:"4 4"}).addTo(layer));
   if (pts.length) map.fitBounds(pts, {padding:[20,20], maxZoom:14});
-  else { const p = D.plaatsen[0]; map.setView([p.lat,p.lon], 11); }
+  else map.setView([51.6, 5.6], 8);
   setTimeout(() => map.invalidateSize(), 50);
 }
 
 function controls(){
-  $("#per").value = S.per;
-  $("#pl").innerHTML = D.plaatsen.map(p => `<span class="chip ${!S.plaatsen||S.plaatsen.includes(p.naam)?"on":""}" data-p="${esc(p.naam)}">${esc(p.naam)}</span>`).join("");
+  const gs = gekozen();
+  $("#per").value = S.per; $("#straal").value = S.km;
+  $("#prov").innerHTML = PROV().map(p => `<span class="chip ${S.prov.includes(p)?"on":""}" data-pv="${esc(p)}">${esc(p)}</span>`).join("");
+  $("#pl").innerHTML = (S.gem||[]).map(n => `<span class="chip on" data-g="${esc(n)}">${esc(n)}<span class="x">×</span></span>`).join("")
+    + S.los.map(l => `<span class="chip on" data-l="${esc(l.naam)}">${esc(l.naam)} · ${S.km} km<span class="x">×</span></span>`).join("");
+  if ($("#lijst").open) lijstVullen(gs);
   $("#cats").innerHTML = Object.entries(CATS).map(([k,[l]]) => `<span class="chip ${S.cats.includes(k)?"on":""}" data-c="${k}">${l}</span>`).join("");
   $("#fHoog").classList.toggle("on", S.hoog); $("#fNu").classList.toggle("on", S.nu); $("#fFiets").classList.toggle("on", S.fiets); $("#fSnel").classList.toggle("on", S.snel); $("#fKaart").classList.toggle("on", S.kaart);
   $("#map").hidden = !S.kaart;
+}
+function lijstVullen(gs){
+  $("#lijstIn").innerHTML = PROV().map(pv => `<h4>${esc(pv)}</h4>` + D.plaatsen.filter(p => p.provincie === pv).map(p =>
+    `<label><input type="checkbox" data-n="${esc(p.naam)}" ${gs.has(p.naam)?"checked":""}> ${esc(p.naam)}</label>`).join("")).join("");
+}
+function zetGemeente(n, aan){
+  const pv = provVan(n);
+  if (!aan && S.prov.includes(pv)) { // uit een hele provincie halen: rest blijft los staan
+    S.prov = S.prov.filter(p => p !== pv);
+    S.gem = [...new Set([...(S.gem||[]), ...D.plaatsen.filter(p => p.provincie === pv).map(p => p.naam)])];
+  }
+  S.gem = (S.gem||[]).filter(x => x !== n);
+  if (aan) S.gem.push(n);
 }
 function upd(){ save(); controls(); render(); }
 
 $("#per").addEventListener("change", e => { S.per = e.target.value; upd(); });
 $("#q").addEventListener("input", e => { S.q = e.target.value; render(); });
-$("#pl").addEventListener("click", e => { const n = e.target.dataset.p; if (!n) return;
-  const all = D.plaatsen.map(p => p.naam); let cur = S.plaatsen || all.slice();
-  cur = cur.includes(n) ? cur.filter(x => x !== n) : [...cur, n];
-  S.plaatsen = cur.length === all.length || !cur.length ? null : cur; upd(); });
+$("#prov").addEventListener("click", e => { const p = e.target.dataset.pv; if (!p) return;
+  S.prov = S.prov.includes(p) ? S.prov.filter(x => x !== p) : [...S.prov, p];
+  S.gem = (S.gem||[]).filter(n => !S.prov.includes(provVan(n))); upd(); });
+$("#pl").addEventListener("click", e => { const c = e.target.closest(".chip"); if (!c) return;
+  if (c.dataset.g) zetGemeente(c.dataset.g, false); else S.los = S.los.filter(l => l.naam !== c.dataset.l); upd(); });
+$("#lijst").addEventListener("toggle", () => { if ($("#lijst").open) lijstVullen(gekozen()); });
+$("#lijstIn").addEventListener("change", e => { if (e.target.dataset.n) { zetGemeente(e.target.dataset.n, e.target.checked); upd(); } });
+$("#straal").addEventListener("change", e => { S.km = +e.target.value; upd(); });
+$("#mijn").addEventListener("click", () => { S.prov = []; S.los = []; S.gem = (D.favorieten||[]).slice(); upd(); });
+$("#wis").addEventListener("click", () => { S.prov = []; S.los = []; S.gem = []; upd(); });
+
+// plaats zoeken: eerst de gemeenten uit data.json, dan alle woonplaatsen via PDOK Locatieserver
+const PDOK = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/suggest";
+let sugs = [], sugT = 0, sugA = null;
+const toonSug = leeg => { const el = $("#sug");
+  el.innerHTML = sugs.length ? sugs.map((s,i) => `<button type="button" data-i="${i}" class="${i?"":"on"}">${esc(s.naam)}<small>${esc(s.sub)}</small></button>`).join("") : (leeg ? '<div>Geen plaats gevonden in deze drie provincies.</div>' : "");
+  el.hidden = !sugs.length && !leeg; };
+async function zoekPlaats(t){
+  const q = t.toLowerCase();
+  const eigen = D.plaatsen.filter(p => p.naam.toLowerCase().includes(q))
+    .sort((a,b) => a.naam.toLowerCase().indexOf(q) - b.naam.toLowerCase().indexOf(q) || a.naam.localeCompare(b.naam)).slice(0,5)
+    .map(p => ({naam:p.naam, sub:`gemeente · ${p.provincie}`, gem:true}));
+  sugs = eigen; toonSug(false);
+  if (sugA) sugA.abort();
+  sugA = new AbortController();
+  try {
+    const u = `${PDOK}?${new URLSearchParams({q:t, rows:8, fl:"weergavenaam,woonplaatsnaam,gemeentenaam,provincienaam,centroide_ll"})}&fq=type:woonplaats&fq=${encodeURIComponent('provincienaam:("Noord-Brabant" OR "Gelderland" OR "Limburg")')}`;
+    const j = await (await fetch(u, {signal:sugA.signal})).json();
+    const namen = new Set(eigen.map(s => s.naam));
+    const pl = (j.response?.docs || []).map(d => { const m = /POINT\(([\d.]+) ([\d.]+)\)/.exec(d.centroide_ll||""); return m && {naam:d.woonplaatsnaam, sub:`${d.gemeentenaam} · ${d.provincienaam}`, lat:+m[2], lon:+m[1], gemeente:d.gemeentenaam, provincie:d.provincienaam}; })
+      .filter(s => s && !namen.has(s.naam));
+    sugs = [...eigen, ...pl].slice(0,9);
+  } catch (e) { if (e.name === "AbortError") return; }
+  toonSug(true);
+}
+function kiesPlaats(s){
+  if (s.gem) { if (!gekozen().has(s.naam)) zetGemeente(s.naam, true); }
+  else if (!S.los.some(l => l.naam === s.naam)) S.los = [...S.los, {naam:s.naam, lat:s.lat, lon:s.lon, gemeente:s.gemeente, provincie:s.provincie}];
+  $("#plaatsIn").value = ""; sugs = []; $("#sug").hidden = true; upd();
+}
+$("#plaatsIn").addEventListener("input", e => { clearTimeout(sugT); const t = e.target.value.trim();
+  if (t.length < 2) { sugs = []; $("#sug").hidden = true; return; } sugT = setTimeout(() => zoekPlaats(t), 180); });
+$("#plaatsIn").addEventListener("keydown", e => { if (e.key === "Escape") $("#sug").hidden = true;
+  if (e.key === "Enter") { e.preventDefault(); if (sugs[0]) kiesPlaats(sugs[0]); } });
+$("#sug").addEventListener("mousedown", e => { const b = e.target.closest("button"); if (b) { e.preventDefault(); kiesPlaats(sugs[+b.dataset.i]); } });
+document.addEventListener("click", e => { if (!e.target.closest(".zoek")) $("#sug").hidden = true; });
 $("#cats").addEventListener("click", e => { const c = e.target.dataset.c; if (!c) return;
   S.cats = S.cats.includes(c) ? S.cats.filter(x => x !== c) : [...S.cats, c]; if (!S.cats.length) S.cats = Object.keys(CATS); upd(); });
 $("#fHoog").addEventListener("click", () => { S.hoog = !S.hoog; upd(); });
@@ -251,9 +356,10 @@ async function copy(t, m){ try { await navigator.clipboard.writeText(t); toast(m
 $("#cpBrief").addEventListener("click", () => {
   const [ws, we] = windowRange(), v = visible();
   const L2 = [`PLAATSRADAR ${fmtD(ws)}${ws!==we?" t/m "+fmtD(we):""} (stand ${D.gegenereerd.slice(11,16)})`, ""];
-  D.plaatsen.map(p => p.naam).filter(n => !S.plaatsen || S.plaatsen.includes(n)).forEach(n => {
-    const it = groupMarkets(sortI(v.filter(x => x.plaats === n && (x.hinder !== "laag" || x.cat !== "markt"))));
-    L2.push(`▶ ${n.toUpperCase()}${it.length ? "" : " — geen bijzonderheden"}`);
+  const alle = secties(v);
+  (alle.length > 12 ? alle.filter(s => s.items.length) : alle).forEach(s => {
+    const it = groupMarkets(sortI(s.items.filter(x => x.hinder !== "laag" || x.cat !== "markt")));
+    L2.push(`▶ ${s.naam.toUpperCase()}${it.length ? "" : " — geen bijzonderheden"}`);
     it.forEach(x => L2.push(`${x.hinder==="hoog"?"🔴":x.hinder==="middel"?"🟠":"⚪"} [${CATS[x.cat][0]}] ${x.titel}${x.locatie?" – "+x.locatie:""} (${x.perioden&&volgende(x)?(isNow(x)?"nu, ":"")+fmtD(volgende(x)[0]):x._n>1?"elke "+(DAGNAAM[x.dag]||x.dag):x.start?fmtD(x.start):"datum?"}${x.eind&&x.cat!=="markt"&&x.eind.slice(0,10)!==(x.start||"").slice(0,10)?" t/m "+fmtD(x.eind):""}${x.tijd?", "+x.tijd:""})`));
     L2.push("");
   });
@@ -262,8 +368,8 @@ $("#cpBrief").addEventListener("click", () => {
 });
 $("#cpCsv").addEventListener("click", () => {
   const c = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
-  const rows = [["plaats","soort","label","titel","start","eind","tijd","locatie","hinder","snelweg","toelichting","bron","url"].join(";")]
-    .concat(sortI(visible()).map(x => [x.plaats,CATS[x.cat][0],x.label,x.titel,x.start,x.eind,x.tijd,x.locatie,x.hinder,x.snelweg?"ja":"",x.toelichting,x.bron,x.url].map(c).join(";")));
+  const rows = [["provincie","gemeente","soort","label","titel","start","eind","tijd","locatie","hinder","snelweg","toelichting","bron","url"].join(";")]
+    .concat(sortI(visible()).map(x => [provVan(x.plaats),x.plaats,CATS[x.cat][0],x.label,x.titel,x.start,x.eind,x.tijd,x.locatie,x.hinder,x.snelweg?"ja":"",x.toelichting,x.bron,x.url].map(c).join(";")));
   copy(rows.join("\n"), "CSV gekopieerd — plak in Excel");
 });
 
@@ -273,10 +379,13 @@ fetch("data.json?t=" + Date.now()).then(r => { if (!r.ok) throw new Error("HTTP 
   $("#sub").textContent = `Bijgewerkt ${new Date(d.gegenereerd).toLocaleString("nl-NL",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · vooruitkijken ${d.horizon_dagen} dagen`;
   const st = d.status, chips = [];
   chips.push(st.ndw.ok ? `<span>NDW ✓ ${st.ndw.items}</span>` : `<span class="bad">NDW ✗</span>`);
-  Object.entries(st.gemeenteblad || {}).forEach(([g,s]) => chips.push(s.ok ? `<span>${esc(g.split(",")[0])} ✓ ${s.relevant}</span>` : `<span class="bad">${esc(g.split(",")[0])} ✗</span>`));
+  const gb = Object.entries(st.gemeenteblad || {}), fout = gb.filter(([,s]) => !s.ok);
+  if (gb.length) chips.push(`<span class="${fout.length?"bad":""}" title="${esc(fout.map(([g]) => g).join(", "))}">Gemeenteblad ${fout.length?"✗":"✓"} ${gb.length-fout.length}/${gb.length}</span>`);
   if (age > 180) chips.push(`<span class="bad">Data ${Math.round(age/60)} uur oud</span>`);
   $("#src").innerHTML = chips.join("");
-  if (S.plaatsen) S.plaatsen = S.plaatsen.filter(n => d.plaatsen.some(p => p.naam === n)); if (S.plaatsen && !S.plaatsen.length) S.plaatsen = null;
+  const bekend = new Set(d.plaatsen.map(p => p.naam));
+  if (S.gem === null) S.gem = (d.favorieten || []).slice();
+  S.gem = S.gem.filter(n => bekend.has(n)); S.prov = S.prov.filter(p => d.plaatsen.some(x => x.provincie === p));
   controls(); render();
 }).catch(e => { const el = $("#err"); el.hidden = false; el.textContent = "Data laden mislukt (" + e.message + "). Probeer later opnieuw."; });
 })();
