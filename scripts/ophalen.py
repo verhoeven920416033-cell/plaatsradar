@@ -688,6 +688,7 @@ def fetch_gmb(gemeenten, today: dt.date, horizon_end: dt.date, cache: Cache, sta
     nu = nu or time.time()
     items = []
     fetched = 0
+    t0 = time.monotonic()
     for p in gemeenten:
         g = p["naam"]
         st = status.setdefault(g, {"ok": False, "gevonden": 0, "relevant": 0})
@@ -746,7 +747,7 @@ def fetch_gmb(gemeenten, today: dt.date, horizon_end: dt.date, cache: Cache, sta
             tdates = parse_nl_dates(kern, today)
             vb = "verkeer" in (title + rub).lower()
             info = cache.d["gmb"].get(ident)
-            if info is None and (vb or not tdates) and fetched < max_text:
+            if info is None and (vb or not tdates) and fetched < max_text and time.monotonic() - t0 < 900:  # max 15 min
                 url = r["itemUrl"].get("html") or r.get("preferredUrl")
                 fetched += 1
                 try:
