@@ -148,7 +148,7 @@ function gekozen(){ const g = new Set(S.gem || []); D.plaatsen.forEach(p => { if
 const losVan = x => S.los.find(l => x.lat ? dist(l, x) <= S.km : x.plaats === l.gemeente);
 function secties(v){
   const gs = gekozen(), los = new Map(S.los.map(l => [l.naam, []])), gem = new Map();
-  v.forEach(x => { if (gs.has(x.plaats)) { if (!gem.has(x.plaats)) gem.set(x.plaats, []); gem.get(x.plaats).push(x); } else los.get(losVan(x).naam).push(x); });
+  v.forEach(x => { const l = losVan(x); if (l) los.get(l.naam).push(x); if (gs.has(x.plaats)) { if (!gem.has(x.plaats)) gem.set(x.plaats, []); gem.get(x.plaats).push(x); } });
   const res = S.los.filter(l => !gs.has(l.naam)).map(l => ({naam:`${l.naam} (${S.km} km)`, prov:l.provincie, items:los.get(l.naam)||[]}));
   [...gs].sort((a,b) => provVan(a).localeCompare(provVan(b)) || a.localeCompare(b)).forEach(n => res.push({naam:n, prov:provVan(n), items:gem.get(n)||[]}));
   return res;
