@@ -36,6 +36,7 @@ ROOT = Path(__file__).resolve().parent.parent
 NDW_URL = "https://opendata.ndw.nu/planningsfeed_wegwerkzaamheden_en_evenementen.xml.gz"
 SRU_URL = "https://repository.overheid.nl/sru"
 NOMINATIM = "https://nominatim.openstreetmap.org/reverse"
+PDOK = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free"
 UA = f"PlaatsRadar/1.1 (open-data dashboard; github.com/{os.environ.get('GITHUB_REPOSITORY', 'lokaal')})"
 XSI_TYPE = "{http://www.w3.org/2001/XMLSchema-instance}type"
 
@@ -108,6 +109,7 @@ class Cache:
         self.d.setdefault("geo", {})
         self.d.setdefault("gmb", {})
         self.d.setdefault("sru", {})
+        self.d.setdefault("wp", {})
         if self.d.get("v") != 3:  # oude cache had geen omschrijving/afsluiting-info
             self.d.update(v=3, gmb={}, sru={})
 
@@ -820,6 +822,33 @@ def build_markets(cfg, today: dt.date, horizon_end: dt.date):
     return items
 
 
+# ---------------------------------------------------------------- woonplaatsen (voor routecheck)
+def woonplaatsen(uit: Path, cache: Cache, nu: float, ttl_dagen=30):
+    """Openbare plaatsenlijst, zodat de routecheck in de browser plaatsen kan herkennen zonder iets te versturen."""
+    w = cache.d["wp"]
+    if not w.get("lijst") or nu - w.get("t", 0) > ttl_dagen * 86400:
+        lijst = []
+        try:
+            for prov in ("Noord-Brabant", "Gelderland", "Limburg"):
+                for start in range(0, 2000, 100):
+                    q = urllib.parse.urlencode({"q": "*:*", "rows": 100, "start": start, "wt": "json",
+                                                "fl": "woonplaatsnaam,gemeentenaam,provincienaam,centroide_ll"})
+                    fq = urllib.parse.quote(f'provincienaam:"{prov}"')
+                    docs = json.loads(http_get(f"{PDOK}?{q}&fq=type:woonplaats&fq={fq}", timeout=30))["response"]["docs"]
+                    for d in docs:
+                        m = re.search(r"POINT\(([\d.]+) ([\d.]+)\)", d.get("centroide_ll", ""))
+                        if m:
+                            lijst.append({"naam": d["woonplaatsnaam"], "gemeente": d["gemeentenaam"], "provincie": d["provincienaam"],
+                                          "lat": round(float(m[2]), 4), "lon": round(float(m[1]), 4)})
+                    if len(docs) < 100:
+                        break
+            cache.d["wp"] = w = {"t": nu, "lijst": lijst}
+            log(f"  woonplaatsen: {len(lijst)}")
+        except Exception as e:
+            log("  woonplaatsen FOUT", str(e)[:160])
+    uit.write_text(json.dumps(w.get("lijst", []), ensure_ascii=False, separators=(",", ":")), "utf-8")
+
+
 # ---------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser()
@@ -883,6 +912,8 @@ def main():
         "items": items,
     }
     Path(a.uit).parent.mkdir(parents=True, exist_ok=True)
+    if not a.geen_gemeenteblad:
+        woonplaatsen(Path(a.uit).with_name("woonplaatsen.json"), cache, time.time())
     Path(a.uit).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), "utf-8")
     cache.save()
     log(f"Klaar: {len(items)} items → {a.uit}")

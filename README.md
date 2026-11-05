@@ -26,6 +26,14 @@ Gratis dashboard met actuele **wegwerkzaamheden en afsluitingen, evenementen, ke
 - **Gemeenten**: `gemeenten.json`. Pas alleen aan bij een gemeentelijke herindeling. `naam` moet exact de naam in het Gemeenteblad zijn.
 - **Markten**: in `config.json` staat `dag` als 0 = maandag t/m 6 = zondag, `plaats` is de gemeentenaam. Alleen de ingevoerde markten staan op de site, dus nog niet heel Gelderland en Limburg.
 
+## Routecheck
+Knop **Routecheck** op de site, of `routecheck.html`. Kies een routelijst (PDF met tekst, Excel .xlsx, CSV of tekst) en een periode. Je krijgt per route de meldingen op de straten van je stops, plus hoge hinder, evenementen en markten in de plaatsen op de route.
+
+- **Routelijsten blijven op je computer.** Ze worden in de browser gelezen, niet verstuurd en niet bewaard. Een Content-Security-Policy op de pagina blokkeert verkeer naar andere sites. Zet routelijsten **nooit** in deze publieke repo; `*.pdf`, `*.xlsx`, `*.xls` en `*.csv` staan in `.gitignore`.
+- **Pc zonder toegang tot de site:** download `routecheck-offline.html` thuis en zet die over. Dat ene bestand bevat lezer + openbare meldingen van dat moment. Dubbelklikken is genoeg, internet is niet nodig. Vanaf 1 dag oud waarschuwt de pagina.
+- De vergelijking werkt op naam: de weg tussen twee stops wordt niet bekeken. *Controleren* = zelfde straatnaam in dezelfde gemeente, maar plaats niet bevestigd.
+- Een gescande PDF (afbeelding) kan niet gelezen worden.
+
 ## Goed om te weten
 - **GitHub zet geplande taken na 60 dagen zonder activiteit in de repo stil.** Je krijgt daar een mail over. Klik dan in Actions op **Enable workflow**, of doe af en toe een kleine wijziging in `config.json`.
 - Gemeenteblad-publicaties zijn vergunningen en besluiten. De datum van het evenement wordt uit de titel of de tekst gehaald (o.a. `Datum evenement:` en `Omschrijving:`). Lukt dat niet, dan staat er "datum onbekend" en wordt de melding nog 3 weken na publicatie getoond. Ingetrokken, geweigerde en ontwerp-publicaties worden overgeslagen; aanvraag + besluit van hetzelfde evenement worden één regel.

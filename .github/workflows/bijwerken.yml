@@ -38,9 +38,12 @@ jobs:
         run: |
           python3 tests/test_gemeenteblad.py
           python3 tests/test_ndw.py
+          node tests/test_route.js
 
       - name: Data ophalen (NDW + Gemeenteblad + markten)
-        run: python3 scripts/ophalen.py
+        run: |
+          python3 scripts/ophalen.py
+          python3 scripts/offline.py
 
       - uses: actions/configure-pages@v6
 

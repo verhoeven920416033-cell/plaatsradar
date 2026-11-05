@@ -3,3 +3,9 @@ site/data.json
 __pycache__/
 *.xml
 *.xml.gz
+*.pdf
+*.xlsx
+*.xls
+*.csv
+site/woonplaatsen.json
+site/routecheck-offline.html
