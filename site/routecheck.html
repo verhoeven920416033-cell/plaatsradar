@@ -43,17 +43,18 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
 <body>
 <header>
   <h1>Routecheck</h1>
-  <p id="sub">Knelpunten op je routes, uit de PlaatsRadar-meldingen — <a href="index.html" class="geenprint">terug naar PlaatsRadar</a></p>
+  <p id="sub">Knelpunten op je routes, uit de PlaatsRadar-meldingen — <a href="index.html" class="geenprint">terug naar PlaatsRadar</a> · <a href="routecheck-offline.html" download="Routecheck-werk.html" class="geenprint">versie voor werk-pc downloaden</a></p>
 </header>
 <main>
   <section class="panel veilig geenprint">
-    <b>Je routelijst blijft op deze computer.</b> Het bestand wordt alleen in deze browser gelezen, niet verstuurd en niet bewaard. Sluit je de pagina, dan is het weg. De browser mag op deze pagina bovendien niets naar andere sites sturen. Uit een routelijst worden alleen routenummer, datum en adres gelezen; codes, tijden en opmerkingen niet.
+    <b>Je routelijst blijft op deze computer.</b> Het bestand wordt alleen in deze browser gelezen, niet verstuurd en niet bewaard. Sluit je de pagina, dan is het weg. Nadat de meldingen zijn opgehaald gaat het netwerk van deze pagina dicht, dus vóór je een bestand kiest. Uit een routelijst worden alleen routenummer, datum en adres gelezen; codes, tijden en opmerkingen niet.
   </section>
   <div id="fout" class="panel waarschuw" hidden></div>
   <section class="panel geenprint">
     <div class="row" style="margin-bottom:10px">
       <span class="lbl">Periode</span><input type="date" id="van" aria-label="Van"> t/m <input type="date" id="tot" aria-label="Tot">
       <span id="stand" class="meta"></span>
+      <label class="btn" id="nieuw" hidden>Meldingenbestand kiezen<input type="file" id="meldingen" accept=".json" style="display:none"></label>
     </div>
     <label class="drop" id="drop"><input type="file" id="bestand" multiple accept=".pdf,.xlsx,.csv,.txt"><b>Kies of sleep je routelijsten hierheen</b><br><span class="meta">Meerdere bestanden tegelijk kan. PDF, Excel (.xlsx), CSV of tekst</span></label>
     <details style="margin-top:10px"><summary class="meta">Of plak de adressen als tekst</summary>
@@ -81,22 +82,37 @@ const K = window.RouteKern, $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const pad = n => String(n).padStart(2,"0"), iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const fmtD = s => { const d = new Date(s.length > 10 ? s : s+"T00:00"); return isNaN(d) ? s : d.toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"}); };
-let D = null, P = null, GEL = null, OVER = [], LAATST = null, DAT = [];
+let NET_DICHT = false, D = null, P = null, GEL = null, OVER = [], LAATST = null, DAT = [];
 const mooi = s => /[a-z]/.test(s) ? s : s.toLowerCase().replace(/(^|[\s\-'])([a-zà-ÿ])/g, (m,a,b) => a + b.toUpperCase());
 const fout = t => { const e = $("#fout"); e.hidden = !t; e.textContent = t || ""; };
 const nu = new Date(), over7 = new Date(nu); over7.setDate(over7.getDate()+6);
 $("#van").value = iso(nu); $("#tot").value = iso(over7);
 
+// Meldingen eerst ophalen; daarna gaat het netwerk van deze pagina dicht, vóór er een routelijst gelezen wordt.
+function sluitNetwerk(){
+  const m = document.createElement("meta"); m.httpEquiv = "Content-Security-Policy"; m.content = "connect-src 'none'";
+  document.head.appendChild(m); NET_DICHT = true;
+}
+function zetStand(bron){
+  const uur = (Date.now() - new Date(D.gegenereerd)) / 36e5, oud = uur > 24;
+  $("#stand").innerHTML = `Meldingen van ${esc(new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))} · ${D.items.length} meldingen · ${esc(bron)}` +
+    (oud ? ` · <b style="color:var(--red)">${Math.round(uur/24)} dag(en) oud</b>` : "") + ` · netwerk ${NET_DICHT ? "dicht" : "open"}`;
+  $("#nieuw").hidden = !window.PR_DATA;
+}
 async function laad(){
-  if (window.PR_DATA) { D = window.PR_DATA; P = K.maakPlaatsen(D.plaatsen, window.PR_WP || []); }
-  else {
+  let bron = "live";
+  if (window.PR_DATA) {
+    D = window.PR_DATA; P = K.maakPlaatsen(D.plaatsen, window.PR_WP || []); bron = "ingebouwd";
+    if (window.PR_LIVE) try {
+      const r = await fetch(window.PR_LIVE + "?t=" + Date.now(), {credentials:"omit", referrerPolicy:"no-referrer", signal:AbortSignal.timeout(7000)});
+      if (r.ok) { D = await r.json(); bron = "live"; }
+    } catch {}
+  } else {
     D = await (await fetch("data.json?t="+Date.now())).json();
     let w = []; try { w = await (await fetch("woonplaatsen.json?t="+Date.now())).json(); } catch {}
     P = K.maakPlaatsen(D.plaatsen, w);
   }
-  const uur = (Date.now() - new Date(D.gegenereerd)) / 36e5;
-  $("#stand").textContent = `Meldingen van ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${D.items.length} meldingen`;
-  if (uur > 24) fout(`Let op: deze meldingen zijn ${Math.round(uur/24)} dag(en) oud. Haal een nieuwe versie op.`);
+  sluitNetwerk(); zetStand(bron);
 }
 const klaar = laad().catch(e => fout("Meldingen laden mislukt: " + e.message));
 
@@ -204,6 +220,9 @@ const drop = $("#drop");
 ["dragover","dragenter"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("on"); }));
 ["dragleave","drop"].forEach(t => drop.addEventListener(t, () => drop.classList.remove("on")));
 drop.addEventListener("drop", e => { e.preventDefault(); const f = [...e.dataTransfer.files]; if (f.length) start(() => leesAlle(f)); });
+$("#meldingen").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try { const d = JSON.parse(await f.text()); if (!Array.isArray(d.items) || !d.gegenereerd) throw 0; D = d; zetStand("uit bestand"); fout(""); if (GEL) toon(); }
+  catch { fout("Dit is geen geldig meldingenbestand (data.json)."); } });
 $("#plakKnop").addEventListener("click", () => { const t = $("#plak").value; start(async () => K.leesRegels(t.split(/\r?\n/), P)); });
 ["van","tot"].forEach(i => $("#"+i).addEventListener("change", () => { if (GEL) toon(); }));
 $("#print").addEventListener("click", () => window.print());
