@@ -27,6 +27,19 @@ function maakPlaatsen(gemeenten, woonplaatsen) {
   return m;
 }
 
+const compact = s => kern(s).replace(/[ ']/g, "");
+/** Plaatsnaam uit een routelijst -> bekende plaats. Ook 'SHERTOGENBOSCH, SINTOEDENRODE, BAARLO LB en VENLOBLERICK. */
+function plaatsVan(plaatsen, naam) {
+  const pk = kern(naam), hit = plaatsen.get(pk); if (hit) return hit;
+  if (!plaatsen._kort) { plaatsen._kort = new Map(); for (const [k, v] of plaatsen) { const c = compact(k); if (!plaatsen._kort.has(c)) plaatsen._kort.set(c, v); } }
+  const c = compact(pk.replace(/ (?:lb|nb|gld|ge|li|l)$/, ""));
+  if (plaatsen._kort.has(c)) return plaatsen._kort.get(c);
+  let best = null;
+  for (const [k, v] of plaatsen._kort) if (k.length >= 6 && c.length > k.length && c.endsWith(k) && (!best || k.length > best[0].length)) best = [k, v];
+  if (!best) for (const [k, v] of plaatsen._kort) if (k.length >= 5 && c.length > k.length && c.startsWith(k) && (!best || k.length > best[0].length)) best = [k, v];
+  return best ? best[1] : [];
+}
+
 /** Zoekt een adres in één regel (cellen gescheiden door |). Geeft {straat,nr,postcode,plaats,route?} of null. */
 function leesRegel(regel, plaatsen) {
   const cellen = regel.split("|").map(c => c.trim()).filter(Boolean);
@@ -80,7 +93,7 @@ function zoekPlaats(cellen, plaatsen, straat) {
 function leesRegels(regels, plaatsen) {
   const stops = [], overgeslagen = []; let route = "Onbekende route";
   for (const r of regels) {
-    const t = r.trim(); if (!t) continue;
+    const t = r.trim().replace(/[ \t]{2,}/g, " | "); if (!t) continue;  // tekst-export: kolommen op spaties
     const rm = RE_ROUTE.exec(t), a = leesRegel(t, plaatsen);
     if (rm && (!a || !a.straat)) { route = "Route " + rm[1]; continue; }
     if (a) stops.push({...a, route: rm ? "Route " + rm[1] : route, bron: t.slice(0, 120)}); else overgeslagen.push(t.slice(0, 120));
@@ -127,52 +140,88 @@ function pdfRegels(items) {
     return s; });
 }
 
+/** Routelijst uit Dynamics/Axapta: vaste kolommen. pag = [[{str,x,y}]]. Leest alleen de kolom Adres + routenummer + datum;
+    codes, ordernummers, tijden en opmerkingen worden bewust niet overgenomen. Geeft null bij een andere opmaak. */
+function leesRoutelijst(pag) {
+  const schoon = s => String(s).replace(/\u00ad/g, "-").replace(/\s+/g, " ").trim();
+  const items = pag.map(p => p.map(i => ({...i, s: schoon(i.str)})).filter(i => i.s));
+  const kop = items.flat(), xA = kop.find(i => i.s === "Adres"), xT = kop.find(i => i.s === "Tijd van");
+  if (!xA || !xT || !kop.some(i => /^Geplande route/.test(i.s))) return null;
+  let route = "Onbekende route", datum = "";
+  const stops = [];
+  for (const p of items) {
+    const kr = p.find(i => /^Geplande route/.test(i.s));
+    if (kr) {
+      const rij = p.filter(i => Math.abs(i.y - kr.y) < 3 && i.x > kr.x).sort((a, b) => a.x - b.x).map(i => i.s).join(" ");
+      const m = /(\d{3,6})\b/.exec(kr.s.replace(/^Geplande route/, "") + " " + rij), d = /\b(\d{2})-?(\d{2})-?(20\d{2})\b/.exec(rij.replace(m ? m[1] : "", ""));
+      if (m) route = "Route " + m[1];
+      if (d) datum = `${d[3]}-${d[2]}-${d[1]}`;
+    }
+    const kol = p.filter(i => i.x >= xA.x - 3 && i.x < xT.x - 3 && !/^(?:Type|Merk|CPP)\s*:/.test(i.s) && i.s !== "Adres").sort((a, b) => b.y - a.y);
+    kol.forEach((i, n) => {
+      const m = /^(\d{4}) ?([A-Z]{2})\s+(.+)$/.exec(i.s);
+      if (!m) return;
+      const b = n && kol[n - 1], a = b && b.y - i.y < 16 && !/^\d{4} ?[A-Z]{2}\s/.test(b.s) ? b.s : "";
+      const h = /^(.*?\D)\s+(\d{1,5})(?:\s*[-/]?\s*[A-Za-z0-9]{0,4})?$/.exec(a);
+      stops.push({straat: h ? h[1].trim() : a, nr: h ? h[2] : "", postcode: `${m[1]} ${m[2]}`, plaats: m[3].trim(), route, bron: ""});
+    });
+  }
+  return {stops, overgeslagen: [], datum};
+}
+
 const actief = (x, van, tot) => {
   if (x.perioden) return x.perioden.some(([s, e]) => s.slice(0, 10) <= tot && e.slice(0, 10) >= van);
   if (!x.start) return true;
   return x.start.slice(0, 10) <= tot && (x.eind || (x.cat === "weg" ? "9999" : x.start)).slice(0, 10) >= van;
 };
 
-/** Vergelijkt stops met meldingen. niveau 1 = op de straat, 2 = in de plaats. */
+/** Vergelijkt stops met meldingen, per route en per plaats. */
 function vergelijk(stops, items, plaatsen, opt) {
-  const {van, tot, straal = 1.5} = opt;
+  const {van, tot, straal = 2.5, perPlaats = 6} = opt;
   const akt = items.filter(x => actief(x, van, tot)).map(x => ({x, t: norm(`${x.titel} ${x.locatie || ""} ${x.toelichting || ""}`)}));
   const perGem = new Map(); akt.forEach(a => { if (!perGem.has(a.x.plaats)) perGem.set(a.x.plaats, []); perGem.get(a.x.plaats).push(a); });
-  const uniek = new Map();
-  stops.forEach(s => { const k = kern(s.straat) + "|" + kern(s.plaats); if (!uniek.has(k)) uniek.set(k, {straat:s.straat, plaats:s.plaats, stops:[]}); uniek.get(k).stops.push(s); });
-  const treffers = [], plaatsTreffers = new Map(), onbekend = new Map();
-  for (const u of uniek.values()) {
-    const pk = kern(u.plaats), opties = plaatsen.get(pk) || [];
-    if (!opties.length) { onbekend.set(u.plaats || "(geen plaats)", (onbekend.get(u.plaats || "(geen plaats)") || 0) + u.stops.length); }
-    const gem = new Set(opties.map(o => o.gemeente));
+  const orde = {hoog:0, middel:1, laag:2}, onbekend = new Map(), routes = new Map(), treffers = [], cache = new Map();
+
+  function plaatsInfo(naam) {  // meldingen rond een plaats: één keer rekenen, routes delen dit
+    const pk = kern(naam);
+    if (cache.has(pk)) return cache.get(pk);
+    const opties = plaatsVan(plaatsen, naam), midden = opties[0], gem = new Set(opties.map(o => o.gemeente));
     let kand = [...gem].flatMap(g => perGem.get(g) || []);
-    const midden = opties[0];
     if (midden) { const al = new Set(kand); akt.forEach(a => { if (!al.has(a) && a.x.lat && dist(midden, a.x) <= 6) kand.push(a); }); }
     else if (pk) kand = akt.filter(a => a.t.includes(" " + pk + " "));
-    const zk = kern(u.straat), geraakt = new Set();
-    if (zk.length >= 5) for (const a of kand) if (a.t.includes(" " + zk + " ")) {
-      geraakt.add(a);
-      treffers.push({straat:u.straat, plaats:u.plaats, stops:u.stops, x:a.x, zeker: !pk || a.t.includes(" " + pk + " ") || a.x.plaats === u.plaats || opties.some(o => o.naam === a.x.plaats)});
-    }
-    if (midden || pk) {
-      const k = pk; if (!plaatsTreffers.has(k)) plaatsTreffers.set(k, {plaats:u.plaats || "?", routes:new Set(), m:new Map()});
-      const p = plaatsTreffers.get(k); u.stops.forEach(s => p.routes.add(s.route));
-      for (const a of kand) {
-        if (geraakt.has(a)) continue;
-        const dichtbij = midden && a.x.lat && dist(midden, a.x) <= straal, inTekst = pk && a.t.includes(" " + pk + " ");
-        const zwaar = a.x.hinder === "hoog" || a.x.cat === "evenement" || a.x.cat === "kermis" || a.x.cat === "markt";
-        if (zwaar && !a.x.fiets && (dichtbij || (inTekst && a.x.cat !== "weg"))) p.m.set(a.x.id, a.x);
-      }
-    }
+    const rond = kand.filter(a => { const x = a.x, zwaar = x.hinder === "hoog" || x.cat === "evenement" || x.cat === "kermis" || x.cat === "markt";
+      if (!zwaar || x.fiets || x.hinder === "laag") return false;
+      return (midden && x.lat && dist(midden, x) <= straal) || (pk && a.t.includes(" " + pk + " ") && x.cat !== "weg") || (!x.lat && x.cat !== "weg" && gem.has(x.plaats)); });
+    const info = {pk, opties, kand, rond, bekend: !!midden};
+    cache.set(pk, info);
+    return info;
   }
-  const orde = {hoog:0, middel:1, laag:2}, ids = new Set(treffers.map(t => t.x.id));
-  treffers.sort((a, b) => orde[a.x.hinder] - orde[b.x.hinder] || b.zeker - a.zeker);
-  const routes = new Map();
-  stops.forEach(s => { if (!routes.has(s.route)) routes.set(s.route, {naam:s.route, stops:0, hits:[]}); routes.get(s.route).stops++; });
-  treffers.forEach(t => { const per = new Map(); t.stops.forEach(s => per.set(s.route, (per.get(s.route) || 0) + 1));
-    per.forEach((n, r) => routes.get(r).hits.push({...t, aantal:n})); });
-  const pl = [...plaatsTreffers.values()].map(p => ({plaats:p.plaats, routes:[...p.routes], items:[...p.m.values()].filter(x => !ids.has(x.id)).sort((a, b) => orde[a.hinder] - orde[b.hinder])})).filter(p => p.items.length).sort((a, b) => b.items.length - a.items.length);
-  return {routes:[...routes.values()], plaatsen:pl, onbekend:[...onbekend], treffers};
+  for (const s of stops) {
+    if (!routes.has(s.route)) routes.set(s.route, {naam:s.route, stops:0, plaatsen:new Map()});
+    const r = routes.get(s.route); r.stops++;
+    const naam = (plaatsVan(plaatsen, s.plaats)[0] || {}).naam || s.plaats || "(geen plaats)", pk = kern(naam) || "?";
+    if (!r.plaatsen.has(pk)) r.plaatsen.set(pk, {plaats:naam, stops:0, straten:new Map()});
+    const p = r.plaatsen.get(pk); p.stops++;
+    const sk = kern(s.straat); if (sk) { if (!p.straten.has(sk)) p.straten.set(sk, {straat:s.straat, aantal:0}); p.straten.get(sk).aantal++; }
+  }
+  for (const r of routes.values()) {
+    r.plaatsen = [...r.plaatsen.values()].map(p => {
+      const info = plaatsInfo(p.plaats), hits = [], ids = new Set();
+      if (!info.bekend) onbekend.set(p.plaats, (onbekend.get(p.plaats) || 0) + p.stops);
+      for (const [sk, st] of p.straten) if (sk.length >= 5) for (const a of info.kand) if (a.t.includes(" " + sk + " ") && !ids.has(a.x.id)) {
+        ids.add(a.x.id);
+        const zeker = !info.pk || a.t.includes(" " + info.pk + " ") || a.x.plaats === p.plaats || info.opties.some(o => o.naam === a.x.plaats);
+        hits.push({straat:st.straat, plaats:p.plaats, aantal:st.aantal, x:a.x, zeker});
+      }
+      hits.sort((a, b) => orde[a.x.hinder] - orde[b.x.hinder] || b.zeker - a.zeker);
+      const titels = new Set(), rond = info.rond.map(a => a.x).filter(x => !ids.has(x.id) && !titels.has(x.titel) && titels.add(x.titel)).sort((a, b) => orde[a.hinder] - orde[b.hinder]);
+      treffers.push(...hits.map(h => ({...h, route:r.naam})));
+      return {plaats:p.plaats, stops:p.stops, bekend:info.bekend, hits, rond:rond.slice(0, perPlaats), meer:Math.max(0, rond.length - perPlaats)};
+    }).sort((a, b) => (b.hits.length + b.rond.length) - (a.hits.length + a.rond.length));
+    r.knelpunten = r.plaatsen.reduce((n, p) => n + p.hits.length + p.rond.length + p.meer, 0);
+    r.hoog = r.plaatsen.reduce((n, p) => n + p.hits.filter(h => h.x.hinder === "hoog").length + p.rond.filter(x => x.hinder === "hoog").length, 0);
+  }
+  return {routes:[...routes.values()], onbekend:[...onbekend], treffers};
 }
-return {norm, kern, dist, maakPlaatsen, leesRegel, leesRegels, leesTabel, csvRijen, pdfRegels, actief, vergelijk};
+return {norm, kern, dist, maakPlaatsen, leesRegel, leesRegels, plaatsVan, leesTabel, leesRoutelijst, csvRijen, pdfRegels, actief, vergelijk};
 });

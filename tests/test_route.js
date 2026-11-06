@@ -23,6 +23,9 @@ assert.equal(K.leesRegel("Totaal stops 14", P), null);
 const r = K.leesRegels(["Route 12 maandag", "Kerkstraat 1 | 5611 AB Eindhoven", "Pagina 1", "Rit: 7B", "Dorpsstraat 7 | Lierop"], P);
 assert.deepEqual(r.stops.map(s => s.route), ["Route 12", "Route 7B"], JSON.stringify(r));
 
+const ax = K.leesRegels(["Route 5", "Winkel A      Kerkstraat 12      5611 AB    Eindhoven", "Pagina 1 van 2"], P);
+assert.deepEqual(ax.stops.map(s => [s.straat, s.plaats, s.route]), [["Kerkstraat", "Eindhoven", "Route 5"]], JSON.stringify(ax));
+
 const t = K.leesTabel(K.csvRijen('Route;Klant;Adres;Postcode;Plaats\n12;Geheim BV;"Vestdijk 5";5611 CA;Eindhoven\n12;Ander;Dorpsstraat 7;;Lierop\n'), P);
 assert.deepEqual(t.stops.map(s => [s.straat, s.nr, s.plaats, s.route]), [["Vestdijk", "5", "Eindhoven", "Route 12"], ["Dorpsstraat", "7", "Lierop", "Route 12"]]);
 assert.ok(!("klant" in t.stops[0]));
@@ -40,9 +43,30 @@ const items = [
 ];
 const v = K.vergelijk(t.stops, items, P, {van:"2026-11-05", tot:"2026-11-08"});
 assert.deepEqual(v.treffers.map(x => [x.x.id, x.zeker]).sort(), [["1", true], ["4", false]], JSON.stringify(v.treffers.map(x => x.x.id)));  // 2 valt buiten de datums; zelfde straat in andere kern = controleren
-assert.equal(v.routes[0].stops, 2);
-const pp = Object.fromEntries(v.plaatsen.map(p => [p.plaats, p.items.map(x => x.id)]));
-assert.deepEqual(pp.Eindhoven, ["5"], JSON.stringify(pp));  // binnen 1,5 km, fietspad telt niet
-assert.deepEqual(pp.Lierop, ["3"]);
+const rt = v.routes[0], ehv = rt.plaatsen.find(p => p.plaats === "Eindhoven"), lie = rt.plaatsen.find(p => p.plaats === "Lierop");
+assert.equal(rt.stops, 2); assert.equal(rt.plaatsen.length, 2);
+assert.deepEqual(ehv.rond.map(x => x.id), ["5"], JSON.stringify(ehv));  // dichtbij centrum, fietspad telt niet
+assert.deepEqual(lie.rond.map(x => x.id), ["3"]);
 assert.deepEqual(K.vergelijk([{straat:"X", plaats:"Parijs", route:"R"}], items, P, {van:"2026-11-05", tot:"2026-11-08"}).onbekend, [["Parijs", 1]]);
+
+assert.equal(K.plaatsVan(P, "'SHERTOGENBOSCH")[0].naam, "'s-Hertogenbosch");
+assert.equal(K.plaatsVan(P, "SINTMICHIELSGESTEL")[0].naam, "Sint-Michielsgestel");
+assert.equal(K.plaatsVan(P, "STEIN LB")[0].naam, "Stein");
+assert.equal(K.plaatsVan(P, "HELMONDSTIPHOUT")[0].naam, "Stiphout");
+assert.equal(K.plaatsVan(P, "VENLOTESTDORP")[0].naam, "Venlo");
+assert.deepEqual(K.plaatsVan(P, "PARIJS"), []);
+
+// routelijst uit Dynamics: vaste kolommen; verzonnen gegevens
+const it = (str, x, y) => ({str, x, y});
+const ax2 = K.leesRoutelijst([[
+  it("Geplande route", 12, 544), it(":", 76, 544), it("1234", 81, 544), it("15\u00ad11\u00ad2026", 134, 544),
+  it("Locatienaam", 137, 527), it("Adres", 271, 527), it("Tijd van", 405, 527),
+  it("Voorbeeldwinkel", 137, 500), it("Vestdijk 5", 271, 500), it("Kluiscode: 11-22-33", 137, 491), it("5611 CA EINDHOVEN", 271, 490),
+  it("Type: Testkast", 271, 481),
+  it("Andere locatie", 137, 460), it("Dorpsstraat 7-a", 271, 460), it("5736 AA LIEROP", 271, 450),
+]]);
+assert.deepEqual(ax2.stops.map(s => [s.straat, s.nr, s.postcode, s.plaats, s.route]), [["Vestdijk", "5", "5611 CA", "EINDHOVEN", "Route 1234"], ["Dorpsstraat", "7", "5736 AA", "LIEROP", "Route 1234"]], JSON.stringify(ax2));
+assert.equal(ax2.datum, "2026-11-15");
+assert.ok(!JSON.stringify(ax2).includes("Kluiscode"), "codes mogen niet worden overgenomen");
+assert.equal(K.leesRoutelijst([[it("Iets anders", 10, 10)]]), null);
 console.log("routecheck OK");

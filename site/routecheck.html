@@ -31,6 +31,7 @@ textarea{width:100%;min-height:90px;margin-top:6px}
 .h{font-size:11px;font-weight:700;border-radius:4px;padding:3px 8px;white-space:nowrap;align-self:start}.h-hoog{background:var(--red);color:#fff}.h-middel{background:#f3b23c;color:#3a2600}.h-laag{background:#e3e8ee;color:#3c4856}
 .ctl{display:inline-block;font-size:10.5px;font-weight:700;border:1px solid #d9a441;color:#7a5200;border-radius:4px;padding:0 5px;margin-left:6px}
 .empty{padding:12px 14px;color:var(--mut)}
+.pk{margin:0;padding:7px 14px;font-size:14px;background:#f7f9fb;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--navy2)}.pk small{font-weight:400;color:var(--mut)}
 table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)}
 details summary{cursor:pointer;font-weight:600}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:9px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}.toast.on{opacity:1}
@@ -46,7 +47,7 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
 </header>
 <main>
   <section class="panel veilig geenprint">
-    <b>Je routelijst blijft op deze computer.</b> Het bestand wordt alleen in deze browser gelezen, niet verstuurd en niet bewaard. Sluit je de pagina, dan is het weg. De browser mag op deze pagina bovendien niets naar andere sites sturen.
+    <b>Je routelijst blijft op deze computer.</b> Het bestand wordt alleen in deze browser gelezen, niet verstuurd en niet bewaard. Sluit je de pagina, dan is het weg. De browser mag op deze pagina bovendien niets naar andere sites sturen. Uit een routelijst worden alleen routenummer, datum en adres gelezen; codes, tijden en opmerkingen niet.
   </section>
   <div id="fout" class="panel waarschuw" hidden></div>
   <section class="panel geenprint">
@@ -54,7 +55,7 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
       <span class="lbl">Periode</span><input type="date" id="van" aria-label="Van"> t/m <input type="date" id="tot" aria-label="Tot">
       <span id="stand" class="meta"></span>
     </div>
-    <label class="drop" id="drop"><input type="file" id="bestand" accept=".pdf,.xlsx,.csv,.txt"><b>Kies of sleep je routelijst hierheen</b><br><span class="meta">PDF, Excel (.xlsx), CSV of tekst</span></label>
+    <label class="drop" id="drop"><input type="file" id="bestand" multiple accept=".pdf,.xlsx,.csv,.txt"><b>Kies of sleep je routelijsten hierheen</b><br><span class="meta">Meerdere bestanden tegelijk kan. PDF, Excel (.xlsx), CSV of tekst</span></label>
     <details style="margin-top:10px"><summary class="meta">Of plak de adressen als tekst</summary>
       <textarea id="plak" placeholder="Route 12&#10;Kerkstraat 12, 5611 AB Eindhoven"></textarea>
       <button class="btn" id="plakKnop">Controleer tekst</button></details>
@@ -66,7 +67,7 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
     <div id="routes"></div>
     <div id="plaatsen"></div>
     <section class="panel"><details id="controle"><summary>Controle: wat is er gelezen?</summary><div id="ctl"></div></details></section>
-    <p class="meta">Vergelijking op straat- en plaatsnaam. De weg tussen twee stops wordt niet bekeken, en een werk op een zijstraat of kruising valt alleen op als het in de plaats staat. Controleer de bron vóór je een route wijzigt.</p>
+    <p class="meta">"Op je straat" = de straat van een stop staat in de melding. "In de omgeving" = hoge hinder, evenementen en markten rond het plaatscentrum (2,5 km). De weg tussen twee stops wordt niet bekeken. Controleer de bron vóór je een route wijzigt.</p>
   </div>
 </main>
 <footer>Meldingen: NDW en Gemeenteblad (CC0). Plaatsnamen: PDOK (CC0). PDF-lezer: pdf.js (Apache 2.0).</footer>
@@ -80,7 +81,8 @@ const K = window.RouteKern, $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const pad = n => String(n).padStart(2,"0"), iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const fmtD = s => { const d = new Date(s.length > 10 ? s : s+"T00:00"); return isNaN(d) ? s : d.toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"}); };
-let D = null, P = null, GEL = null, OVER = [], LAATST = null;
+let D = null, P = null, GEL = null, OVER = [], LAATST = null, DAT = [];
+const mooi = s => /[a-z]/.test(s) ? s : s.toLowerCase().replace(/(^|[\s\-'])([a-zà-ÿ])/g, (m,a,b) => a + b.toUpperCase());
 const fout = t => { const e = $("#fout"); e.hidden = !t; e.textContent = t || ""; };
 const nu = new Date(), over7 = new Date(nu); over7.setDate(over7.getDate()+6);
 $("#van").value = iso(nu); $("#tot").value = iso(over7);
@@ -104,11 +106,12 @@ if (pdfjs) { const w = document.getElementById("pdfw");
 
 async function leesPdf(buf){
   const doc = await pdfjs.getDocument({data:new Uint8Array(buf), isEvalSupported:false, disableFontFace:true, useSystemFonts:false}).promise;
-  const regels = [];
-  for (let i = 1; i <= doc.numPages; i++) regels.push(...K.pdfRegels((await (await doc.getPage(i)).getTextContent()).items));
+  const pag = [];
+  for (let i = 1; i <= doc.numPages; i++) pag.push((await (await doc.getPage(i)).getTextContent()).items);
   await doc.destroy();
-  if (!regels.length) throw new Error("Deze PDF bevat geen tekst (waarschijnlijk een scan). Exporteer hem als Excel of als PDF met tekst.");
-  return K.leesRegels(regels, P);
+  if (!pag.some(p => p.some(i => i.str && i.str.trim()))) throw new Error("Deze PDF bevat geen tekst (waarschijnlijk een scan). Exporteer hem als Excel of als PDF met tekst.");
+  const r = K.leesRoutelijst(pag.map(p => p.map(i => ({str:i.str, x:i.transform[4], y:i.transform[5]}))));
+  return r || K.leesRegels(pag.flatMap(p => K.pdfRegels(p)), P);
 }
 // .xlsx is een zip met XML: zelf lezen, zonder extra bibliotheek
 async function unzipTekst(buf){
@@ -141,58 +144,79 @@ async function leesXlsx(buf){
 async function leesBestand(f){
   const n = f.name.toLowerCase();
   if (n.endsWith(".xls")) throw new Error("Oud .xls-formaat: sla het op als .xlsx of CSV.");
-  if (n.endsWith(".pdf")) return leesPdf(await f.arrayBuffer());
-  if (n.endsWith(".xlsx")) return leesXlsx(await f.arrayBuffer());
-  const t = await f.text();
+  const buf = await f.arrayBuffer(), kop = new TextDecoder("latin1").decode(buf.slice(0, 5));
+  if (kop === "%PDF-") return leesPdf(buf);  // ook als de bestandsnaam op .txt eindigt
+  if (n.endsWith(".xlsx")) return leesXlsx(buf);
+  if (/^\{\\rtf/.test(kop)) throw new Error("RTF wordt niet gelezen. Kies bij bestandsindeling PDF of Tekst (UTF-8).");
+  if (/^\s*<[a-z!]/i.test(kop)) throw new Error("HTML wordt niet gelezen. Kies bij bestandsindeling PDF of Tekst (UTF-8).");
+  let t = new TextDecoder("utf-8").decode(buf);
+  if (t.includes("\ufffd")) t = new TextDecoder("windows-1252").decode(buf);  // ASCII-export van Dynamics
   return /[;\t]/.test(t.split(/\r?\n/,1)[0]) || n.endsWith(".csv") ? K.leesTabel(K.csvRijen(t), P) : K.leesRegels(t.split(/\r?\n/), P);
 }
 async function start(fn){
   fout(""); await klaar; if (!D) return;
   try {
     const r = await fn();
-    if (!r.stops.length) { GEL = null; $("#uit").hidden = true; fout("Geen adressen herkend. Stuur me (zonder klantnamen) een voorbeeld van de opmaak, dan pas ik de lezer aan."); return; }
-    GEL = r.stops; OVER = r.overgeslagen; toon();
+    if (!r.stops.length) { GEL = null; $("#uit").hidden = true; fout("Geen adressen herkend. Stuur me (zonder echte gegevens) een nagemaakt voorbeeld van de opmaak."); return; }
+    GEL = r.stops; OVER = r.overgeslagen;
+    const vandaag = iso(new Date()), d = (r.datums || []).filter(x => x >= vandaag).sort();
+    if (d.length) { $("#van").value = d[0]; $("#tot").value = d[d.length-1]; }
+    DAT = r.datums || []; toon();
   } catch (e) { fout(e.message || "Bestand lezen mislukt."); }
+}
+async function leesAlle(files){  // meerdere routelijsten tegelijk; misluktes worden gemeld, de rest gaat door
+  const stops = [], over = [], datums = [], mis = [];
+  for (const f of files) { try { const r = await leesBestand(f); stops.push(...r.stops); over.push(...r.overgeslagen); if (r.datum) datums.push(r.datum); } catch (e) { mis.push(`${f.name}: ${e.message}`); } }
+  if (mis.length) setTimeout(() => fout("Niet gelezen: " + mis.join(" · ")), 0);
+  return {stops, overgeslagen:over, datums};
 }
 const wanneer = (x, van, tot) => { const p = x.perioden && (x.perioden.find(([s,e]) => s.slice(0,10) <= tot && e.slice(0,10) >= van));
   const [s, e] = p || [x.start, x.eind]; if (!s) return "datum onbekend";
   return fmtD(s) + (e && e.slice(0,10) !== s.slice(0,10) ? " t/m " + fmtD(e) : ""); };
 const rand = (t, n) => `${n} ${n===1?t[0]:t[1]}`;
-function regel(h, van, tot){ const x = h.x;
-  return `<div class="item"><div class="st">${esc(h.straat)}${h.plaats?", "+esc(h.plaats):""}<small>${rand(["stop","stops"],h.aantal)}</small></div>
-  <div><div class="ttl">${esc(x.titel)}${h.zeker?"":'<span class="ctl">controleren</span>'}</div>
-  <div class="meta">${esc(x.label)} · ${esc(wanneer(x,van,tot))} · ${esc(x.bron)}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">bron</a>`:""}</div></div>
-  <span class="h h-${x.hinder}">${x.hinder}</span></div>`; }
+const bron = x => `${esc(x.label)} · ${esc(wanneer(x,LAATST.van,LAATST.tot))} · ${esc(x.bron)}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">bron</a>`:""}`;
+const hitHtml = h => `<div class="item"><div class="st">${esc(h.straat)}<small>op je straat · ${rand(["stop","stops"],h.aantal)}</small></div>
+  <div><div class="ttl">${esc(h.x.titel)}${h.zeker?"":'<span class="ctl">controleren</span>'}</div><div class="meta">${bron(h.x)}</div></div><span class="h h-${h.x.hinder}">${h.x.hinder}</span></div>`;
+const rondHtml = x => `<div class="item"><div class="st">In de omgeving</div><div><div class="ttl">${esc(x.titel)}</div><div class="meta">${bron(x)}</div></div><span class="h h-${x.hinder}">${x.hinder}</span></div>`;
 function toon(){
   const van = $("#van").value, tot = $("#tot").value;
   if (!van || !tot || tot < van) { fout("Kies een geldige periode."); return; }
   const v = K.vergelijk(GEL, D.items, P, {van, tot}); LAATST = {v, van, tot};
-  const hoog = v.treffers.filter(t => t.x.hinder === "hoog").length;
-  $("#kop").textContent = `Periode ${fmtD(van)} t/m ${fmtD(tot)}, meldingen van ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}.`;
-  $("#kpis").innerHTML = [[GEL.length,"stops"],[v.routes.length,"routes"],[v.treffers.length,"op de straat"],[hoog,"hoge hinder",1],[v.plaatsen.length,"plaatsen met hinder"],[v.onbekend.length,"plaatsen onbekend"]]
+  const rs = v.routes.slice().sort((a,b) => b.hoog-a.hoog || b.knelpunten-a.knelpunten), hoog = rs.reduce((n,r) => n+r.hoog, 0);
+  const oud = DAT.filter(d => d < iso(new Date()));
+  $("#kop").textContent = `Periode ${fmtD(van)} t/m ${fmtD(tot)}, meldingen van ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}.` + (oud.length ? ` Let op: routelijst van ${[...new Set(oud)].map(fmtD).join(", ")}; dit is de hinder in de gekozen periode.` : "");
+  $("#kpis").innerHTML = [[v.routes.length,"routes"],[GEL.length,"stops"],[v.treffers.length,"op je straten"],[hoog,"hoge hinder",1],[v.onbekend.length,"plaatsen onbekend"]]
     .map(([n,t,a]) => `<div class="kpi${a?" alert":""}"><b>${n}</b><span>${t}</span></div>`).join("");
-  $("#routes").innerHTML = v.routes.slice().sort((a,b) => b.hits.length-a.hits.length).map(r => `<div class="place"><h2>${esc(r.naam)} <small>${rand(["stop","stops"],r.stops)} · ${rand(["knelpunt","knelpunten"],r.hits.length)}</small></h2>${r.hits.length ? r.hits.map(h => regel(h,van,tot)).join("") : '<div class="empty">Geen meldingen op de straten van deze route.</div>'}</div>`).join("");
-  $("#plaatsen").innerHTML = v.plaatsen.length ? `<div class="place"><h2>Ook in deze plaatsen <small>hoge hinder binnen 1,5 km van het centrum, evenementen en markten</small></h2>` +
-    v.plaatsen.map(p => p.items.slice(0,8).map(x => regel({x, straat:p.plaats, plaats:"", aantal:0, zeker:true}, van, tot).replace(/<small>0 stops<\/small>/, `<small>${esc(p.routes.slice(0,3).join(", "))}${p.routes.length>3?" e.a.":""}</small>`)).join("") + (p.items.length>8?`<div class="empty">+ ${p.items.length-8} meer in ${esc(p.plaats)}</div>`:"")).join("") + `</div>` : "";
+  $("#routes").innerHTML = rs.map(r => {
+    const met = r.plaatsen.filter(p => p.hits.length || p.rond.length), zonder = r.plaatsen.filter(p => !p.hits.length && !p.rond.length);
+    return `<div class="place"><h2>${esc(r.naam)} <small>${rand(["stop","stops"],r.stops)} · ${rand(["plaats","plaatsen"],r.plaatsen.length)} · ${rand(["bijzonderheid","bijzonderheden"],r.knelpunten)}${r.hoog?` · <b style="color:var(--red)">${r.hoog} hoge hinder</b>`:""}</small></h2>
+    <div class="empty" style="padding:8px 14px"><b>Komt in:</b> ${r.plaatsen.map(p => esc(mooi(p.plaats))).join(", ")}</div>
+    ${met.map(p => `<h3 class="pk">${esc(mooi(p.plaats))} <small>${rand(["stop","stops"],p.stops)}</small></h3>${p.hits.map(hitHtml).join("")}${p.rond.map(rondHtml).join("")}${p.meer?`<div class="empty">+ ${p.meer} meer in ${esc(mooi(p.plaats))}</div>`:""}`).join("")}
+    ${zonder.length && met.length ? `<div class="empty">Geen bijzonderheden in: ${zonder.map(p => esc(mooi(p.plaats))).join(", ")}</div>` : ""}
+    ${!met.length ? '<div class="empty">Geen bijzonderheden in deze periode.</div>' : ""}</div>`; }).join("");
+  $("#plaatsen").innerHTML = "";
   $("#ctl").innerHTML = `<p class="meta">${rand(["adres","adressen"],GEL.length)} gelezen, ${OVER.length} regels overgeslagen.${v.onbekend.length?` Niet herkende plaatsen (buiten de drie provincies of verkeerd gelezen): ${esc(v.onbekend.map(([p,n]) => `${p} (${n})`).join(", "))}.`:""}</p>
-    <table><tr><th>Route</th><th>Straat</th><th>Nr</th><th>Postcode</th><th>Plaats</th></tr>${GEL.slice(0,300).map(s => `<tr><td>${esc(s.route)}</td><td>${esc(s.straat)}</td><td>${esc(s.nr)}</td><td>${esc(s.postcode)}</td><td>${esc(s.plaats)}</td></tr>`).join("")}</table>
-    ${GEL.length>300?`<p class="meta">+ ${GEL.length-300} meer</p>`:""}
+    <table><tr><th>Route</th><th>Straat</th><th>Nr</th><th>Postcode</th><th>Plaats</th></tr>${GEL.slice(0,400).map(s => `<tr><td>${esc(s.route)}</td><td>${esc(s.straat)}</td><td>${esc(s.nr)}</td><td>${esc(s.postcode)}</td><td>${esc(s.plaats)}</td></tr>`).join("")}</table>
+    ${GEL.length>400?`<p class="meta">+ ${GEL.length-400} meer</p>`:""}
     ${OVER.length?`<p class="meta"><b>Overgeslagen:</b><br>${OVER.slice(0,40).map(esc).join("<br>")}</p>`:""}`;
   $("#uit").hidden = false; $("#uit").scrollIntoView({behavior:"smooth", block:"start"});
 }
-$("#bestand").addEventListener("change", e => { const f = e.target.files[0]; if (f) start(() => leesBestand(f)); e.target.value = ""; });
+$("#bestand").addEventListener("change", e => { const f = [...e.target.files]; if (f.length) start(() => leesAlle(f)); e.target.value = ""; });
 const drop = $("#drop");
 ["dragover","dragenter"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("on"); }));
 ["dragleave","drop"].forEach(t => drop.addEventListener(t, () => drop.classList.remove("on")));
-drop.addEventListener("drop", e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) start(() => leesBestand(f)); });
+drop.addEventListener("drop", e => { e.preventDefault(); const f = [...e.dataTransfer.files]; if (f.length) start(() => leesAlle(f)); });
 $("#plakKnop").addEventListener("click", () => { const t = $("#plak").value; start(async () => K.leesRegels(t.split(/\r?\n/), P)); });
 ["van","tot"].forEach(i => $("#"+i).addEventListener("change", () => { if (GEL) toon(); }));
 $("#print").addEventListener("click", () => window.print());
 $("#wis").addEventListener("click", () => { GEL = null; OVER = []; LAATST = null; $("#plak").value = ""; ["routes","plaatsen","ctl","kpis"].forEach(i => $("#"+i).innerHTML = ""); $("#uit").hidden = true; fout(""); window.scrollTo(0,0); });
 function toast(t){ const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), 1800); }
-$("#kopie").addEventListener("click", async () => { const {v, van, tot} = LAATST, L = [`ROUTECHECK ${fmtD(van)} t/m ${fmtD(tot)} — VERTROUWELIJK`, ""];
-  v.routes.filter(r => r.hits.length).forEach(r => { L.push(`▶ ${r.naam.toUpperCase()}`); r.hits.forEach(h => L.push(`${h.x.hinder==="hoog"?"🔴":h.x.hinder==="middel"?"🟠":"⚪"} ${h.straat}${h.plaats?", "+h.plaats:""}: ${h.x.titel} (${wanneer(h.x,van,tot)})${h.zeker?"":" [controleren]"}`)); L.push(""); });
-  if (L.length === 2) L.push("Geen meldingen op de straten van deze routes.");
+$("#kopie").addEventListener("click", async () => { const {v, van, tot} = LAATST, L = [`ROUTECHECK ${fmtD(van)} t/m ${fmtD(tot)} — VERTROUWELIJK`, ""], ic = h => h==="hoog"?"🔴":h==="middel"?"🟠":"⚪";
+  v.routes.forEach(r => { L.push(`▶ ${r.naam.toUpperCase()} — komt in ${r.plaatsen.map(p => mooi(p.plaats)).join(", ")}`);
+    r.plaatsen.filter(p => p.hits.length || p.rond.length).forEach(p => { L.push(`  ${mooi(p.plaats)}:`);
+      p.hits.forEach(h => L.push(`  ${ic(h.x.hinder)} ${h.straat}: ${h.x.titel} (${wanneer(h.x,van,tot)})${h.zeker?"":" [controleren]"}`));
+      p.rond.forEach(x => L.push(`  ${ic(x.hinder)} ${x.titel} (${wanneer(x,van,tot)})`)); });
+    if (!r.knelpunten) L.push("  Geen bijzonderheden."); L.push(""); });
   try { await navigator.clipboard.writeText(L.join("\n")); toast("Verslag gekopieerd"); } catch { toast("Kopiëren geblokkeerd door browser"); } });
 })();
 </script>

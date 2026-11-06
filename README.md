@@ -27,12 +27,13 @@ Gratis dashboard met actuele **wegwerkzaamheden en afsluitingen, evenementen, ke
 - **Markten**: in `config.json` staat `dag` als 0 = maandag t/m 6 = zondag, `plaats` is de gemeentenaam. Alleen de ingevoerde markten staan op de site, dus nog niet heel Gelderland en Limburg.
 
 ## Routecheck
-Knop **Routecheck** op de site, of `routecheck.html`. Kies een routelijst (PDF met tekst, Excel .xlsx, CSV of tekst) en een periode. Je krijgt per route de meldingen op de straten van je stops, plus hoge hinder, evenementen en markten in de plaatsen op de route.
+Knop **Routecheck** op de site, of `routecheck.html`. Kies een of meer routelijsten (PDF met tekst, Excel .xlsx, CSV of tekst) en een periode. Je krijgt per route welke plaatsen hij aandoet en per plaats de bijzonderheden: meldingen op de straten van je stops, plus hoge hinder, evenementen en markten rond het plaatscentrum (2,5 km). Bij een Dynamics-routelijst worden alleen routenummer, datum en de kolom Adres gelezen.
 
 - **Routelijsten blijven op je computer.** Ze worden in de browser gelezen, niet verstuurd en niet bewaard. Een Content-Security-Policy op de pagina blokkeert verkeer naar andere sites. Zet routelijsten **nooit** in deze publieke repo; `*.pdf`, `*.xlsx`, `*.xls` en `*.csv` staan in `.gitignore`.
 - **Pc zonder toegang tot de site:** download `routecheck-offline.html` thuis en zet die over. Dat ene bestand bevat lezer + openbare meldingen van dat moment. Dubbelklikken is genoeg, internet is niet nodig. Vanaf 1 dag oud waarschuwt de pagina.
 - De vergelijking werkt op naam: de weg tussen twee stops wordt niet bekeken. *Controleren* = zelfde straatnaam in dezelfde gemeente, maar plaats niet bevestigd.
 - Een gescande PDF (afbeelding) kan niet gelezen worden.
+- Vanuit Dynamics: printbestemming **Bestand**, bestandsindeling **PDF** of **Tekst (UTF-8)**, geen RTF of HTML.
 
 ## Goed om te weten
 - **GitHub zet geplande taken na 60 dagen zonder activiteit in de repo stil.** Je krijgt daar een mail over. Klik dan in Actions op **Enable workflow**, of doe af en toe een kleine wijziging in `config.json`.
