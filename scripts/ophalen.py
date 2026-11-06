@@ -742,6 +742,8 @@ def fetch_gmb(gemeenten, today: dt.date, horizon_end: dt.date, cache: Cache, sta
             rub = r.get("type", "")
             if not relevant(title, rub):
                 continue
+            if classify_gmb(title, rub)[2] == "aanvraag":  # pas interessant als het definitief is
+                continue
             pub = r.get("available", "")[:10]
             pub_d = dt.date.fromisoformat(pub) if pub else today
             # 'i.p.v. 3 oktober' en 'd.d. 8 juni' zijn geen evenementdata
