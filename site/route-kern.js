@@ -175,51 +175,39 @@ const actief = (x, van, tot) => {
   return x.start.slice(0, 10) <= tot && (x.eind || (x.cat === "weg" ? "9999" : x.start)).slice(0, 10) >= van;
 };
 
-/** Vergelijkt stops met meldingen, per route en per plaats. */
+/** Vergelijkt stops met meldingen: alleen meldingen die de straat van een stop noemen, in die plaats of gemeente.
+    Omleidingsroutes en fiets-/voetpaden tellen niet: daar is de stop zelf niet geraakt. */
 function vergelijk(stops, items, plaatsen, opt) {
-  const {van, tot, straal = 2.5, perPlaats = 6} = opt;
-  const akt = items.filter(x => actief(x, van, tot)).map(x => ({x, t: norm(`${x.titel} ${x.locatie || ""} ${x.toelichting || ""}`)}));
+  const {van, tot} = opt;
+  const zonderOmleiding = t => String(t || "").split(/(?<=[.!?])\s+|\s·\s/).filter(z => !/omgeleid|omleiding/i.test(z)).join(" ");
+  const akt = items.filter(x => !x.fiets && actief(x, van, tot)).map(x => ({x, t: norm(`${x.titel} ${x.locatie || ""} ${zonderOmleiding(x.toelichting)}`)}));
   const perGem = new Map(); akt.forEach(a => { if (!perGem.has(a.x.plaats)) perGem.set(a.x.plaats, []); perGem.get(a.x.plaats).push(a); });
-  const orde = {hoog:0, middel:1, laag:2}, onbekend = new Map(), routes = new Map(), treffers = [], cache = new Map();
-
-  function plaatsInfo(naam) {  // meldingen rond een plaats: één keer rekenen, routes delen dit
-    const pk = kern(naam);
-    if (cache.has(pk)) return cache.get(pk);
-    const opties = plaatsVan(plaatsen, naam), midden = opties[0], gem = new Set(opties.map(o => o.gemeente));
-    let kand = [...gem].flatMap(g => perGem.get(g) || []);
-    if (midden) { const al = new Set(kand); akt.forEach(a => { if (!al.has(a) && a.x.lat && dist(midden, a.x) <= 6) kand.push(a); }); }
-    else if (pk) kand = akt.filter(a => a.t.includes(" " + pk + " "));
-    const rond = kand.filter(a => { const x = a.x, zwaar = x.hinder === "hoog" || x.cat === "evenement" || x.cat === "kermis" || x.cat === "markt";
-      if (!zwaar || x.fiets || x.hinder === "laag") return false;
-      return (midden && x.lat && dist(midden, x) <= straal) || (pk && a.t.includes(" " + pk + " ") && x.cat !== "weg") || (!x.lat && x.cat !== "weg" && gem.has(x.plaats)); });
-    const info = {pk, opties, kand, rond, bekend: !!midden};
-    cache.set(pk, info);
-    return info;
-  }
+  const orde = {hoog:0, middel:1, laag:2}, onbekend = new Map(), routes = new Map(), treffers = [];
   for (const s of stops) {
     if (!routes.has(s.route)) routes.set(s.route, {naam:s.route, stops:0, plaatsen:new Map()});
     const r = routes.get(s.route); r.stops++;
-    const naam = (plaatsVan(plaatsen, s.plaats)[0] || {}).naam || s.plaats || "(geen plaats)", pk = kern(naam) || "?";
-    if (!r.plaatsen.has(pk)) r.plaatsen.set(pk, {plaats:naam, stops:0, straten:new Map()});
+    const opties = plaatsVan(plaatsen, s.plaats), naam = (opties[0] || {}).naam || s.plaats || "(geen plaats)", pk = kern(naam) || "?";
+    if (!r.plaatsen.has(pk)) r.plaatsen.set(pk, {plaats:naam, pk, opties, stops:0, straten:new Map()});
     const p = r.plaatsen.get(pk); p.stops++;
     const sk = kern(s.straat); if (sk) { if (!p.straten.has(sk)) p.straten.set(sk, {straat:s.straat, aantal:0}); p.straten.get(sk).aantal++; }
   }
   for (const r of routes.values()) {
     r.plaatsen = [...r.plaatsen.values()].map(p => {
-      const info = plaatsInfo(p.plaats), hits = [], ids = new Set();
-      if (!info.bekend) onbekend.set(p.plaats, (onbekend.get(p.plaats) || 0) + p.stops);
-      for (const [sk, st] of p.straten) if (sk.length >= 5) for (const a of info.kand) if (a.t.includes(" " + sk + " ") && !ids.has(a.x.id)) {
+      if (!p.opties.length) onbekend.set(p.plaats, (onbekend.get(p.plaats) || 0) + p.stops);
+      const gem = new Set(p.opties.map(o => o.gemeente));
+      const kand = gem.size ? [...gem].flatMap(g => perGem.get(g) || []) : akt.filter(a => a.t.includes(" " + p.pk + " "));
+      const hits = [], ids = new Set();
+      for (const [sk, st] of p.straten) if (sk.length >= 5) for (const a of kand) if (a.t.includes(" " + sk + " ") && !ids.has(a.x.id)) {
         ids.add(a.x.id);
-        const zeker = !info.pk || a.t.includes(" " + info.pk + " ") || a.x.plaats === p.plaats || info.opties.some(o => o.naam === a.x.plaats);
+        const zeker = a.t.includes(" " + p.pk + " ") || a.x.plaats === p.plaats;
         hits.push({straat:st.straat, plaats:p.plaats, aantal:st.aantal, x:a.x, zeker});
       }
       hits.sort((a, b) => orde[a.x.hinder] - orde[b.x.hinder] || b.zeker - a.zeker);
-      const titels = new Set(), rond = info.rond.map(a => a.x).filter(x => !ids.has(x.id) && !titels.has(x.titel) && titels.add(x.titel)).sort((a, b) => orde[a.hinder] - orde[b.hinder]);
       treffers.push(...hits.map(h => ({...h, route:r.naam})));
-      return {plaats:p.plaats, stops:p.stops, bekend:info.bekend, hits, rond:rond.slice(0, perPlaats), meer:Math.max(0, rond.length - perPlaats)};
-    }).sort((a, b) => (b.hits.length + b.rond.length) - (a.hits.length + a.rond.length));
-    r.knelpunten = r.plaatsen.reduce((n, p) => n + p.hits.length + p.rond.length + p.meer, 0);
-    r.hoog = r.plaatsen.reduce((n, p) => n + p.hits.filter(h => h.x.hinder === "hoog").length + p.rond.filter(x => x.hinder === "hoog").length, 0);
+      return {plaats:p.plaats, stops:p.stops, bekend:!!p.opties.length, hits};
+    }).sort((a, b) => b.hits.length - a.hits.length);
+    r.knelpunten = r.plaatsen.reduce((n, p) => n + p.hits.length, 0);
+    r.hoog = r.plaatsen.reduce((n, p) => n + p.hits.filter(h => h.x.hinder === "hoog").length, 0);
   }
   return {routes:[...routes.values()], onbekend:[...onbekend], treffers};
 }

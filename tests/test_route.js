@@ -43,10 +43,20 @@ const items = [
 ];
 const v = K.vergelijk(t.stops, items, P, {van:"2026-11-05", tot:"2026-11-08"});
 assert.deepEqual(v.treffers.map(x => [x.x.id, x.zeker]).sort(), [["1", true], ["4", false]], JSON.stringify(v.treffers.map(x => x.x.id)));  // 2 valt buiten de datums; zelfde straat in andere kern = controleren
-const rt = v.routes[0], ehv = rt.plaatsen.find(p => p.plaats === "Eindhoven"), lie = rt.plaatsen.find(p => p.plaats === "Lierop");
-assert.equal(rt.stops, 2); assert.equal(rt.plaatsen.length, 2);
-assert.deepEqual(ehv.rond.map(x => x.id), ["5"], JSON.stringify(ehv));  // dichtbij centrum, fietspad telt niet
-assert.deepEqual(lie.rond.map(x => x.id), ["3"]);
+const rt = v.routes[0], lie = rt.plaatsen.find(p => p.plaats === "Lierop");
+assert.equal(rt.stops, 2); assert.equal(rt.plaatsen.length, 2); assert.equal(rt.knelpunten, 2);
+assert.deepEqual(lie.hits.map(h => h.x.id), ["4"]);  // geen algemene meldingen uit de plaats
+
+// alleen de straat van de stop telt
+const eigen = [
+  {id:"a", plaats:"Eindhoven", cat:"weg", label:"Weg dicht", titel:"Vestdijk Eindhoven", hinder:"hoog", start:"2026-11-06", eind:"2026-11-07"},
+  {id:"b", plaats:"Eindhoven", cat:"weg", label:"Weg dicht", titel:"Kanaaldijk Eindhoven", hinder:"hoog", toelichting:"Het verkeer wordt omgeleid via Vestdijk", start:"2026-11-06", eind:"2026-11-07"},
+  {id:"c", plaats:"Eindhoven", cat:"weg", label:"Fiets-/voetpad dicht", titel:"Vestdijk fietspad", hinder:"laag", fiets:true, start:"2026-11-06", eind:"2026-11-07"},
+  {id:"d", plaats:"Helmond", cat:"weg", label:"Weg dicht", titel:"Vestdijk Helmond", hinder:"hoog", lat:51.44, lon:5.47, start:"2026-11-06", eind:"2026-11-07"},
+  {id:"e", plaats:"Eindhoven", cat:"evenement", label:"Vergund/besluit", titel:"Groot festival centrum", hinder:"hoog", lat:51.44, lon:5.47, start:"2026-11-06"},
+];
+const q = K.vergelijk([{straat:"Vestdijk", plaats:"Eindhoven", route:"R"}], eigen, P, {van:"2026-11-05", tot:"2026-11-08"});
+assert.deepEqual(q.treffers.map(t => t.x.id), ["a"], JSON.stringify(q.treffers.map(t => t.x.id)));
 assert.deepEqual(K.vergelijk([{straat:"X", plaats:"Parijs", route:"R"}], items, P, {van:"2026-11-05", tot:"2026-11-08"}).onbekend, [["Parijs", 1]]);
 
 assert.equal(K.plaatsVan(P, "'SHERTOGENBOSCH")[0].naam, "'s-Hertogenbosch");
