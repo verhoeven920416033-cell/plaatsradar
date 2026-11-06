@@ -37,7 +37,7 @@ Knop **Routecheck** op de site, of `routecheck.html`. Kies een of meer routelijs
 
 ## Goed om te weten
 - **GitHub zet geplande taken na 60 dagen zonder activiteit in de repo stil.** Je krijgt daar een mail over. Klik dan in Actions op **Enable workflow**, of doe af en toe een kleine wijziging in `config.json`.
-- Gemeenteblad-publicaties zijn vergunningen en besluiten. De datum van het evenement wordt uit de titel of de tekst gehaald (o.a. `Datum evenement:` en `Omschrijving:`). Lukt dat niet, dan staat er "datum onbekend" en wordt de melding nog 3 weken na publicatie getoond. Aanvragen, ingetrokken, geweigerde en ontwerp-publicaties worden overgeslagen: een evenement verschijnt pas als het vergund, geaccepteerd of gemeld is.
+- Gemeenteblad-publicaties zijn vergunningen en besluiten. De datum van het evenement wordt uit de titel of de tekst gehaald (o.a. `Datum evenement:` en `Omschrijving:`). Lukt dat niet, dan staat er "datum onbekend" en wordt de melding nog 3 weken na publicatie getoond. Ingetrokken, geweigerde en ontwerp-publicaties worden overgeslagen; aanvraag + besluit van hetzelfde evenement worden één regel.
 - **Hinder**: *hoog* = weg dicht voor auto's op een hoofdroute of met NDW-hinderklasse 2+, of een op-/afrit dicht, of een verkeersbesluit met afsluitingen. *middel* = weg dicht in een woonstraat of rijstrookbeperking. *laag* = snelheidsbeperking of fiets-/voetpad. Fiets-/voetpaden staan standaard uit (knop **Incl. fiets-/voetpaden**).
 - NDW kent aparte uitvoeringsvensters (bijv. alleen 's nachts). "NU" en **Nu actief** kijken naar die vensters, niet naar de hele projectduur.
 - Contactpersonen uit de NDW-opmerkingen worden bewust niet overgenomen.

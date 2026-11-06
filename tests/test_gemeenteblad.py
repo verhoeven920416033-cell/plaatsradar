@@ -151,24 +151,19 @@ assert [i["id"] for i in items] == ["gmb-2026-9"] and items[0]["start"] == "2026
 assert items[0]["titel"] == "Brainport FANzone, Philips Stadion", items
 print("verleden/rubriek OK")
 
-# aanvragen tellen niet mee, ook niet als de datum klopt; besluit van hetzelfde evenement wel
+# aanvragen tellen mee, met label Aanvraag; hetzelfde evenement met besluit wordt één regel
 RECS[:] = [rec("gmb-2026-10", "Aanvraag vergunning voor de Intocht op 14 november 2026 aan Markt", "Eindhoven", "2026-10-29"),
-           rec("gmb-2026-11", "Ingekomen evenementenaanvraag: Kerstmarkt op 14 november 2026", "Eindhoven", "2026-10-29"),
-           rec("gmb-2026-12", "Ontvangen aanvraag voor een evenementenvergunning op 14 november 2026", "Eindhoven", "2026-10-29"),
            rec("gmb-2026-13", "Toestemming voor de Intocht op 14 november 2026 aan Markt", "Eindhoven", "2026-10-29"),
-           rec("gmb-2026-14", "Besluit op aanvraag: Festival op 15 november 2026", "Eindhoven", "2026-10-29")]
-_sru = f'<?xml version="1.0"?><sru:searchRetrieveResponse {NS}><sru:numberOfRecords>5</sru:numberOfRecords><sru:records>{"".join(RECS)}</sru:records></sru:searchRetrieveResponse>'
+           rec("gmb-2026-15", "Ingekomen evenementenaanvraag: Kerstmarkt op 20 november 2026", "Eindhoven", "2026-10-29")]
+_sru = f'<?xml version="1.0"?><sru:searchRetrieveResponse {NS}><sru:numberOfRecords>3</sru:numberOfRecords><sru:records>{"".join(RECS)}</sru:records></sru:searchRetrieveResponse>'
+_vorige = O.http_get
 O.http_get = lambda url, timeout=0, tries=0: _sru.encode()
-st, cache.d = {}, {"geo": {}, "gmb": {}, "sru": {}}
+st, _c = {}, cache.d
+cache.d = {"geo": {}, "gmb": {}, "sru": {}}
 items = O.fetch_gmb(P, today, today + dt.timedelta(days=30), cache, st)
-assert sorted(i["id"] for i in items) == ["gmb-2026-13", "gmb-2026-14"], [i["id"] for i in items]
+assert sorted((i["id"], i["label"]) for i in items) == [("gmb-2026-13", "Vergund/besluit"), ("gmb-2026-15", "Aanvraag")], items
 print("aanvragen OK")
-RECS[:] = [rec("gmb-2026-8", "Aanvraag vergunning voor het evenement Griezelberg op 30 oktober 2026 aan Gooisehof", "Eindhoven", "2026-10-29"),
-           rec("gmb-2026-9", "Besluit op aanvraag: Brainport FANzone, Philips Stadion", "Eindhoven", "2026-10-29")]
-SRU_OK = f'<?xml version="1.0"?><sru:searchRetrieveResponse {NS}><sru:numberOfRecords>2</sru:numberOfRecords><sru:records>{"".join(RECS)}</sru:records></sru:searchRetrieveResponse>'
-O.http_get = lambda url, timeout=0, tries=0: TEXT_9 if "gmb-2026-9" in url else SRU_OK.encode()
-st, cache.d = {}, {"geo": {}, "gmb": {}, "sru": {}}
-O.fetch_gmb(P, today, today + dt.timedelta(days=30), cache, st)
+O.http_get, cache.d = _vorige, _c
 
 # cache: binnen 6 uur geen nieuwe SRU-vraag; bij fout het laatste goede antwoord
 n = len(calls)
