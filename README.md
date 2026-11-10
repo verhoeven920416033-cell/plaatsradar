@@ -33,6 +33,8 @@ Knop **Routecheck** op de site, of `routecheck.html`. Kies een of meer routelijs
 - **Werk-pc:** download via de routecheck *versie voor werk-pc* (`Routecheck-werk.html`). Eén bestand, geen installatie: dubbelklikken opent het in de browser. Bij openen haalt het verse meldingen op als die site bereikbaar is, anders gebruikt het de ingebouwde meldingen van de downloaddag of kies je een `data.json`. Daarna gaat het netwerk van de pagina dicht, vóór je een routelijst kiest.
 - **Optimiser-export (.xlsx):** wordt herkend aan de kolommen *SRit* en *Laad-losplaats straat/huisnr./postcode/plaats*. Alleen rit, adres en datum (*Vroegste laden*) worden gelezen; naam, waarde, kwalificaties en tijden niet. De periode springt naar de datum uit het bestand. Dubbele orders op hetzelfde adres tellen als één stop. **Ritten overslaan** staat standaard op 442 en 443.
 - **Huddle-print:** één A4 (liggend) voor de Daily Huddle: per route alleen hoge en middel hinder bij de stops, met tijden op de dag en een lege kolom *Actie* om met de hand in te vullen, plus afvinkvakken om na de dienst in te leveren. Kies één dag als periode voor tijden per dag.
+- **Filters:** zoekveld (route, plaats, straat, postcode of melding; komma = of), periode met één klik (vandaag, morgen, over 2 dagen, 7 dagen), hinder (hoog/middel/laag), soort (weg/werk, evenement, markt/kermis), alleen routes met problemen, alleen zeker, en routes aan/uit. Aantallen staan op de knoppen. Huddle-print en Kopieer volgen het filter.
+- **Weergaven:** *Per route*, *Tabel* (sorteren door op een kolomkop te klikken) en *Kaart*: een overzicht van bovenaf met gemeentegrenzen, de plaatsen van je stops en de knelpunten (rood = hoog, oranje = middel). Klik op een punt voor details. De kaart werkt zonder internet: geen kaartdienst, dus er gaat ook niets naar buiten over welk gebied je bekijkt. Daardoor geen straten op de kaart.
 - De vergelijking werkt op straatnaam: een afsluiting om de hoek of op de weg ernaartoe valt erbuiten. *Controleren* = zelfde straatnaam in dezelfde gemeente, maar plaats niet bevestigd.
 - Een gescande PDF (afbeelding) kan niet gelezen worden.
 - Vanuit Dynamics: printbestemming **Bestand**, bestandsindeling **PDF** of **Tekst (UTF-8)**, geen RTF of HTML.
@@ -45,6 +47,7 @@ Knop **Planning** op de site, of `planning.html`. Voor de planners: kies een rij
 - **Download Excel** met beide overzichten.
 
 Meldingen krijgen hun postcodegebied uit de openbare CBS-postcodevlakken (PDOK, maandelijks ververst). Gemeenteblad-meldingen zonder coördinaten staan apart onder *Zonder exacte plek*. Het Excel blijft op je computer; voor de werk-pc is er `Planning-werk.html` (zelfde werkwijze als de routecheck).
+- **Filters en kaart:** naast het postcode-/straatfilter ook hinder (standaard hoog + middel) en soort. Tab *Kaart* toont de postcodegebieden die op de rijdag gereden worden (blauw) met de hinder erin; klik op een gebied voor de diensten van die dag.
 
 ## Goed om te weten
 

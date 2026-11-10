@@ -91,3 +91,13 @@ assert.deepEqual(opt.datums, ["2026-11-12"]);
 assert.ok(!JSON.stringify(opt).includes("Geheime") && !JSON.stringify(opt).includes("99"), "naam en waarde niet overnemen");
 assert.equal(K.excelDatum(46338), "2026-11-12"); assert.equal(K.excelDatum("12-11-2026"), "2026-11-12");
 console.log("routecheck OK");
+// kaart-coördinaten per plaats in de vergelijking
+{
+  const K2 = require("../site/route-kern.js"), P2 = K2.maakPlaatsen([{naam:"Eindhoven", provincie:"Noord-Brabant", lat:51.44, lon:5.48}], []);
+  const v2 = K2.vergelijk([{route:"Route 1", straat:"Kerkstraat", nr:"1", postcode:"", plaats:"Eindhoven"}], [], P2, {van:"2026-01-01", tot:"2026-01-02"});
+  const p2 = v2.routes[0].plaatsen[0];
+  if (p2.lat !== 51.44 || p2.gemeente !== "Eindhoven" || p2.straten[0] !== "Kerkstraat") { console.error("kaartvelden FOUT", p2); process.exit(1); }
+  const Kaart = require("../site/kaart.js");
+  if (!(Kaart.px(5) === 0 && Kaart.py(51.6) === 0 && Kaart.py(51.5) > 0)) { console.error("projectie FOUT"); process.exit(1); }
+  console.log("kaart-velden OK");
+}

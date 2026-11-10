@@ -38,6 +38,7 @@ jobs:
         run: |
           python3 tests/test_gemeenteblad.py
           python3 tests/test_ndw.py
+          python3 tests/test_kaart.py
           node tests/test_route.js
           node tests/test_plan.js
 

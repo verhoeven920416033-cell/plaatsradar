@@ -15,6 +15,7 @@ def js(naam):
 
 
 def bouw(pagina, uit, scripts, data_js, csp, pdf_worker=False):
+    """data_js: ingebouwde openbare gegevens (meldingen, plaatsen, kaart). Nooit routegegevens."""
     h = (SITE / pagina).read_text("utf-8")
     h = re.sub(r"<!--CSP-->.*?<!--/CSP-->", lambda m: f'<meta http-equiv="Content-Security-Policy" content="{csp}">', h, flags=re.S)
     h = re.sub(r' — <a href="index\.html".*?</a></p>', " (versie voor werk-pc)</p>", h, count=1, flags=re.S)
@@ -39,8 +40,12 @@ def main():
            "style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'")
     data_js = ("window.PR_DATA=" + data.replace("</", "<\\/") + ";window.PR_WP=" + wp.replace("</", "<\\/") +
                f";window.PR_LIVE={json.dumps(live)};")
-    n1 = bouw("routecheck.html", "routecheck-offline.html", ["vendor/pdf.min.js", "route-kern.js"], data_js, csp, pdf_worker=True)
-    n2 = bouw("planning.html", "planning-offline.html", ["xlsx.js", "plan-kern.js"], data_js, csp)
+    kf = SITE / "kaart.json"
+    k = json.loads(kf.read_text("utf-8")) if kf.exists() else {"gemeenten": [], "pc4": []}
+    kaart = lambda d: ";window.PR_KAART=" + json.dumps(d, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";"
+    n1 = bouw("routecheck.html", "routecheck-offline.html", ["vendor/pdf.min.js", "route-kern.js", "kaart.js"],
+              data_js + kaart({"gemeenten": k["gemeenten"], "pc4": []}), csp, pdf_worker=True)  # routecheck: geen postcodevlakken nodig
+    n2 = bouw("planning.html", "planning-offline.html", ["xlsx.js", "plan-kern.js", "kaart.js"], data_js + kaart(k), csp)
     print(f"offline: routecheck {n1 / 1e6:.1f} MB, planning {n2 / 1e6:.1f} MB, {len(json.loads(data)['items'])} meldingen")
 
 

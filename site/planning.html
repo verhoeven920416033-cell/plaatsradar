@@ -43,6 +43,8 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
 .tabs{display:flex;gap:6px;margin-bottom:10px}.tab{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 14px;font:600 13px system-ui,sans-serif;cursor:pointer}.tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .grp{display:inline-block;font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin:0 4px 2px 0;color:var(--navy2);background:#f4f7fb}
 td.sam{font-weight:700;color:#1f7a4d}
+.chip.c-hoog.on{background:var(--red);border-color:var(--red)}.chip.c-middel.on{background:#f3b23c;border-color:#f3b23c;color:#3a2600}.chip i{font-style:normal;opacity:.75;font-size:11.5px;margin-left:4px}
+.leg{display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:12.5px;color:var(--mut)}.leg b{display:inline-block;width:11px;height:11px;border-radius:50%}.leg b.vk{border-radius:2px;background:#cfe0f5;border:1px solid #5a86b8}
 </style>
 </head>
 <body>
@@ -69,20 +71,27 @@ td.sam{font-weight:700;color:#1f7a4d}
     <section class="panel geenprint">
       <div class="row" style="margin-bottom:8px"><span class="lbl">Diensten</span><span id="groepen" class="row"></span></div>
       <div class="row" style="margin-bottom:8px"><span class="lbl">Filter</span><input type="search" id="filter" style="flex:1 1 320px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit" placeholder="Postcodes of straten, gescheiden door komma's: 5611, 5612-5615, Vestdijk, Tilburg" aria-label="Filter op postcode of straat"><span id="filterInfo" class="meta"></span></div>
-      <div class="row"><span class="chip" id="fLaag">Incl. lage hinder</span><span style="flex:1"></span>
+      <div class="row" style="margin-bottom:8px"><span class="lbl">Hinder</span><span id="fHinder" class="row" style="gap:6px"></span><span class="lbl" style="margin-left:8px">Soort</span><span id="fSoort" class="row" style="gap:6px"></span></div>
+      <div class="row"><button class="btn" id="reset">Filters wissen</button><span style="flex:1"></span>
         <button class="btn pri" id="excel">Download Excel</button><button class="btn" id="print">Print</button><button class="btn" id="wis">Wis</button></div>
     </section>
     <p class="meta"><b>Vertrouwelijk: dit overzicht bevat planningsgegevens.</b> <span id="kop"></span></p>
     <div class="kpis" id="kpis"></div>
-    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Hinder op de rijdag</button><button class="tab" data-t="sync">Diensten samenvoegen</button></div>
+    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Hinder op de rijdag</button><button class="tab" data-t="kaart">Kaart</button><button class="tab" data-t="sync">Diensten samenvoegen</button></div>
     <div id="hinder"></div>
+    <div id="kaartvak" hidden>
+      <div class="row geenprint" style="margin-bottom:8px"><span class="leg"><b style="background:#c8102e"></b>hoog</span><span class="leg"><b style="background:#f3a712"></b>middel</span><span class="leg"><b style="background:#7b8794"></b>laag</span><span class="leg"><b style="background:#fff;border:2px dashed #7b8794"></b>plek ongeveer</span><span class="leg"><b class="vk"></b>postcodegebied gereden op de rijdag</span></div>
+      <div id="kaart"></div>
+      <p class="meta">Kaart zonder internet: gemeentegrenzen en postcodegebieden (CBS/PDOK), geen straten. Scrollen of +/− om te zoomen, slepen om te schuiven, klik op een punt of postcodegebied voor details.</p>
+    </div>
     <div id="sync" hidden></div>
   </div>
 </main>
-<footer>Meldingen: NDW en Gemeenteblad (CC0). Postcodegebieden: CBS/PDOK (CC-BY). Plaatsnamen: PDOK (CC0).</footer>
+<footer>Meldingen: NDW en Gemeenteblad (CC0). Postcodegebieden en gemeentegrenzen: CBS/PDOK (CC-BY). Plaatsnamen: PDOK (CC0).</footer>
 <div class="toast" id="toast"></div>
 <script src="xlsx.js"></script>
 <script src="plan-kern.js"></script>
+<script src="kaart.js"></script>
 <script>
 (() => {
 "use strict";
@@ -91,7 +100,10 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const pad = n => String(n).padStart(2,"0"), iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const fmtD = s => { const d = new Date(s.length > 10 ? s : s+"T00:00"); return isNaN(d) ? s : d.toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"}); };
 const rand = (t, n) => `${n} ${n===1?t[0]:t[1]}`;
-let NET_DICHT = false, D = null, WP = [], G = null, AAN = null, LAAG = false, TAB = "hinder", R = null, FILTER = null, FT = 0;
+let NET_DICHT = false, D = null, WP = [], G = null, AAN = null, TAB = "hinder", R = null, FILTER = null, FT = 0, KAART = null, KAART_DATA = window.PR_KAART || null;
+const HINDER = ["hoog","middel","laag"], SOORT = {weg:"Weg / werk", evenement:"Evenement / kermis"}, soortVan = x => x.cat === "evenement" || x.cat === "kermis" ? "evenement" : "weg";
+const nieuwH = () => new Set(["hoog","middel"]);
+let FH = nieuwH(), FS = new Set(Object.keys(SOORT));
 const fout = t => { const e = $("#fout"); e.hidden = !t; e.textContent = t || ""; };
 const plusDag = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
 $("#datum").value = plusDag(2);
@@ -112,6 +124,7 @@ async function laad(){
   } else {
     D = await (await fetch("data.json?t="+Date.now())).json();
     try { WP = await (await fetch("woonplaatsen.json?t="+Date.now())).json(); } catch {}
+    try { KAART_DATA = await (await fetch("kaart.json")).json(); } catch {}
   }
   sluitNetwerk(); zetStand(bron);
 }
@@ -134,11 +147,14 @@ function wanneer(x){ const d = $("#datum").value, p = x.perioden && x.perioden.f
 function toon(){
   const datum = $("#datum").value; if (!datum || !G) return;
   $("#dagnaam").textContent = K.DAGEN[K.weekdag(datum)];
-  R = K.planDag(G.gebieden, D.items, {datum, groepen:AAN, laag:LAAG, woonplaatsen:WP, filter:FILTER});
+  R = K.planDag(G.gebieden, D.items, {datum, groepen:AAN, hinder:FH, soort:x => FS.has(soortVan(x)), woonplaatsen:WP, filter:FILTER});
+  const alle = K.planDag(G.gebieden, D.items, {datum, groepen:AAN, hinder:new Set(HINDER), woonplaatsen:WP, filter:FILTER});
+  const ar = [...new Map([...alle.plaatsen.flatMap(p => p.rijen.map(r => r.x)), ...alle.zonder.flatMap(z => z.rijen)].map(x => [x.id, x])).values()];
+  $("#fHinder").innerHTML = HINDER.map(h => `<span class="chip c-${h} ${FH.has(h)?"on":""}" data-h="${h}">${h}<i>${ar.filter(x => (x.hinder === "geen" ? "laag" : x.hinder) === h).length}</i></span>`).join("");
+  $("#fSoort").innerHTML = Object.entries(SOORT).map(([k,t]) => `<span class="chip ${FS.has(k)?"on":""}" data-s="${k}">${t}<i>${ar.filter(x => soortVan(x) === k).length}</i></span>`).join("");
   const S = K.synchronisatie(G.gebieden, AAN, FILTER);
   $("#filterInfo").textContent = FILTER ? `${FILTER.pc.length ? FILTER.pc.length + " postcode(s)" : ""}${FILTER.pc.length && FILTER.tk.length ? " + " : ""}${FILTER.tk.length ? FILTER.tk.length + " straat/plaats" : ""}` : "";
   $("#groepen").innerHTML = G.groepen.map(g => `<span class="chip ${AAN.has(g)?"on":""}" data-g="${esc(g)}">${esc(g)}</span>`).join("");
-  $("#fLaag").classList.toggle("on", LAAG);
   $("#kop").textContent = (FILTER ? `Filter: ${$("#filter").value.trim()}. ` : "") + `Rijdag ${fmtD(datum)} (${R.dag}), meldingen van ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}.`;
   $("#kpis").innerHTML = [[R.gebieden,"postcodegebieden gereden"],[R.plaatsen.length,"plaatsen met hinder"],[R.meldingen,"meldingen"],[R.hoog,"hoge hinder",1],[S.length,"gebieden samen te voegen"]]
     .map(([n,t,a]) => `<div class="kpi${a?" alert":""}"><b>${n}</b><span>${t}</span></div>`).join("");
@@ -151,9 +167,31 @@ function toon(){
   $("#sync").innerHTML = S.length ? `<div class="panel"><p class="meta">Postcodegebieden waar de gekozen diensten op verschillende dagen rijden. "Samen" = dagen waarop ze er allemaal al komen.</p>
     <div style="overflow-x:auto"><table><tr><th>Plaats</th><th>PC4</th>${gs.map(g => `<th>${esc(g)}</th>`).join("")}<th>Samen</th></tr>${S.map(s => `<tr><td>${esc(s.plaats)}</td><td>${esc(s.pc4)}</td>${gs.map(g => `<td>${esc(s.diensten[g] ?? "")}</td>`).join("")}<td class="sam">${esc(s.samen)}</td></tr>`).join("")}</table></div></div>`
     : '<div class="panel">Alle gekozen diensten rijden in dezelfde gebieden op dezelfde dagen.</div>';
-  $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync";
+  $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#kaartvak").hidden = TAB !== "kaart";
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.t === TAB));
   $("#uit").hidden = false; R.sync = S; R.gs = gs; R.datum = datum;
+  if (TAB === "kaart") tekenKaart();
+}
+const gemPunt = new Map();
+function tekenKaart(){
+  if (!window.Kaart) return;
+  if (!KAART) KAART = window.Kaart.maak($("#kaart"), {data:KAART_DATA, label:"Kaart met postcodegebieden en hinder", info:kaartInfo});
+  if (!gemPunt.size) D.plaatsen.forEach(g => gemPunt.set(g.naam, g));
+  const per = new Map();
+  R.plaatsen.forEach(p => p.rijen.forEach(r => { if (!per.has(r.x.id)) per.set(r.x.id, {x:r.x, pc4:new Set(), groepen:new Set()}); const m = per.get(r.x.id); r.pc4.forEach(q => m.pc4.add(q)); r.groepen.forEach(g => m.groepen.add(g)); }));
+  R.zonder.forEach(z => z.rijen.forEach(x => { if (!per.has(x.id)) per.set(x.id, {x, pc4:new Set(), groepen:new Set(), gemeente:true}); }));
+  const punten = [...per.values()].map(m => { const g = gemPunt.get(m.x.plaats) || {}; return {lat:m.x.lat || g.lat, lon:m.x.lon || g.lon, hinder:m.x.hinder, titel:m.x.titel, ongeveer:!m.x.lat, m}; });
+  R.pcInfo = new Map(R.gereden.map(g => [g.pc4, g]));
+  const fp = FILTER && FILTER.pc.length ? R.gereden.filter(g => FILTER.pc.some(([a, b]) => +g.pc4 >= a && +g.pc4 <= b)) : R.gereden;
+  KAART.teken({punten, vlakken:(fp.length ? fp : R.gereden).map(g => g.pc4)});
+}
+function kaartInfo(p, soort){
+  if (soort === "vlak") { const g = R.pcInfo.get(p.pc4); if (!g) return `Postcode ${esc(p.pc4)}`;
+    const n = R.plaatsen.reduce((t, q) => t + q.rijen.filter(r => r.pc4.includes(p.pc4)).length, 0);
+    return `<b>Postcode ${esc(g.pc4)}</b> · ${esc(g.plaats)}<div class="meta">Rijden op ${esc(R.dag)}: ${g.groepen.map(esc).join(", ")}<br>${rand(["melding","meldingen"], n)} in dit gebied</div>`; }
+  const {x, pc4, groepen, gemeente} = p.m;
+  return `<span class="h h-${x.hinder}">${x.hinder}</span> <b>${esc(x.titel)}</b><div class="meta" style="margin-top:4px">${bron(x)}${p.ongeveer ? "<br>Plek ongeveer (midden gemeente)." : ""}</div>` +
+    `<div style="margin-top:6px">${gemeente ? "Gemeente-breed, geen exacte plek: controleren." : `<b>Postcode:</b> ${esc([...pc4].join(", "))}<br><b>Diensten:</b> ${esc([...groepen].join(", "))}`}</div>`;
 }
 function excel(){
   const h = [["Rijdag","Plaats","Postcode (PC4)","Diensten die dag","Hinder","Soort","Melding","Wanneer","Bron","Link"]];
@@ -171,7 +209,11 @@ drop.addEventListener("drop", e => { e.preventDefault(); const f = e.dataTransfe
 document.querySelectorAll("[data-plus]").forEach(b => b.addEventListener("click", () => { $("#datum").value = plusDag(+b.dataset.plus); toon(); }));
 $("#datum").addEventListener("change", toon);
 $("#groepen").addEventListener("click", e => { const g = e.target.dataset.g; if (!g) return; AAN.has(g) ? AAN.delete(g) : AAN.add(g); if (!AAN.size) AAN = new Set(G.groepen); toon(); });
-$("#fLaag").addEventListener("click", () => { LAAG = !LAAG; toon(); });
+$("#uit").addEventListener("click", e => { const c = e.target.closest("[data-h],[data-s]"); if (!c) return;
+  if (c.dataset.h) { FH.has(c.dataset.h) ? FH.delete(c.dataset.h) : FH.add(c.dataset.h); if (!FH.size) FH = nieuwH(); }
+  else { FS.has(c.dataset.s) ? FS.delete(c.dataset.s) : FS.add(c.dataset.s); if (!FS.size) FS = new Set(Object.keys(SOORT)); }
+  toon(); });
+$("#reset").addEventListener("click", () => { FH = nieuwH(); FS = new Set(Object.keys(SOORT)); FILTER = null; $("#filter").value = ""; if (G) AAN = new Set(G.groepen); toon(); });
 $("#filter").addEventListener("input", e => { clearTimeout(FT); FT = setTimeout(() => { FILTER = K.maakFilter(e.target.value); toon(); }, 200); });
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => { TAB = t.dataset.t; toon(); }));
 $("#excel").addEventListener("click", excel);

@@ -55,7 +55,8 @@ function planDag(gebieden, items, opt) {
     for (const p of g.pc4) { if (!pc.has(p)) pc.set(p, {plaats: g.plaats, groepen: new Set()}); pc.get(p).groepen.add(g.groep); }
   const gemVan = new Map((opt.woonplaatsen || []).map(w => [kern(w.naam), w.gemeente]));
   const plaatsGem = new Map(); for (const v of pc.values()) { const gm = gemVan.get(kern(v.plaats)); if (gm) plaatsGem.set(v.plaats, gm); }
-  const relevant = items.filter(x => !x.fiets && x.cat !== "markt" && (opt.laag || x.hinder !== "laag") && actief(x, opt.datum));
+  const hOk = x => opt.hinder ? opt.hinder.has(x.hinder === "geen" ? "laag" : x.hinder) : (opt.laag || x.hinder !== "laag");
+  const relevant = items.filter(x => !x.fiets && x.cat !== "markt" && hOk(x) && (!opt.soort || opt.soort(x)) && actief(x, opt.datum));
   const perPlaats = new Map(), zonder = new Map(), geteld = new Set();
   const voeg = (plaats, rij) => { if (!perPlaats.has(plaats)) perPlaats.set(plaats, {plaats, groepen: new Set(), pc4: new Set(), rijen: []}); const p = perPlaats.get(plaats);
     if (!p.rijen.some(r => r.x.id === rij.x.id)) p.rijen.push(rij); rij.groepen.forEach(g => p.groepen.add(g)); rij.pc4.forEach(q => p.pc4.add(q)); };
@@ -85,7 +86,7 @@ function planDag(gebieden, items, opt) {
     zonderL = zonderL.map(z => z.plaatsen.some(pl => tekstIn(fp, pl)) ? {...z, plaatsen: z.plaatsen.filter(pl => tekstIn(fp, pl))} : {...z, rijen: z.rijen.filter(x => tekstIn(f, melding(x)))}).filter(z => z.rijen.length);
   }
   const ids = new Set(plaatsen.flatMap(p => p.rijen.map(r => r.x.id)));
-  return {dag: DAGEN[dag], gebieden: pc.size, plaatsen, zonder: zonderL, meldingen: ids.size,
+  return {dag: DAGEN[dag], gebieden: pc.size, gereden: [...pc].map(([c, v]) => ({pc4: c, plaats: v.plaats, groepen: [...v.groepen].sort()})), plaatsen, zonder: zonderL, meldingen: ids.size,
           hoog: relevant.filter(x => ids.has(x.id) && x.hinder === "hoog").length, filter: !!opt.filter};
 }
 

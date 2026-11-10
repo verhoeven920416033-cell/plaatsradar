@@ -111,6 +111,7 @@ class Cache:
         self.d.setdefault("sru", {})
         self.d.setdefault("wp", {})
         self.d.setdefault("pc4", {})
+        self.d.setdefault("kaart", {})
         if self.d.get("v") != 3:  # oude cache had geen omschrijving/afsluiting-info
             self.d.update(v=3, gmb={}, sru={})
 
@@ -908,6 +909,110 @@ def ken_pc4(items, vlakken):
     return n
 
 
+# ---------------------------------------------------------------- kaart (offline overzicht, geen kaarttegels)
+GEM_WFS = "https://service.pdok.nl/cbs/gebiedsindelingen/{jaar}/wfs/v1_0"
+
+
+def vereenvoudig(ring, eps):
+    """Douglas-Peucker; houdt begin en eind."""
+    if len(ring) < 5:
+        return ring
+    houd = [False] * len(ring)
+    houd[0] = houd[-1] = True
+    stapel = [(0, len(ring) - 1)]
+    while stapel:
+        a, b = stapel.pop()
+        (x1, y1), (x2, y2) = ring[a], ring[b]
+        dx, dy = x2 - x1, y2 - y1
+        n = math.hypot(dx, dy) or 1e-12
+        beste, bi = 0.0, -1
+        for i in range(a + 1, b):
+            x, y = ring[i]
+            d = abs(dy * (x - x1) - dx * (y - y1)) / n if (dx or dy) else math.hypot(x - x1, y - y1)
+            if d > beste:
+                beste, bi = d, i
+        if beste > eps and bi > 0:
+            houd[bi] = True
+            stapel += [(a, bi), (bi, b)]
+    return [p for p, k in zip(ring, houd) if k]
+
+
+def plat(ring):
+    """[[lon,lat],…] → [lon*1e4, lat*1e4, …] als gehele getallen (±10 m): klein bestand."""
+    return [v for x, y in ring for v in (round(x * 1e4), round(y * 1e4))]
+
+
+def gemeentegrenzen(gemeenten):
+    la0, la1 = min(g["lat"] for g in gemeenten) - 0.3, max(g["lat"] for g in gemeenten) + 0.3
+    lo0, lo1 = min(g["lon"] for g in gemeenten) - 0.45, max(g["lon"] for g in gemeenten) + 0.45
+    namen = {g["naam"]: g.get("provincie", "") for g in gemeenten}
+    for jaar in (dt.date.today().year, dt.date.today().year - 1, 2025, 2024):
+        try:
+            q = urllib.parse.urlencode({"service": "WFS", "version": "2.0.0", "request": "GetFeature",
+                                        "typeNames": "gebiedsindelingen:gemeente_gegeneraliseerd",
+                                        "outputFormat": "application/json", "srsName": "EPSG:4326"})
+            fc = json.loads(http_get(f"{GEM_WFS.format(jaar=jaar)}?{q}", timeout=120, tries=2))
+        except Exception as e:
+            log(f"  gemeentegrenzen {jaar} FOUT", str(e)[:120])
+            continue
+        uit = []
+        for f in fc.get("features") or []:
+            g = f.get("geometry") or {}
+            polys = g.get("coordinates") or []
+            if g.get("type") == "Polygon":
+                polys = [polys]
+            ringen = []
+            for poly in polys:
+                for ring in poly[:1]:  # alleen buitenrand: genoeg voor een overzicht
+                    if ring and ring[0][0] > 40:  # lat,lon-volgorde → omdraaien
+                        ring = [[y, x] for x, y in ring]
+                    r = vereenvoudig([[x, y] for x, y in ring], 0.0012)
+                    if len(r) >= 4:
+                        ringen.append(r)
+            pts = [p for r in ringen for p in r]
+            if not pts or max(p[0] for p in pts) < lo0 or min(p[0] for p in pts) > lo1 or max(p[1] for p in pts) < la0 or min(p[1] for p in pts) > la1:
+                continue
+            n = (f.get("properties") or {}).get("statnaam", "")
+            for k in (n, n.replace(".", ""), re.sub(r"\s*\(.*\)$", "", n)):  # CBS: "Beek (L.)", eigen lijst: "Beek"
+                if k in namen:
+                    n = k
+                    break
+            uit.append({"n": n, "p": namen.get(n, ""), "r": [plat(r) for r in ringen]})
+        if len(uit) > 100:
+            log(f"  gemeentegrenzen {jaar}: {len(uit)}")
+            return uit
+    return []
+
+
+def kaart(uit: Path, cache: Cache, gemeenten, vlakken, nu: float, ttl_dagen=60):
+    """Schrijft site/kaart.json: gemeentegrenzen + postcodegebieden, vereenvoudigd. De pagina's tekenen dit zelf, zonder kaartdienst."""
+    w = cache.d["kaart"]
+    if not w.get("gem") or nu - w.get("t", 0) > ttl_dagen * 86400:
+        gem = gemeentegrenzen(gemeenten)
+        if gem:
+            cache.d["kaart"] = w = {"t": nu, "gem": gem}
+    eigen = []  # postcodegebieden alleen binnen de eigen gemeenten
+    for g in w.get("gem", []):
+        if g["p"]:
+            rs = [[[r[i] / 1e4, r[i + 1] / 1e4] for i in range(0, len(r), 2)] for r in g["r"]]
+            pts = [q for r in rs for q in r]
+            eigen.append(([min(q[0] for q in pts), min(q[1] for q in pts), max(q[0] for q in pts), max(q[1] for q in pts)], rs))
+    binnen = lambda x, y: any(b[0] <= x <= b[2] and b[1] <= y <= b[3] and in_vlak(x, y, rs) for b, rs in eigen)
+    pc4 = []
+    for v in vlakken or []:
+        b = v["bb"]
+        proef = [((b[0] + b[2]) / 2, (b[1] + b[3]) / 2)] + [tuple(q) for q in v["r"][0][::max(1, len(v["r"][0]) // 8)]]
+        if eigen and not any(binnen(x, y) for x, y in proef):
+            continue
+        rs = [plat(r) for r in (vereenvoudig(r, 0.0011) for r in v["r"]) if len(r) >= 4]
+        if rs:
+            pc4.append({"c": v["pc4"], "r": rs})
+    if not w.get("gem") and not pc4:
+        return 0
+    uit.write_text(json.dumps({"gemeenten": w.get("gem", []), "pc4": pc4}, ensure_ascii=False, separators=(",", ":")), "utf-8")
+    return uit.stat().st_size
+
+
 # ---------------------------------------------------------------- woonplaatsen (voor routecheck)
 def woonplaatsen(uit: Path, cache: Cache, nu: float, ttl_dagen=30):
     """Openbare plaatsenlijst, zodat de routecheck in de browser plaatsen kan herkennen zonder iets te versturen."""
@@ -946,6 +1051,7 @@ def main():
     ap.add_argument("--nu", help="ISO-tijd om 'nu' te simuleren (testen)")
     ap.add_argument("--geen-gemeenteblad", action="store_true")
     ap.add_argument("--geen-geocoding", action="store_true")
+    ap.add_argument("--alleen-kaart", action="store_true", help="alleen site/kaart.json maken")
     a = ap.parse_args()
 
     cfg = json.loads(Path(a.config).read_text("utf-8"))
@@ -956,6 +1062,11 @@ def main():
     horizon_end_dt = now + dt.timedelta(days=horizon)
     horizon_end = today + dt.timedelta(days=horizon)
     cache = Cache(Path(a.cache))
+    if a.alleen_kaart:
+        n = kaart(Path(a.uit).with_name("kaart.json"), cache, plaatsen, pc4_vlakken(cache, plaatsen, time.time()), time.time())
+        cache.save()
+        log(f"kaart.json: {n / 1e3:.0f} kB")
+        return
     status = {"ndw": {"ok": False}, "gemeenteblad": {}, "markten": {"ok": True}}
     items = []
 
@@ -1007,6 +1118,10 @@ def main():
     Path(a.uit).parent.mkdir(parents=True, exist_ok=True)
     if not a.geen_gemeenteblad:
         woonplaatsen(Path(a.uit).with_name("woonplaatsen.json"), cache, time.time())
+        try:
+            log(f"  kaart.json: {kaart(Path(a.uit).with_name('kaart.json'), cache, plaatsen, vlakken, time.time()) / 1e3:.0f} kB")
+        except Exception as e:
+            log("  kaart FOUT", str(e)[:160])
     Path(a.uit).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), "utf-8")
     cache.save()
     log(f"Klaar: {len(items)} items → {a.uit}")

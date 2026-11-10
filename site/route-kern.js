@@ -231,7 +231,8 @@ function vergelijk(stops, items, plaatsen, opt) {
       }
       hits.sort((a, b) => orde[a.x.hinder] - orde[b.x.hinder] || b.zeker - a.zeker);
       treffers.push(...hits.map(h => ({...h, route:r.naam})));
-      return {plaats:p.plaats, stops:p.stops, bekend:!!p.opties.length, hits};
+      const o = p.opties[0] || {};
+      return {plaats:p.plaats, stops:p.stops, bekend:!!p.opties.length, hits, lat:o.lat, lon:o.lon, gemeente:o.gemeente, straten:[...p.straten.values()].map(x => x.straat)};
     }).sort((a, b) => b.hits.length - a.hits.length);
     r.knelpunten = r.plaatsen.reduce((n, p) => n + p.hits.length, 0);
     r.hoog = r.plaatsen.reduce((n, p) => n + p.hits.filter(h => h.x.hinder === "hoog").length, 0);

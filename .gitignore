@@ -10,3 +10,4 @@ __pycache__/
 site/woonplaatsen.json
 site/routecheck-offline.html
 site/planning-offline.html
+site/kaart.json
