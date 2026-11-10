@@ -64,3 +64,13 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
   assert.ok(f["xl/worksheets/sheet1.xml"].includes("x &amp; y"));
   console.log("plan OK");
 })();
+// optimiser-export in de planning
+{
+  const P = require("../site/plan-kern.js");
+  const kop = ["Kenmerk 1","SRit","Laad-losplaats naam","Laad-losplaats straat","Laad-losplaats postcode","Laad-losplaats plaats","Vroegste laden"];
+  const g = P.leesGeogroepen([kop, ["a","101","X","Kerkstraat","5611 AB","Eindhoven","46337.25"], ["b","101","Y","Markt","5611 CD","Eindhoven","46337.3"], ["c","102","Z","Dorp","5701 AA","Helmond","12-11-2026"], ["d","442","Q","Weg","6211 AA","Maastricht","46337"]], {skip:["442","443"]});
+  const fout = m => { console.error("optimiser-plan FOUT", m, JSON.stringify(g)); process.exit(1); };
+  if (g.bron !== "optimiser" || g.gebieden.length !== 2 || g.groepen.join() !== "Rit 101,Rit 102" || g.overgeslagen.join() !== "442") fout("gebieden");
+  if (g.datums.join() !== "2026-11-11,2026-11-12" || !g.gebieden[0].dagen[2] || g.gebieden[0].dagen[3] || !g.gebieden[1].dagen[3]) fout("dagen");
+  console.log("optimiser-plan OK");
+}

@@ -5,10 +5,42 @@ const DAGEN = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterd
 const ja = v => /^(ja|j|yes|y|x|1|waar|true)$/i.test(String(v ?? "").trim());
 const kern = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
 
+/** Optimiser-export (SRit + Laad-losplaats postcode/plaats + Vroegste laden) -> gebieden per rit, postcodegebied en rijdag.
+    Alleen rit, postcode, plaats en datum worden gelezen; naam, straat, waarde en tijden niet. */
+function datumVan(v) {
+  const t = String(v ?? "").trim();
+  if (/^\d+(\.\d+)?$/.test(t) && +t > 30000) return new Date(Date.UTC(1899, 11, 30) + Math.floor(+t) * 864e5).toISOString().slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t) || /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/.exec(t);
+  return !m ? "" : m[1].length === 4 ? `${m[1]}-${m[2]}-${m[3]}` : `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+}
+function leesOptimiserPlan(rijen, opt) {
+  const kop = h => String(h ?? "").trim();
+  const k = rijen.slice(0, 10).findIndex(r => r.some(c => /^s?rit$/i.test(kop(c))) && r.some(c => /laad-?losplaats (postcode|straat)/i.test(kop(c))));
+  if (k < 0) return null;
+  const ci = re => rijen[k].findIndex(c => re.test(kop(c)));
+  const c = {rit: ci(/^s?rit$/i), pc: ci(/laad-?losplaats postcode|^postcode$/i), plaats: ci(/laad-?losplaats plaats|^plaats$/i), datum: ci(/vroegste laden|^datum$/i)};
+  if (c.pc < 0) throw new Error("Optimiser-export zonder kolom 'Laad-losplaats postcode'.");
+  const skip = new Set(((opt || {}).skip || []).map(String)), per = new Map(), datums = new Set(), fout = [], overgeslagen = new Set();
+  for (const r of rijen.slice(k + 1)) {
+    const rit = kop(r[c.rit]); if (!rit) continue;
+    if (skip.has(rit)) { overgeslagen.add(rit); continue; }
+    const m = /(\d{4})\s*[A-Z]{0,2}\s*$/i.exec(kop(r[c.pc]));
+    if (!m) { fout.push("Rit " + rit + ": geen postcode"); continue; }
+    const d = c.datum >= 0 ? datumVan(r[c.datum]) : ""; if (d) datums.add(d);
+    const wd = d ? (new Date(d + "T12:00:00Z").getUTCDay() + 6) % 7 : -1;
+    const key = rit + "|" + m[1];
+    if (!per.has(key)) per.set(key, {groep: "Rit " + rit, plaats: c.plaats >= 0 ? kop(r[c.plaats]) : "", van: m[1], tot: m[1], pc4: [m[1]], dagen: Array(7).fill(false)});
+    const g = per.get(key); if (wd < 0) g.dagen.fill(true); else g.dagen[wd] = true;
+  }
+  const gebieden = [...per.values()], groepen = [...new Set(gebieden.map(g => g.groep))].sort((a, b) => a.localeCompare(b, "nl", {numeric: true}));
+  return {gebieden, fout, groepen, datums: [...datums].sort(), bron: "optimiser", overgeslagen: [...overgeslagen]};
+}
+
 /** Rijen uit het Excel -> gebieden {groep, plaats, van, tot, pc4[], dagen[7]}. Kolommen op kopnaam. */
-function leesGeogroepen(rijen) {
+function leesGeogroepen(rijen, opt) {
+  const o = leesOptimiserPlan(rijen, opt); if (o) return o;
   const k = rijen.slice(0, 20).findIndex(r => r.some(c => /locatie ?groep|^groep$/i.test(String(c).trim())) && r.some(c => /^van$/i.test(String(c).trim())));
-  if (k < 0) throw new Error("Kolommen niet herkend. Verwacht o.a. 'Locatie groep', 'Omschrijving', 'Van', 'Tot' en de weekdagen.");
+  if (k < 0) throw new Error("Kolommen niet herkend. Kies het geogroepen-Excel ('Locatie groep', 'Omschrijving', 'Van', 'Tot' en de weekdagen) of de optimiser-export ('SRit', 'Laad-losplaats postcode').");
   const kop = rijen[k].map(c => String(c).trim().toLowerCase()), zoek = re => kop.findIndex(c => re.test(c));
   const ci = {groep: zoek(/locatie ?groep|^groep$/), plaats: zoek(/^omschrijving|^plaats/), van: zoek(/^van$/), tot: zoek(/^tot$/), dag: DAGEN.map(d => kop.indexOf(d))};
   const gebieden = [], fout = [];
@@ -106,5 +138,5 @@ function synchronisatie(gebieden, groepen, f) {
   }
   return uit.filter(r => !f || pcIn(f, r.pc4) || tekstIn(f, r.plaats)).sort((a, b) => a.plaats.localeCompare(b.plaats) || a.pc4.localeCompare(b.pc4));
 }
-return {DAGEN, KORT, maakFilter, leesGeogroepen, planDag, synchronisatie, weekdag, actief};
+return {DAGEN, KORT, maakFilter, leesGeogroepen, leesOptimiserPlan, planDag, synchronisatie, weekdag, actief};
 });

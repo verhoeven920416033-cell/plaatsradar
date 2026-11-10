@@ -47,6 +47,7 @@ Knop **Planning** op de site, of `planning.html`. Voor de planners: kies een rij
 - **Download Excel** met beide overzichten.
 
 Meldingen krijgen hun postcodegebied uit de openbare CBS-postcodevlakken (PDOK, maandelijks ververst). Gemeenteblad-meldingen zonder coördinaten staan apart onder *Zonder exacte plek*. Het Excel blijft op je computer; voor de werk-pc is er `Planning-werk.html` (zelfde werkwijze als de routecheck).
+- **Optimiser-export kan ook:** sleep de export uit de optimiser erin in plaats van het geogroepen-Excel. Dan worden de ritten de "diensten" (knoppen *Rit …*), met de postcodegebieden van hun stops op de datum uit *Vroegste laden*. De rijdag springt naar die datum. Alleen rit, postcode, plaats en datum worden gelezen. *Ritten overslaan* staat standaard op 442 en 443.
 - **Filters, tabel en kaart:** zoekveld voor postcode, straat, plaats, dienst of melding (komma = of), dienstknoppen met aantal gebieden (eerste klik kiest alleen die dienst, *Alle* zet alles terug), hinder (standaard hoog + middel), soort, rijdag met één klik (vandaag t/m over 3 dagen) en *Filters wissen*. Tab *Tabel* sorteert op elke kolom. Tab *Kaart* toont de postcodegebieden die op de rijdag gereden worden (blauw) met de hinder erin; klik op een gebied voor de diensten van die dag.
 
 ## Goed om te weten

@@ -66,7 +66,8 @@ td.sam{font-weight:700;color:#1f7a4d}
     </div>
     <div class="row" style="margin-bottom:10px"><span id="stand" class="meta"></span>
       <label class="btn" id="nieuw" hidden>Meldingenbestand kiezen<input type="file" id="meldingen" accept=".json" style="display:none"></label></div>
-    <label class="drop" id="drop"><input type="file" id="bestand" accept=".xlsx"><b>Kies of sleep het geogroepen-Excel hierheen</b><br><span class="meta">Kolommen: Locatie groep, Omschrijving, Van, Tot, Maandag t/m Zondag</span></label>
+    <label class="drop" id="drop"><input type="file" id="bestand" accept=".xlsx"><b>Kies of sleep het geogroepen-Excel of de optimiser-export hierheen</b><br><span class="meta">Geogroepen: Locatie groep, Omschrijving, Van, Tot, Maandag t/m Zondag · Optimiser: SRit, Laad-losplaats postcode/plaats, Vroegste laden</span></label>
+    <div class="row" style="margin-top:10px"><label class="meta">Ritten overslaan (optimiser) <input id="skip" value="442, 443" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;width:160px" aria-label="Ritten overslaan"></label><span class="meta">(komma's ertussen)</span></div>
   </section>
   <div id="uit" hidden>
     <section class="panel geenprint">
@@ -136,8 +137,9 @@ async function leesExcel(f){
   fout(""); await klaar; if (!D) return;
   try {
     if (!/\.xlsx$/i.test(f.name)) throw new Error("Kies een .xlsx-bestand (oud .xls: eerst opslaan als .xlsx).");
-    G = K.leesGeogroepen(await X.lees(await f.arrayBuffer()));
-    if (!G.gebieden.length) throw new Error("Geen postcodegebieden gevonden.");
+    G = K.leesGeogroepen(await X.lees(await f.arrayBuffer()), {skip:$("#skip").value.split(/[,;\s]+/).filter(Boolean)});
+    if (!G.gebieden.length) throw new Error(G.bron === "optimiser" ? "Geen ritten met postcode gevonden (alle ritten overgeslagen?)." : "Geen postcodegebieden gevonden.");
+    if (G.bron === "optimiser") { const vandaag = iso(new Date()), d = G.datums.filter(x => x >= vandaag); if (d.length) $("#datum").value = d[0]; else if (G.datums.length) $("#datum").value = G.datums[G.datums.length - 1]; }
     AAN = new Set(G.groepen); toon();
   } catch (e) { G = null; $("#uit").hidden = true; fout(e.message || "Excel lezen mislukt."); }
 }
@@ -159,7 +161,10 @@ function toon(){
   const wd = K.weekdag(datum), perG = g => new Set(G.gebieden.filter(x => x.groep === g && x.dagen[wd]).flatMap(x => x.pc4)).size;
   const allesAan = AAN.size === G.groepen.length;
   $("#groepen").innerHTML = `<span class="chip ${allesAan?"on":""}" data-g="*">Alle</span>` + G.groepen.map(g => `<span class="chip ${AAN.has(g) && !allesAan?"on":""}" data-g="${esc(g)}" title="postcodegebieden op ${esc(K.DAGEN[wd])}">${esc(g)}<i>${perG(g)}</i></span>`).join("");
-  $("#kop").textContent = (FILTER ? `Filter: ${$("#filter").value.trim()}. ` : "") + `Rijdag ${fmtD(datum)} (${R.dag}), meldingen van ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}.`;
+  $("#kop").textContent = (FILTER ? `Filter: ${$("#filter").value.trim()}. ` : "") + `Rijdag ${fmtD(datum)} (${R.dag}), meldingen van ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}.` +
+    (G.bron === "optimiser" ? ` Bron: optimiser-export, ${G.groepen.length} ritten${G.datums.length ? " op " + G.datums.map(fmtD).join(", ") : ""}${G.overgeslagen.length ? ", overgeslagen: " + G.overgeslagen.join(", ") : ""}.` +
+      (G.datums.length && !G.datums.includes(datum) ? " Let op: de rijdag staat niet in het bestand, dus er rijdt niets." : "") : "");
+  document.querySelector("#groepen").previousElementSibling.textContent = G.bron === "optimiser" ? "Ritten" : "Diensten";
   $("#kpis").innerHTML = [[R.gebieden,"postcodegebieden gereden"],[R.plaatsen.length,"plaatsen met hinder"],[R.meldingen,"meldingen"],[R.hoog,"hoge hinder",1],[S.length,"gebieden samen te voegen"]]
     .map(([n,t,a]) => `<div class="kpi${a?" alert":""}"><b>${n}</b><span>${t}</span></div>`).join("");
   $("#hinder").innerHTML = (R.plaatsen.length ? R.plaatsen.map(p => `<div class="place"><h2>${esc(p.plaats)} <small>${rand(["melding","meldingen"],p.rijen.length)} · ${esc(p.pc4.join(", "))}</small></h2>
