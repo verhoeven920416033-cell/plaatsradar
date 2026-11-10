@@ -79,4 +79,15 @@ assert.deepEqual(ax2.stops.map(s => [s.straat, s.nr, s.postcode, s.plaats, s.rou
 assert.equal(ax2.datum, "2026-11-15");
 assert.ok(!JSON.stringify(ax2).includes("Kluiscode"), "codes mogen niet worden overgenomen");
 assert.equal(K.leesRoutelijst([[it("Iets anders", 10, 10)]]), null);
+// export uit de optimiser: verzonnen gegevens
+const opt = K.leesTabel([
+  ["Kenmerk 1", "Type", "Depot", "SRit", "Laad-losplaats kenmerk", "Laad-losplaats naam", "Laad-losplaats straat", "Laad-losplaats huisnr.", "Laad-losplaats postcode", "Laad-losplaats plaats", "Status", "Waarde (Gewicht)", "Vroegste laden"],
+  ["X1", "afleveren", "Test", "1234", "A1", "Geheime Klant", "Vestdijk", "5", "5611 CA", "EINDHOVEN", "Gepland", "99", "2026-11-12 06:00:00"],
+  ["X2", "afleveren", "Test", "1234", "A1", "Geheime Klant", "Vestdijk", "5", "5611 CA", "EINDHOVEN", "Gepland", "12", "2026-11-12 06:00:00"],
+  ["X3", "ophalen", "Test", "442", "A2", "Ander", "Dorpsstraat", "7", "B 5736 AA", "LIEROP", "Gepland", "1", "46338"],
+], P);
+assert.deepEqual(opt.stops.map(s => [s.route, s.straat, s.nr, s.postcode, s.plaats]), [["Route 1234", "Vestdijk", "5", "5611 CA", "EINDHOVEN"], ["Route 442", "Dorpsstraat", "7", "5736 AA", "LIEROP"]], JSON.stringify(opt));
+assert.deepEqual(opt.datums, ["2026-11-12"]);
+assert.ok(!JSON.stringify(opt).includes("Geheime") && !JSON.stringify(opt).includes("99"), "naam en waarde niet overnemen");
+assert.equal(K.excelDatum(46338), "2026-11-12"); assert.equal(K.excelDatum("12-11-2026"), "2026-11-12");
 console.log("routecheck OK");

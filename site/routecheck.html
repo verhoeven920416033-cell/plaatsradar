@@ -64,7 +64,8 @@ body.huddle>header,body.huddle>main,body.huddle>footer,body.huddle>.toast{displa
       <span id="stand" class="meta"></span>
       <label class="btn" id="nieuw" hidden>Meldingenbestand kiezen<input type="file" id="meldingen" accept=".json" style="display:none"></label>
     </div>
-    <label class="drop" id="drop"><input type="file" id="bestand" multiple accept=".pdf,.xlsx,.csv,.txt"><b>Kies of sleep je routelijsten hierheen</b><br><span class="meta">Meerdere bestanden tegelijk kan. PDF, Excel (.xlsx), CSV of tekst</span></label>
+    <label class="drop" id="drop"><input type="file" id="bestand" multiple accept=".pdf,.xlsx,.csv,.txt"><b>Kies of sleep je routelijsten hierheen</b><br><span class="meta">Routelijsten (PDF) of de Excel-export uit de optimiser. Meerdere bestanden tegelijk kan.</span></label>
+    <div class="row" style="margin-top:10px"><label class="meta">Ritten overslaan <input id="skip" value="442, 443" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;width:160px" aria-label="Ritten overslaan"></label><span class="meta">(komma's ertussen)</span></div>
     <details style="margin-top:10px"><summary class="meta">Of plak de adressen als tekst</summary>
       <textarea id="plak" placeholder="Route 12&#10;Kerkstraat 12, 5611 AB Eindhoven"></textarea>
       <button class="btn" id="plakKnop">Controleer tekst</button></details>
@@ -91,7 +92,7 @@ const K = window.RouteKern, $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const pad = n => String(n).padStart(2,"0"), iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const fmtD = s => { const d = new Date(s.length > 10 ? s : s+"T00:00"); return isNaN(d) ? s : d.toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"}); };
-let NET_DICHT = false, D = null, P = null, GEL = null, OVER = [], LAATST = null, DAT = [];
+let OVERGESLAGEN = [], NET_DICHT = false, D = null, P = null, GEL = null, OVER = [], LAATST = null, DAT = [];
 const mooi = s => /[a-z]/.test(s) ? s : s.toLowerCase().replace(/(^|[\s\-'])([a-zà-ÿ])/g, (m,a,b) => a + b.toUpperCase());
 const fout = t => { const e = $("#fout"); e.hidden = !t; e.textContent = t || ""; };
 const nu = new Date(), over7 = new Date(nu); over7.setDate(over7.getDate()+6);
@@ -156,15 +157,15 @@ async function unzipTekst(buf){
 async function leesXlsx(buf){
   const f = await unzipTekst(buf), xml = t => new DOMParser().parseFromString(t, "application/xml"), tag = (e,n) => [...e.getElementsByTagNameNS("*", n)];
   const ss = f["xl/sharedStrings.xml"] ? tag(xml(f["xl/sharedStrings.xml"]), "si").map(s => tag(s,"t").map(t => t.textContent).join("")) : [];
-  const stops = [], over = [];
+  const stops = [], over = [], dat = new Set();
   for (const k of Object.keys(f).filter(n => /sheet\d+\.xml$/.test(n)).sort()) {
     const rijen = tag(xml(f[k]), "row").map(r => { const u = []; tag(r,"c").forEach(c => {
       const ref = (c.getAttribute("r")||"A").replace(/\d/g,""); let i = 0; for (const ch of ref) i = i*26 + ch.charCodeAt(0)-64;
       const t = c.getAttribute("t"), w = tag(c,"v")[0]?.textContent ?? "";
       u[i-1] = t === "s" ? ss[+w] : t === "inlineStr" ? tag(c,"t").map(x => x.textContent).join("") : w; }); return Array.from(u, x => x ?? ""); });
-    const r = K.leesTabel(rijen, P); stops.push(...r.stops); over.push(...r.overgeslagen);
+    const r = K.leesTabel(rijen, P); stops.push(...r.stops); over.push(...r.overgeslagen); (r.datums || []).forEach(d => dat.add(d));
   }
-  return {stops, overgeslagen:over};
+  return {stops, overgeslagen:over, datums:[...dat]};
 }
 async function leesBestand(f){
   const n = f.name.toLowerCase();
@@ -183,7 +184,11 @@ async function start(fn){
   try {
     const r = await fn();
     if (!r.stops.length) { GEL = null; $("#uit").hidden = true; fout("Geen adressen herkend. Stuur me (zonder echte gegevens) een nagemaakt voorbeeld van de opmaak."); return; }
-    GEL = r.stops; OVER = r.overgeslagen;
+    const skip = new Set($("#skip").value.split(/[,;\s]+/).map(x => x.trim()).filter(Boolean));
+    const weg = r.stops.filter(s => skip.has(s.route.replace(/^Route\s+/i, "")));
+    GEL = r.stops.filter(s => !weg.includes(s)); OVER = r.overgeslagen;
+    if (!GEL.length) { $("#uit").hidden = true; fout("Alle ritten zijn overgeslagen. Pas 'Ritten overslaan' aan."); return; }
+    OVERGESLAGEN = [...new Set(weg.map(s => s.route.replace(/^Route\s+/i, "")))];
     const vandaag = iso(new Date()), d = (r.datums || []).filter(x => x >= vandaag).sort();
     if (d.length) { $("#van").value = d[0]; $("#tot").value = d[d.length-1]; }
     DAT = r.datums || []; toon();
@@ -191,7 +196,7 @@ async function start(fn){
 }
 async function leesAlle(files){  // meerdere routelijsten tegelijk; misluktes worden gemeld, de rest gaat door
   const stops = [], over = [], datums = [], mis = [];
-  for (const f of files) { try { const r = await leesBestand(f); stops.push(...r.stops); over.push(...r.overgeslagen); if (r.datum) datums.push(r.datum); } catch (e) { mis.push(`${f.name}: ${e.message}`); } }
+  for (const f of files) { try { const r = await leesBestand(f); stops.push(...r.stops); over.push(...r.overgeslagen); if (r.datum) datums.push(r.datum); (r.datums || []).forEach(d => datums.push(d)); } catch (e) { mis.push(`${f.name}: ${e.message}`); } }
   if (mis.length) setTimeout(() => fout("Niet gelezen: " + mis.join(" · ")), 0);
   return {stops, overgeslagen:over, datums};
 }
@@ -218,7 +223,7 @@ function toon(){
     ${met.map(p => `<h3 class="pk">${esc(mooi(p.plaats))}</h3>${p.hits.map(hitHtml).join("")}`).join("")}
     ${!met.length ? '<div class="empty">Geen problemen bij de stops in deze periode.</div>' : ""}</div>`; }).join("");
   $("#plaatsen").innerHTML = "";
-  $("#ctl").innerHTML = `<p class="meta">${rand(["adres","adressen"],GEL.length)} gelezen, ${OVER.length} regels overgeslagen.${v.onbekend.length?` Niet herkende plaatsen (buiten de drie provincies of verkeerd gelezen): ${esc(v.onbekend.map(([p,n]) => `${p} (${n})`).join(", "))}.`:""}</p>
+  $("#ctl").innerHTML = `<p class="meta">${rand(["adres","adressen"],GEL.length)} gelezen, ${OVER.length} regels overgeslagen.${OVERGESLAGEN.length?` Ritten niet meegenomen: ${esc(OVERGESLAGEN.join(", "))}.`:""}${v.onbekend.length?` Niet herkende plaatsen (buiten de drie provincies of verkeerd gelezen): ${esc(v.onbekend.map(([p,n]) => `${p} (${n})`).join(", "))}.`:""}</p>
     <table><tr><th>Route</th><th>Straat</th><th>Nr</th><th>Postcode</th><th>Plaats</th></tr>${GEL.slice(0,400).map(s => `<tr><td>${esc(s.route)}</td><td>${esc(s.straat)}</td><td>${esc(s.nr)}</td><td>${esc(s.postcode)}</td><td>${esc(s.plaats)}</td></tr>`).join("")}</table>
     ${GEL.length>400?`<p class="meta">+ ${GEL.length-400} meer</p>`:""}
     ${OVER.length?`<p class="meta"><b>Overgeslagen:</b><br>${OVER.slice(0,40).map(esc).join("<br>")}</p>`:""}`;

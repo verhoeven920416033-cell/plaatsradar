@@ -103,7 +103,34 @@ function leesRegels(regels, plaatsen) {
 
 const KOP = {straat:/^(straat|straatnaam|adres|address|bezoekadres|afleveradres|street|locatie ?adres)/i, nr:/^(huisn|nr$|nummer$)/i, plaats:/^(plaats|woonplaats|stad|city|gemeente|vestigingsplaats)/i, postcode:/^(postcode|zip)/i, route:/^(route|rit|ronde|tour)/i};
 /** Tabellen (CSV/Excel): kolommen op kopnaam, anders regel voor regel. Klantnamen e.d. worden niet gebruikt. */
+/** Export uit de route-optimiser: kolommen SRit + Laad-losplaats straat/huisnr./postcode/plaats (+ Vroegste laden).
+    Alleen rit, adres en datum worden gelezen; naam, waarde, kwalificaties en tijden niet. */
+const OPT = {route:/^s?rit$/i, straat:/straat$/i, nr:/huisn/i, postcode:/postcode$/i, plaats:/(?:^|\s)plaats$/i, datum:/vroegste laden|^datum$/i};
+function excelDatum(v) {
+  const t = String(v ?? "").trim();
+  if (/^\d+(\.\d+)?$/.test(t) && +t > 30000) { const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(+t) * 864e5); return d.toISOString().slice(0, 10); }
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t) || /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/.exec(t);
+  if (!m) return "";
+  return m[1].length === 4 ? `${m[1]}-${m[2]}-${m[3]}` : `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+}
+function leesOptimiser(rijen) {
+  const k = rijen.slice(0, 10).findIndex(r => r.some(c => OPT.route.test(String(c).trim())) && r.some(c => /laad-?losplaats straat/i.test(String(c))));
+  if (k < 0) return null;
+  const col = {}; rijen[k].forEach((c, i) => { const h = String(c).trim(); for (const n in OPT) if (col[n] === undefined && OPT[n].test(h)) col[n] = i; });
+  const stops = [], datums = new Set(), gezien = new Set();
+  for (const r of rijen.slice(k + 1)) {
+    const v = n => col[n] === undefined ? "" : String(r[col[n]] ?? "").trim();
+    const rit = v("route"), straat = v("straat");
+    if (!rit || !straat) continue;
+    const d = excelDatum(v("datum")); if (d) datums.add(d);
+    const st = {straat, nr: v("nr"), postcode: v("postcode").replace(/^[A-Z]\s+/, ""), plaats: v("plaats"), route: "Route " + rit, bron: ""};
+    const key = [st.route, kern(st.straat), st.nr, st.postcode].join("|");
+    if (!gezien.has(key)) { gezien.add(key); stops.push(st); }
+  }
+  return {stops, overgeslagen: [], datums: [...datums].sort()};
+}
 function leesTabel(rijen, plaatsen) {
+  const opt = leesOptimiser(rijen); if (opt) return opt;
   const k = rijen.slice(0, 25).findIndex(r => r.some(c => KOP.straat.test(String(c).trim())) && r.some(c => KOP.plaats.test(String(c).trim()) || KOP.postcode.test(String(c).trim())));
   if (k < 0) return leesRegels(rijen.map(r => r.map(c => String(c ?? "").trim()).filter(Boolean).join(" | ")), plaatsen);
   const col = {}; rijen[k].forEach((c, i) => { for (const n in KOP) if (col[n] === undefined && KOP[n].test(String(c).trim())) col[n] = i; });
@@ -211,5 +238,5 @@ function vergelijk(stops, items, plaatsen, opt) {
   }
   return {routes:[...routes.values()], onbekend:[...onbekend], treffers};
 }
-return {norm, kern, dist, maakPlaatsen, leesRegel, leesRegels, plaatsVan, leesTabel, leesRoutelijst, csvRijen, pdfRegels, actief, vergelijk};
+return {norm, kern, dist, maakPlaatsen, leesRegel, leesRegels, plaatsVan, leesOptimiser, excelDatum, leesTabel, leesRoutelijst, csvRijen, pdfRegels, actief, vergelijk};
 });
