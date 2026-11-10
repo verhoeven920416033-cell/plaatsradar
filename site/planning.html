@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--CSP--><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' blob:; connect-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><!--/CSP-->
+<meta name="referrer" content="no-referrer">
+<title>PlaatsRadar Planning</title>
+<style>
+:root{--navy:#001f3f;--navy2:#003366;--red:#c8102e;--bg:#f3f5f8;--card:#fff;--ink:#1a2330;--mut:#5b6878;--line:#dde3ea}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:16px 20px 14px;border-bottom:4px solid var(--red)}
+header h1{margin:0;font-size:22px}header p{margin:3px 0 0;opacity:.85;font-size:13px}header a{color:#fff}
+main{max-width:1050px;margin:0 auto;padding:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.veilig{border-left:4px solid #1f7a4d}.waarschuw{border-left:4px solid var(--red)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.lbl{font-size:12px;font-weight:700;color:var(--navy2);text-transform:uppercase;letter-spacing:.4px}
+input[type=date],textarea{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
+textarea{width:100%;min-height:90px;margin-top:6px}
+.btn{border:0;border-radius:8px;padding:8px 14px;font:600 13px system-ui,sans-serif;cursor:pointer;background:#e8eef6;color:var(--navy)}.btn.pri{background:var(--red);color:#fff}
+.drop{display:block;border:2px dashed #b9c4d0;border-radius:10px;padding:22px;text-align:center;cursor:pointer;background:#fafbfd}.drop.on{border-color:var(--navy);background:#eef2f7}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;min-width:110px}
+.kpi b{display:block;font-size:22px;color:var(--navy)}.kpi span{font-size:12px;color:var(--mut)}.kpi.alert b{color:var(--red)}
+.place{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden;break-inside:avoid-page}
+.place h2{margin:0;padding:9px 14px;font-size:17px;background:#eef2f7;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.place h2 small{font-weight:500;color:var(--mut);font-size:12px}
+.item{display:grid;grid-template-columns:190px 1fr auto;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0}
+.ttl{font-weight:600}.meta{font-size:12.5px;color:var(--mut)}.meta a{color:var(--navy2)}.st{font-weight:600;color:var(--navy);font-size:13.5px}.st small{display:block;font-weight:400;color:var(--mut)}
+.h{font-size:11px;font-weight:700;border-radius:4px;padding:3px 8px;white-space:nowrap;align-self:start}.h-hoog{background:var(--red);color:#fff}.h-middel{background:#f3b23c;color:#3a2600}.h-laag{background:#e3e8ee;color:#3c4856}
+.ctl{display:inline-block;font-size:10.5px;font-weight:700;border:1px solid #d9a441;color:#7a5200;border-radius:4px;padding:0 5px;margin-left:6px}
+.empty{padding:12px 14px;color:var(--mut)}
+.pk{margin:0;padding:7px 14px;font-size:14px;background:#f7f9fb;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--navy2)}.pk small{font-weight:400;color:var(--mut)}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)}
+details summary{cursor:pointer;font-weight:600}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:9px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}.toast.on{opacity:1}
+footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color:var(--mut)}
+@media(max-width:700px){.item{grid-template-columns:1fr auto}.item .st{grid-column:1/-1}}
+@media print{header{background:none;color:#000;border-bottom:2px solid #000}header a,.geenprint,.toast,footer{display:none!important}body{background:#fff}.place,.kpi{border-color:#999}.item{font-size:12px;padding:5px 10px}}
+
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;user-select:none}.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.tabs{display:flex;gap:6px;margin-bottom:10px}.tab{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 14px;font:600 13px system-ui,sans-serif;cursor:pointer}.tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.grp{display:inline-block;font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin:0 4px 2px 0;color:var(--navy2);background:#f4f7fb}
+td.sam{font-weight:700;color:#1f7a4d}
+</style>
+</head>
+<body>
+<header>
+  <h1>Planning vooruit</h1>
+  <p id="sub">Hinder per postcodegebied op de rijdag, uit je geogroepen — <a href="index.html" class="geenprint">PlaatsRadar</a> · <a href="routecheck.html" class="geenprint">Routecheck</a> · <a href="planning-offline.html" download="Planning-werk.html" class="geenprint">versie voor werk-pc downloaden</a></p>
+</header>
+<main>
+  <section class="panel veilig geenprint">
+    <b>Je geogroepen blijven op deze computer.</b> Het Excel-bestand wordt alleen in deze browser gelezen, niet verstuurd en niet bewaard. Nadat de meldingen zijn opgehaald gaat het netwerk van deze pagina dicht, vóór je een bestand kiest.
+  </section>
+  <div id="fout" class="panel waarschuw" hidden></div>
+  <section class="panel geenprint">
+    <div class="row" style="margin-bottom:10px">
+      <span class="lbl">Rijdag</span><input type="date" id="datum" aria-label="Rijdag">
+      <button class="btn" data-plus="1">Morgen</button><button class="btn" data-plus="2">Over 2 dagen</button><button class="btn" data-plus="3">Over 3 dagen</button>
+      <span id="dagnaam" class="meta"></span>
+    </div>
+    <div class="row" style="margin-bottom:10px"><span id="stand" class="meta"></span>
+      <label class="btn" id="nieuw" hidden>Meldingenbestand kiezen<input type="file" id="meldingen" accept=".json" style="display:none"></label></div>
+    <label class="drop" id="drop"><input type="file" id="bestand" accept=".xlsx"><b>Kies of sleep het geogroepen-Excel hierheen</b><br><span class="meta">Kolommen: Locatie groep, Omschrijving, Van, Tot, Maandag t/m Zondag</span></label>
+  </section>
+  <div id="uit" hidden>
+    <section class="panel geenprint">
+      <div class="row" style="margin-bottom:8px"><span class="lbl">Diensten</span><span id="groepen" class="row"></span></div>
+      <div class="row"><span class="chip" id="fLaag">Incl. lage hinder</span><span style="flex:1"></span>
+        <button class="btn pri" id="excel">Download Excel</button><button class="btn" id="print">Print</button><button class="btn" id="wis">Wis</button></div>
+    </section>
+    <p class="meta"><b>Vertrouwelijk: dit overzicht bevat planningsgegevens.</b> <span id="kop"></span></p>
+    <div class="kpis" id="kpis"></div>
+    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Hinder op de rijdag</button><button class="tab" data-t="sync">Diensten samenvoegen</button></div>
+    <div id="hinder"></div>
+    <div id="sync" hidden></div>
+  </div>
+</main>
+<footer>Meldingen: NDW en Gemeenteblad (CC0). Postcodegebieden: CBS/PDOK (CC-BY). Plaatsnamen: PDOK (CC0).</footer>
+<div class="toast" id="toast"></div>
+<script src="xlsx.js"></script>
+<script src="plan-kern.js"></script>
+<script>
+(() => {
+"use strict";
+const K = window.PlanKern, X = window.Xlsx, $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2,"0"), iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fmtD = s => { const d = new Date(s.length > 10 ? s : s+"T00:00"); return isNaN(d) ? s : d.toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"}); };
+const rand = (t, n) => `${n} ${n===1?t[0]:t[1]}`;
+let NET_DICHT = false, D = null, WP = [], G = null, AAN = null, LAAG = false, TAB = "hinder", R = null;
+const fout = t => { const e = $("#fout"); e.hidden = !t; e.textContent = t || ""; };
+const plusDag = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
+$("#datum").value = plusDag(2);
+
+function sluitNetwerk(){ const m = document.createElement("meta"); m.httpEquiv = "Content-Security-Policy"; m.content = "connect-src 'none'"; document.head.appendChild(m); NET_DICHT = true; }
+function zetStand(bron){
+  const uur = (Date.now() - new Date(D.gegenereerd)) / 36e5, pc = D.items.filter(x => x.pc4).length;
+  $("#stand").innerHTML = `Meldingen van ${esc(new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))} · ${D.items.length} meldingen, ${pc} met postcode · ${esc(bron)}` +
+    (uur > 24 ? ` · <b style="color:var(--red)">${Math.round(uur/24)} dag(en) oud</b>` : "") + ` · netwerk ${NET_DICHT ? "dicht" : "open"}` +
+    (pc ? "" : ' · <b style="color:var(--red)">postcodes ontbreken nog</b>');
+  $("#nieuw").hidden = !window.PR_DATA;
+}
+async function laad(){
+  let bron = "live";
+  if (window.PR_DATA) {
+    D = window.PR_DATA; WP = window.PR_WP || []; bron = "ingebouwd";
+    if (window.PR_LIVE) try { const r = await fetch(window.PR_LIVE + "?t=" + Date.now(), {credentials:"omit", referrerPolicy:"no-referrer", signal:AbortSignal.timeout(7000)}); if (r.ok) { D = await r.json(); bron = "live"; } } catch {}
+  } else {
+    D = await (await fetch("data.json?t="+Date.now())).json();
+    try { WP = await (await fetch("woonplaatsen.json?t="+Date.now())).json(); } catch {}
+  }
+  sluitNetwerk(); zetStand(bron);
+}
+const klaar = laad().catch(e => fout("Meldingen laden mislukt: " + e.message));
+
+async function leesExcel(f){
+  fout(""); await klaar; if (!D) return;
+  try {
+    if (!/\.xlsx$/i.test(f.name)) throw new Error("Kies een .xlsx-bestand (oud .xls: eerst opslaan als .xlsx).");
+    G = K.leesGeogroepen(await X.lees(await f.arrayBuffer()));
+    if (!G.gebieden.length) throw new Error("Geen postcodegebieden gevonden.");
+    AAN = new Set(G.groepen); toon();
+  } catch (e) { G = null; $("#uit").hidden = true; fout(e.message || "Excel lezen mislukt."); }
+}
+const bron = x => `${esc(x.label)} · ${esc(wanneer(x))} · ${esc(x.bron)}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">bron</a>`:""}`;
+function wanneer(x){ const d = $("#datum").value, p = x.perioden && x.perioden.find(([s,e]) => s.slice(0,10) <= d && e.slice(0,10) >= d);
+  const [s, e] = p || [x.start, x.eind]; if (!s) return "datum onbekend";
+  const t = s.length > 10 && s.slice(0,10) === d ? " " + s.slice(11,16) + (e && e.slice(0,10) === d ? "–" + e.slice(11,16) : "") : "";
+  return fmtD(s) + t + (e && e.slice(0,10) !== s.slice(0,10) ? " t/m " + fmtD(e) : ""); }
+function toon(){
+  const datum = $("#datum").value; if (!datum || !G) return;
+  $("#dagnaam").textContent = K.DAGEN[K.weekdag(datum)];
+  R = K.planDag(G.gebieden, D.items, {datum, groepen:AAN, laag:LAAG, woonplaatsen:WP});
+  const S = K.synchronisatie(G.gebieden, AAN);
+  $("#groepen").innerHTML = G.groepen.map(g => `<span class="chip ${AAN.has(g)?"on":""}" data-g="${esc(g)}">${esc(g)}</span>`).join("");
+  $("#fLaag").classList.toggle("on", LAAG);
+  $("#kop").textContent = `Rijdag ${fmtD(datum)} (${R.dag}), meldingen van ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}.`;
+  $("#kpis").innerHTML = [[R.gebieden,"postcodegebieden gereden"],[R.plaatsen.length,"plaatsen met hinder"],[R.meldingen,"meldingen"],[R.hoog,"hoge hinder",1],[S.length,"gebieden samen te voegen"]]
+    .map(([n,t,a]) => `<div class="kpi${a?" alert":""}"><b>${n}</b><span>${t}</span></div>`).join("");
+  $("#hinder").innerHTML = (R.plaatsen.length ? R.plaatsen.map(p => `<div class="place"><h2>${esc(p.plaats)} <small>${rand(["melding","meldingen"],p.rijen.length)} · ${esc(p.pc4.join(", "))}</small></h2>
+      <div class="empty" style="padding:8px 14px"><b>Rijden op ${esc(R.dag)}:</b> ${p.groepen.map(g => `<span class="grp">${esc(g)}</span>`).join("")}</div>
+      ${p.rijen.map(r => `<div class="item"><div class="st">${esc(r.pc4.join(", "))}<small>${r.groepen.map(esc).join(", ")}</small></div><div><div class="ttl">${esc(r.x.titel)}</div><div class="meta">${bron(r.x)}</div></div><span class="h h-${r.x.hinder}">${r.x.hinder}</span></div>`).join("")}</div>`).join("")
+    : `<div class="panel">Geen hinder in de gereden postcodegebieden op ${esc(fmtD(datum))}.</div>`)
+    + (R.zonder.length ? `<div class="place"><h2>Zonder exacte plek <small>gemeente-breed, controleren</small></h2>${R.zonder.map(z => z.rijen.map(x => `<div class="item"><div class="st">${esc(z.gemeente)}<small>${esc(z.plaatsen.slice(0,4).join(", "))}${z.plaatsen.length>4?" e.a.":""}</small></div><div><div class="ttl">${esc(x.titel)}</div><div class="meta">${bron(x)}</div></div><span class="h h-${x.hinder}">${x.hinder}</span></div>`).join("")).join("")}</div>` : "");
+  const gs = G.groepen.filter(g => AAN.has(g));
+  $("#sync").innerHTML = S.length ? `<div class="panel"><p class="meta">Postcodegebieden waar de gekozen diensten op verschillende dagen rijden. "Samen" = dagen waarop ze er allemaal al komen.</p>
+    <div style="overflow-x:auto"><table><tr><th>Plaats</th><th>PC4</th>${gs.map(g => `<th>${esc(g)}</th>`).join("")}<th>Samen</th></tr>${S.map(s => `<tr><td>${esc(s.plaats)}</td><td>${esc(s.pc4)}</td>${gs.map(g => `<td>${esc(s.diensten[g] ?? "")}</td>`).join("")}<td class="sam">${esc(s.samen)}</td></tr>`).join("")}</table></div></div>`
+    : '<div class="panel">Alle gekozen diensten rijden in dezelfde gebieden op dezelfde dagen.</div>';
+  $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync";
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.t === TAB));
+  $("#uit").hidden = false; R.sync = S; R.gs = gs; R.datum = datum;
+}
+function excel(){
+  const h = [["Rijdag","Plaats","Postcode (PC4)","Diensten die dag","Hinder","Soort","Melding","Wanneer","Bron","Link"]];
+  R.plaatsen.forEach(p => p.rijen.forEach(r => h.push([R.datum, p.plaats, r.pc4.join(", "), r.groepen.join(", "), r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.x.bron, r.x.url || ""])));
+  R.zonder.forEach(z => z.rijen.forEach(x => h.push([R.datum, z.plaatsen.join(", "), "", "gemeente-breed", x.hinder, x.label, x.titel, wanneer(x), x.bron, x.url || ""])));
+  const s = [["Plaats","PC4", ...R.gs, "Samen"], ...R.sync.map(r => [r.plaats, r.pc4, ...R.gs.map(g => r.diensten[g] ?? ""), r.samen])];
+  const a = document.createElement("a"); a.href = URL.createObjectURL(X.schrijf([{naam:"Hinder " + R.datum, rijen:h}, {naam:"Samenvoegen", rijen:s}]));
+  a.download = `planning-${R.datum}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+$("#bestand").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) leesExcel(f); });
+const drop = $("#drop");
+["dragover","dragenter"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("on"); }));
+["dragleave","drop"].forEach(t => drop.addEventListener(t, () => drop.classList.remove("on")));
+drop.addEventListener("drop", e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) leesExcel(f); });
+document.querySelectorAll("[data-plus]").forEach(b => b.addEventListener("click", () => { $("#datum").value = plusDag(+b.dataset.plus); toon(); }));
+$("#datum").addEventListener("change", toon);
+$("#groepen").addEventListener("click", e => { const g = e.target.dataset.g; if (!g) return; AAN.has(g) ? AAN.delete(g) : AAN.add(g); if (!AAN.size) AAN = new Set(G.groepen); toon(); });
+$("#fLaag").addEventListener("click", () => { LAAG = !LAAG; toon(); });
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => { TAB = t.dataset.t; toon(); }));
+$("#excel").addEventListener("click", excel);
+$("#print").addEventListener("click", () => window.print());
+$("#wis").addEventListener("click", () => { G = null; R = null; $("#uit").hidden = true; ["hinder","sync","kpis"].forEach(i => $("#"+i).innerHTML = ""); fout(""); });
+$("#meldingen").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try { const d = JSON.parse(await f.text()); if (!Array.isArray(d.items) || !d.gegenereerd) throw 0; D = d; zetStand("uit bestand"); fout(""); if (G) toon(); }
+  catch { fout("Dit is geen geldig meldingenbestand (data.json)."); } });
+})();
+</script>
+</body>
+</html>

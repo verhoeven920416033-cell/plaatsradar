@@ -110,6 +110,7 @@ class Cache:
         self.d.setdefault("gmb", {})
         self.d.setdefault("sru", {})
         self.d.setdefault("wp", {})
+        self.d.setdefault("pc4", {})
         if self.d.get("v") != 3:  # oude cache had geen omschrijving/afsluiting-info
             self.d.update(v=3, gmb={}, sru={})
 
@@ -415,6 +416,7 @@ def parse_ndw(stream, gemeenten, now, horizon_end, stats):
                 "info": links[0] if links else "",
                 "types": sorted(t for t in types | mgmt if t),
                 "lat": round(mid[0], 5), "lon": round(mid[1], 5),
+                "_pts": [pts[i] for i in sorted({0, len(pts) // 4, len(pts) // 2, 3 * len(pts) // 4, len(pts) - 1})],
             })
         finally:
             elem.clear()
@@ -458,6 +460,7 @@ def finish_ndw(items):
             continue
         g["ramen"] = g["ramen"] + it["ramen"]
         g["uitleg"] = uniek(g["uitleg"] + it["uitleg"])
+        g["_pts"] = g["_pts"] + it["_pts"]
         g["eind"] = None if g["eind"] is None or it["eind"] is None else max(g["eind"], it["eind"])
         if rang[it["hinder"]] < rang[g["hinder"]]:
             g["hinder"] = it["hinder"]
@@ -474,7 +477,7 @@ def finish_ndw(items):
             "toelichting": " · ".join(g["uitleg"])[:300],
             "bron": g["bron"] or "NDW", "bron_type": "NDW", "info": g["info"],
             "url": f"https://www.openstreetmap.org/?mlat={g['lat']}&mlon={g['lon']}#map=17/{g['lat']}/{g['lon']}",
-            "lat": g["lat"], "lon": g["lon"],
+            "lat": g["lat"], "lon": g["lon"], "_pts": g["_pts"],
         })
     return res
 
@@ -822,6 +825,89 @@ def build_markets(cfg, today: dt.date, horizon_end: dt.date):
     return items
 
 
+# ---------------------------------------------------------------- postcodegebieden (voor planning met geogroepen)
+PC4_WFS = "https://service.pdok.nl/cbs/postcode4/{jaar}/wfs/v1_0"
+
+
+def pc4_vlakken(cache: Cache, gemeenten, nu: float, ttl_dagen=60):
+    """CBS-postcode4-vlakken (openbaar, PDOK), vereenvoudigd en alleen rond de drie provincies. Maandelijks verversen."""
+    w = cache.d["pc4"]
+    if w.get("vlakken") and nu - w.get("t", 0) < ttl_dagen * 86400:
+        return w["vlakken"]
+    la0, la1 = min(g["lat"] for g in gemeenten) - 0.25, max(g["lat"] for g in gemeenten) + 0.25
+    lo0, lo1 = min(g["lon"] for g in gemeenten) - 0.35, max(g["lon"] for g in gemeenten) + 0.35
+    for jaar in (dt.date.today().year - 1, dt.date.today().year - 2, 2024):
+        vlakken = []
+        try:
+            start = 0
+            while True:
+                q = urllib.parse.urlencode({"service": "WFS", "version": "2.0.0", "request": "GetFeature", "typeNames": "postcode4:postcode4",
+                                            "outputFormat": "application/json", "srsName": "EPSG:4326", "count": 1000, "startIndex": start})
+                fc = json.loads(http_get(f"{PC4_WFS.format(jaar=jaar)}?{q}", timeout=120))
+                feats = fc.get("features") or []
+                for f in feats:
+                    g = f.get("geometry") or {}
+                    polys = g.get("coordinates") or []
+                    if g.get("type") == "Polygon":
+                        polys = [polys]
+                    ringen = []
+                    for poly in polys:
+                        for ring in poly:  # gaten tellen mee in de pariteitstest
+                            stap = max(1, len(ring) // 150)
+                            ringen.append([[round(x, 5), round(y, 5)] for x, y in ring[::stap]])
+                    pts = [p for r in ringen for p in r]
+                    if not pts:
+                        continue
+                    bb = [min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts)]
+                    if bb[2] < lo0 or bb[0] > lo1 or bb[3] < la0 or bb[1] > la1:
+                        continue
+                    vlakken.append({"pc4": str(f.get("properties", {}).get("postcode", "")).zfill(4), "bb": bb, "r": ringen})
+                if len(feats) < 1000:
+                    break
+                start += 1000
+            if len(vlakken) > 500:
+                cache.d["pc4"] = {"t": nu, "jaar": jaar, "vlakken": vlakken}
+                log(f"  postcodegebieden {jaar}: {len(vlakken)}")
+                return vlakken
+        except Exception as e:
+            log(f"  postcodegebieden {jaar} FOUT", str(e)[:160])
+    return w.get("vlakken") or []
+
+
+def in_vlak(x, y, ringen):
+    binnen = False
+    for r in ringen:
+        j = len(r) - 1
+        for i in range(len(r)):
+            xi, yi = r[i]
+            xj, yj = r[j]
+            if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi + 1e-15) + xi:
+                binnen = not binnen
+            j = i
+    return binnen
+
+
+def ken_pc4(items, vlakken):
+    """Zet per melding de postcodegebieden (4 cijfers) waar hij ligt. Voor de planning op geogroepen."""
+    if not vlakken:
+        return 0
+    n = 0
+    for it in items:
+        pts = it.pop("_pts", None) or ([(it["lat"], it["lon"])] if it.get("lat") else [])
+        gevonden = []
+        for la, lo in pts:
+            for v in vlakken:
+                b = v["bb"]
+                if b[0] <= lo <= b[2] and b[1] <= la <= b[3] and in_vlak(lo, la, v["r"]):
+                    if v["pc4"] not in gevonden:
+                        gevonden.append(v["pc4"])
+                    break
+        if gevonden:
+            it["pc4"] = gevonden[:8]
+            n += 1
+    return n
+
+
 # ---------------------------------------------------------------- woonplaatsen (voor routecheck)
 def woonplaatsen(uit: Path, cache: Cache, nu: float, ttl_dagen=30):
     """Openbare plaatsenlijst, zodat de routecheck in de browser plaatsen kan herkennen zonder iets te versturen."""
@@ -900,6 +986,13 @@ def main():
 
     # 3. Markten
     items += build_markets(cfg, today, horizon_end)
+
+    # 4. Postcodegebieden
+    vlakken = [] if a.geen_gemeenteblad else pc4_vlakken(cache, plaatsen, time.time())
+    status["postcodes"] = {"ok": bool(vlakken), "met_pc4": ken_pc4(items, vlakken)}
+    for it in items:
+        it.pop("_pts", None)
+    log(f"  postcodes: {status['postcodes']}")
 
     order = {"hoog": 0, "middel": 1, "laag": 2, "geen": 3}
     items.sort(key=lambda x: (x["plaats"], order.get(x["hinder"], 9), x["start"] or "0"))

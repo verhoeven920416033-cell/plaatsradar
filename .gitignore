@@ -9,3 +9,4 @@ __pycache__/
 *.csv
 site/woonplaatsen.json
 site/routecheck-offline.html
+site/planning-offline.html

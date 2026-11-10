@@ -50,3 +50,14 @@ r = O.merge_periods([(now, now + dt.timedelta(hours=2)), (now + dt.timedelta(hou
                      (now + dt.timedelta(days=1), now + dt.timedelta(days=2))])
 assert len(r) == 2 and r[0][1] == now + dt.timedelta(hours=3), r
 print("vensters OK")
+
+# postcodegebied: punt-in-vlak, ook met gat
+vl = [{"pc4": "5611", "bb": [5.0, 51.0, 6.0, 52.0], "r": [[[5.0, 51.0], [6.0, 51.0], [6.0, 52.0], [5.0, 52.0], [5.0, 51.0]],
+                                                     [[5.4, 51.4], [5.6, 51.4], [5.6, 51.6], [5.4, 51.6], [5.4, 51.4]]]},
+      {"pc4": "5612", "bb": [5.4, 51.4, 5.6, 51.6], "r": [[[5.4, 51.4], [5.6, 51.4], [5.6, 51.6], [5.4, 51.6], [5.4, 51.4]]]}]
+its = [{"lat": 51.2, "lon": 5.2}, {"lat": 51.5, "lon": 5.5}, {"lat": 53.0, "lon": 5.5}, {"_pts": [(51.2, 5.2), (51.5, 5.5)], "lat": 51.3, "lon": 5.3}]
+assert O.ken_pc4(its, vl) == 3
+assert [i.get("pc4") for i in its] == [["5611"], ["5612"], None, ["5611", "5612"]], its
+assert all("_pts" not in i for i in its)
+assert "_pts" in O.finish_ndw(ruw)[0]
+print("postcodes OK")

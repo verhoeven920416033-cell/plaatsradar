@@ -35,7 +35,16 @@ Knop **Routecheck** op de site, of `routecheck.html`. Kies een of meer routelijs
 - Een gescande PDF (afbeelding) kan niet gelezen worden.
 - Vanuit Dynamics: printbestemming **Bestand**, bestandsindeling **PDF** of **Tekst (UTF-8)**, geen RTF of HTML.
 
+## Planning vooruit (geogroepen)
+Knop **Planning** op de site, of `planning.html`. Voor de planners: kies een rijdag (standaard over 2 dagen) en sleep het geogroepen-Excel erin (kolommen *Locatie groep, Omschrijving, Van, Tot, Maandag … Zondag* met Ja/Nee). Je ziet:
+- **Hinder op de rijdag:** per plaats de meldingen die die dag actief zijn in postcodegebieden (4 cijfers) die dan gereden worden, met welke diensten er komen. Fiets-/voetpaden, markten en meldingen zonder datum tellen niet; lage hinder staat standaard uit.
+- **Diensten samenvoegen:** postcodegebieden waar de gekozen diensten op verschillende dagen rijden, met de dagen waarop ze er al samen komen.
+- **Download Excel** met beide overzichten.
+
+Meldingen krijgen hun postcodegebied uit de openbare CBS-postcodevlakken (PDOK, maandelijks ververst). Gemeenteblad-meldingen zonder coördinaten staan apart onder *Zonder exacte plek*. Het Excel blijft op je computer; voor de werk-pc is er `Planning-werk.html` (zelfde werkwijze als de routecheck).
+
 ## Goed om te weten
+
 - **GitHub zet geplande taken na 60 dagen zonder activiteit in de repo stil.** Je krijgt daar een mail over. Klik dan in Actions op **Enable workflow**, of doe af en toe een kleine wijziging in `config.json`.
 - Gemeenteblad-publicaties zijn vergunningen en besluiten. De datum van het evenement wordt uit de titel of de tekst gehaald (o.a. `Datum evenement:` en `Omschrijving:`). Lukt dat niet, dan staat er "datum onbekend" en wordt de melding nog 3 weken na publicatie getoond. Ingetrokken, geweigerde en ontwerp-publicaties worden overgeslagen; aanvraag + besluit van hetzelfde evenement worden één regel.
 - **Hinder**: *hoog* = weg dicht voor auto's op een hoofdroute of met NDW-hinderklasse 2+, of een op-/afrit dicht, of een verkeersbesluit met afsluitingen. *middel* = weg dicht in een woonstraat of rijstrookbeperking. *laag* = snelheidsbeperking of fiets-/voetpad. Fiets-/voetpaden staan standaard uit (knop **Incl. fiets-/voetpaden**).
