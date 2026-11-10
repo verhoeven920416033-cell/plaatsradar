@@ -31,6 +31,7 @@ Knop **Routecheck** op de site, of `routecheck.html`. Kies een of meer routelijs
 
 - **Routelijsten blijven op je computer.** Ze worden in de browser gelezen, niet verstuurd en niet bewaard. Een Content-Security-Policy op de pagina blokkeert verkeer naar andere sites. Zet routelijsten **nooit** in deze publieke repo; `*.pdf`, `*.xlsx`, `*.xls` en `*.csv` staan in `.gitignore`.
 - **Werk-pc:** download via de routecheck *versie voor werk-pc* (`Routecheck-werk.html`). Eén bestand, geen installatie: dubbelklikken opent het in de browser. Bij openen haalt het verse meldingen op als die site bereikbaar is, anders gebruikt het de ingebouwde meldingen van de downloaddag of kies je een `data.json`. Daarna gaat het netwerk van de pagina dicht, vóór je een routelijst kiest.
+- **Huddle-print:** één A4 (liggend) voor de Daily Huddle: per route alleen hoge en middel hinder bij de stops, met tijden op de dag en een lege kolom *Actie* om met de hand in te vullen, plus afvinkvakken om na de dienst in te leveren. Kies één dag als periode voor tijden per dag.
 - De vergelijking werkt op straatnaam: een afsluiting om de hoek of op de weg ernaartoe valt erbuiten. *Controleren* = zelfde straatnaam in dezelfde gemeente, maar plaats niet bevestigd.
 - Een gescande PDF (afbeelding) kan niet gelezen worden.
 - Vanuit Dynamics: printbestemming **Bestand**, bestandsindeling **PDF** of **Tekst (UTF-8)**, geen RTF of HTML.

@@ -37,7 +37,15 @@ details summary{cursor:pointer;font-weight:600}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:9px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}.toast.on{opacity:1}
 footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color:var(--mut)}
 @media(max-width:700px){.item{grid-template-columns:1fr auto}.item .st{grid-column:1/-1}}
-@media print{header{background:none;color:#000;border-bottom:2px solid #000}header a,.geenprint,.toast,footer{display:none!important}body{background:#fff}.place,.kpi{border-color:#999}.item{font-size:12px;padding:5px 10px}}
+#huddle{font:12px/1.35 Arial,Helvetica,sans-serif;color:#000;background:#fff}
+#huddle h1{font-size:18px;margin:0 0 2px}#huddle .hk{display:flex;justify-content:space-between;gap:12px;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px;font-size:12.5px}
+#huddle table{width:100%;border-collapse:collapse;font-size:11.5px}#huddle th{background:#e6e6e6;text-align:left;border:1px solid #000;padding:4px 5px}
+#huddle td{border:1px solid #000;padding:4px 5px;vertical-align:top}#huddle td.act{width:22%}#huddle tr.rk td{border-top:2px solid #000}#huddle tr{break-inside:avoid}
+#huddle .lijn{border-bottom:1px solid #000;height:18px;margin:4px 0}#huddle .vak{display:inline-block;margin:3px 14px 3px 0;white-space:nowrap}
+#huddle .vt{font-size:10.5px;margin-top:8px}#huddle .ic{font-weight:700}
+body.huddle>header,body.huddle>main,body.huddle>footer,body.huddle>.toast{display:none!important}body.huddle #huddle{display:block!important;padding:0}
+@media screen{body.huddle #huddle{max-width:1000px;margin:12px auto;padding:16px;border:1px solid #999}}
+@media print{@page{size:A4 landscape;margin:10mm}header{background:none;color:#000;border-bottom:2px solid #000}header a,.geenprint,.toast,footer{display:none!important}body{background:#fff}.place,.kpi{border-color:#999}.item{font-size:12px;padding:5px 10px}}
 </style>
 </head>
 <body>
@@ -62,7 +70,7 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
       <button class="btn" id="plakKnop">Controleer tekst</button></details>
   </section>
   <div id="uit" hidden>
-    <section class="row geenprint" style="margin-bottom:12px"><button class="btn pri" id="print">Print / opslaan als PDF</button><button class="btn" id="kopie">Kopieer verslag</button><button class="btn" id="wis">Wis alles</button></section>
+    <section class="row geenprint" style="margin-bottom:12px"><button class="btn pri" id="huddleKnop">Huddle-print</button><button class="btn" id="print">Print verslag</button><button class="btn" id="kopie">Kopieer verslag</button><button class="btn" id="wis">Wis alles</button></section>
     <p class="meta"><b>Vertrouwelijk: dit verslag bevat routegegevens.</b> <span id="kop"></span></p>
     <div class="kpis" id="kpis"></div>
     <div id="routes"></div>
@@ -71,6 +79,7 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
     <p class="meta">Alleen meldingen die de straat van een stop noemen, in die plaats of gemeente. Omleidingen en fiets-/voetpaden tellen niet mee. "Controleren" = zelfde straatnaam in de gemeente, maar de plaats staat niet in de melding. Een afsluiting om de hoek of op de weg ernaartoe valt hier dus buiten. Controleer de bron vóór je een route wijzigt.</p>
   </div>
 </main>
+<section id="huddle" hidden></section>
 <footer>Meldingen: NDW en Gemeenteblad (CC0). Plaatsnamen: PDOK (CC0). PDF-lezer: pdf.js (Apache 2.0).</footer>
 <div class="toast" id="toast"></div>
 <script src="vendor/pdf.min.js"></script>
@@ -225,8 +234,40 @@ $("#meldingen").addEventListener("change", async e => { const f = e.target.files
   catch { fout("Dit is geen geldig meldingenbestand (data.json)."); } });
 $("#plakKnop").addEventListener("click", () => { const t = $("#plak").value; start(async () => K.leesRegels(t.split(/\r?\n/), P)); });
 ["van","tot"].forEach(i => $("#"+i).addEventListener("change", () => { if (GEL) toon(); }));
+// Huddle-print: één A4 voor de transporteurs, alleen hoge en middel hinder bij de stops, kolom Actie leeg om in te vullen
+const tijdOp = (x, dag) => {
+  if (x.perioden) { const p = x.perioden.filter(([s,e]) => s.slice(0,10) <= dag && e.slice(0,10) >= dag);
+    if (p.length) return p.map(([s,e]) => (s.slice(0,10) < dag ? "00:00" : s.slice(11,16)) + "–" + (e.slice(0,10) > dag ? "24:00" : e.slice(11,16))).join(", ").replace(/^00:00–24:00$/, "hele dag"); }
+  if (!x.start) return "datum onbekend";
+  return x.start.length > 10 && x.start.slice(0,10) === dag ? "vanaf " + x.start.slice(11,16) : "hele dag";
+};
+function huddle(){
+  const {v, van, tot} = LAATST, ic = {hoog:"🔴 HOOG ·", middel:"🟠"};  // HOOG blijft leesbaar op een zwart-witprinter
+  const ritten = v.routes.slice().sort((a,b) => a.naam.localeCompare(b.naam, "nl", {numeric:true}));
+  const dagen = van === tot ? fmtD(van) : `${fmtD(van)} t/m ${fmtD(tot)}`;
+  let rijen = "";
+  for (const r of ritten) {
+    const h = r.plaatsen.flatMap(p => p.hits.filter(x => x.x.hinder !== "laag").map(x => ({...x, plaats:p.plaats})));
+    const nr = esc(r.naam.replace(/^Route\s+/i, ""));
+    if (!h.length) { rijen += `<tr class="rk"><td><b>${nr}</b></td><td colspan="4">Geen bijzonderheden bij de stops</td><td class="act"></td></tr>`; continue; }
+    h.forEach((x, i) => { rijen += `<tr${i ? "" : ' class="rk"'}><td>${i ? "" : `<b>${nr}</b>`}</td><td>${esc(mooi(x.plaats))}</td><td>${esc(x.straat)}</td>
+      <td><span class="ic">${ic[x.x.hinder] || ""}</span> ${esc(x.x.label)}: ${esc(x.x.titel.length > 90 ? x.x.titel.slice(0, 88) + "…" : x.x.titel)}${x.zeker ? "" : " (controleren)"}</td>
+      <td>${esc(van === tot ? tijdOp(x.x, van) : wanneer(x.x, van, tot))}</td><td class="act"></td></tr>`; });
+  }
+  $("#huddle").innerHTML = `<div class="hk"><div><h1>Daily Huddle – hinder op route</h1>${esc(dagen)} · meldingen van ${esc(new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))}</div>
+    <div style="text-align:right">Supervisor: ______________________<br><b>Vertrouwelijk – na de dienst inleveren</b></div></div>
+    <table><thead><tr><th style="width:7%">Route</th><th style="width:12%">Plaats</th><th style="width:14%">Straat (stop)</th><th>Wat speelt er</th><th style="width:11%">Tijd</th><th>Actie</th></tr></thead><tbody>${rijen}</tbody></table>
+    <p style="margin:10px 0 0"><b>Algemeen vandaag:</b></p><div class="lijn"></div><div class="lijn"></div>
+    <p style="margin:8px 0 2px"><b>Ingeleverd na dienst:</b></p>${ritten.map(r => `<span class="vak">☐ ${esc(r.naam.replace(/^Route\s+/i, ""))}</span>`).join("")}
+    <p class="vt">🔴 hoog · 🟠 middel. Alleen meldingen die de straat van een stop noemen; omleidingen en lage hinder staan er niet op. Bron: PlaatsRadar (NDW, Gemeenteblad). Controleer bij twijfel de bron.</p>`;
+  document.body.classList.add("huddle"); $("#huddle").hidden = false;
+  const terug = () => { document.body.classList.remove("huddle"); $("#huddle").hidden = true; window.removeEventListener("afterprint", terug); };
+  window.addEventListener("afterprint", terug);
+  setTimeout(() => window.print(), 50);
+}
+$("#huddleKnop").addEventListener("click", () => { if (LAATST) huddle(); });
 $("#print").addEventListener("click", () => window.print());
-$("#wis").addEventListener("click", () => { GEL = null; OVER = []; LAATST = null; $("#plak").value = ""; ["routes","plaatsen","ctl","kpis"].forEach(i => $("#"+i).innerHTML = ""); $("#uit").hidden = true; fout(""); window.scrollTo(0,0); });
+$("#wis").addEventListener("click", () => { $("#huddle").innerHTML = ""; GEL = null; OVER = []; LAATST = null; $("#plak").value = ""; ["routes","plaatsen","ctl","kpis"].forEach(i => $("#"+i).innerHTML = ""); $("#uit").hidden = true; fout(""); window.scrollTo(0,0); });
 function toast(t){ const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), 1800); }
 $("#kopie").addEventListener("click", async () => { const {v, van, tot} = LAATST, L = [`ROUTECHECK ${fmtD(van)} t/m ${fmtD(tot)} — VERTROUWELIJK`, ""], ic = h => h==="hoog"?"🔴":h==="middel"?"🟠":"⚪";
   v.routes.forEach(r => { L.push(`▶ ${r.naam.toUpperCase()} — komt in ${r.plaatsen.map(p => mooi(p.plaats)).join(", ")}`);
