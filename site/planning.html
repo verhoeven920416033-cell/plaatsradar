@@ -43,6 +43,7 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
 .tabs{display:flex;gap:6px;margin-bottom:10px}.tab{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 14px;font:600 13px system-ui,sans-serif;cursor:pointer}.tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .grp{display:inline-block;font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin:0 4px 2px 0;color:var(--navy2);background:#f4f7fb}
 td.sam{font-weight:700;color:#1f7a4d}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}.tw th{position:sticky;top:0;background:#eef2f7;cursor:pointer;white-space:nowrap}.tw th.s::after{content:" ▾"}.tw th.s.op::after{content:" ▴"}.tw td{vertical-align:top}
 .chip.c-hoog.on{background:var(--red);border-color:var(--red)}.chip.c-middel.on{background:#f3b23c;border-color:#f3b23c;color:#3a2600}.chip i{font-style:normal;opacity:.75;font-size:11.5px;margin-left:4px}
 .leg{display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:12.5px;color:var(--mut)}.leg b{display:inline-block;width:11px;height:11px;border-radius:50%}.leg b.vk{border-radius:2px;background:#cfe0f5;border:1px solid #5a86b8}
 </style>
@@ -60,7 +61,7 @@ td.sam{font-weight:700;color:#1f7a4d}
   <section class="panel geenprint">
     <div class="row" style="margin-bottom:10px">
       <span class="lbl">Rijdag</span><input type="date" id="datum" aria-label="Rijdag">
-      <button class="btn" data-plus="1">Morgen</button><button class="btn" data-plus="2">Over 2 dagen</button><button class="btn" data-plus="3">Over 3 dagen</button>
+      <button class="btn" data-plus="0">Vandaag</button><button class="btn" data-plus="1">Morgen</button><button class="btn" data-plus="2">Over 2 dagen</button><button class="btn" data-plus="3">Over 3 dagen</button>
       <span id="dagnaam" class="meta"></span>
     </div>
     <div class="row" style="margin-bottom:10px"><span id="stand" class="meta"></span>
@@ -70,15 +71,16 @@ td.sam{font-weight:700;color:#1f7a4d}
   <div id="uit" hidden>
     <section class="panel geenprint">
       <div class="row" style="margin-bottom:8px"><span class="lbl">Diensten</span><span id="groepen" class="row"></span></div>
-      <div class="row" style="margin-bottom:8px"><span class="lbl">Filter</span><input type="search" id="filter" style="flex:1 1 320px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit" placeholder="Postcodes of straten, gescheiden door komma's: 5611, 5612-5615, Vestdijk, Tilburg" aria-label="Filter op postcode of straat"><span id="filterInfo" class="meta"></span></div>
+      <div class="row" style="margin-bottom:8px"><span class="lbl">Filter</span><input type="search" id="filter" style="flex:1 1 320px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit" placeholder="Postcode, straat, plaats, dienst of melding. Komma = of: 5611, 5612-5615, Vestdijk, Tilburg, CWC1" aria-label="Filter op postcode of straat"><span id="filterInfo" class="meta"></span></div>
       <div class="row" style="margin-bottom:8px"><span class="lbl">Hinder</span><span id="fHinder" class="row" style="gap:6px"></span><span class="lbl" style="margin-left:8px">Soort</span><span id="fSoort" class="row" style="gap:6px"></span></div>
       <div class="row"><button class="btn" id="reset">Filters wissen</button><span style="flex:1"></span>
         <button class="btn pri" id="excel">Download Excel</button><button class="btn" id="print">Print</button><button class="btn" id="wis">Wis</button></div>
     </section>
     <p class="meta"><b>Vertrouwelijk: dit overzicht bevat planningsgegevens.</b> <span id="kop"></span></p>
     <div class="kpis" id="kpis"></div>
-    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Hinder op de rijdag</button><button class="tab" data-t="kaart">Kaart</button><button class="tab" data-t="sync">Diensten samenvoegen</button></div>
+    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Hinder op de rijdag</button><button class="tab" data-t="tabel">Tabel</button><button class="tab" data-t="kaart">Kaart</button><button class="tab" data-t="sync">Diensten samenvoegen</button></div>
     <div id="hinder"></div>
+    <div id="tabel" hidden></div>
     <div id="kaartvak" hidden>
       <div class="row geenprint" style="margin-bottom:8px"><span class="leg"><b style="background:#c8102e"></b>hoog</span><span class="leg"><b style="background:#f3a712"></b>middel</span><span class="leg"><b style="background:#7b8794"></b>laag</span><span class="leg"><b style="background:#fff;border:2px dashed #7b8794"></b>plek ongeveer</span><span class="leg"><b class="vk"></b>postcodegebied gereden op de rijdag</span></div>
       <div id="kaart"></div>
@@ -103,7 +105,7 @@ const rand = (t, n) => `${n} ${n===1?t[0]:t[1]}`;
 let NET_DICHT = false, D = null, WP = [], G = null, AAN = null, TAB = "hinder", R = null, FILTER = null, FT = 0, KAART = null, KAART_DATA = window.PR_KAART || null;
 const HINDER = ["hoog","middel","laag"], SOORT = {weg:"Weg / werk", evenement:"Evenement / kermis"}, soortVan = x => x.cat === "evenement" || x.cat === "kermis" ? "evenement" : "weg";
 const nieuwH = () => new Set(["hoog","middel"]);
-let FH = nieuwH(), FS = new Set(Object.keys(SOORT));
+let FH = nieuwH(), FS = new Set(Object.keys(SOORT)), SORT = {k:"hinder", op:true};
 const fout = t => { const e = $("#fout"); e.hidden = !t; e.textContent = t || ""; };
 const plusDag = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
 $("#datum").value = plusDag(2);
@@ -154,7 +156,9 @@ function toon(){
   $("#fSoort").innerHTML = Object.entries(SOORT).map(([k,t]) => `<span class="chip ${FS.has(k)?"on":""}" data-s="${k}">${t}<i>${ar.filter(x => soortVan(x) === k).length}</i></span>`).join("");
   const S = K.synchronisatie(G.gebieden, AAN, FILTER);
   $("#filterInfo").textContent = FILTER ? `${FILTER.pc.length ? FILTER.pc.length + " postcode(s)" : ""}${FILTER.pc.length && FILTER.tk.length ? " + " : ""}${FILTER.tk.length ? FILTER.tk.length + " straat/plaats" : ""}` : "";
-  $("#groepen").innerHTML = G.groepen.map(g => `<span class="chip ${AAN.has(g)?"on":""}" data-g="${esc(g)}">${esc(g)}</span>`).join("");
+  const wd = K.weekdag(datum), perG = g => new Set(G.gebieden.filter(x => x.groep === g && x.dagen[wd]).flatMap(x => x.pc4)).size;
+  const allesAan = AAN.size === G.groepen.length;
+  $("#groepen").innerHTML = `<span class="chip ${allesAan?"on":""}" data-g="*">Alle</span>` + G.groepen.map(g => `<span class="chip ${AAN.has(g) && !allesAan?"on":""}" data-g="${esc(g)}" title="postcodegebieden op ${esc(K.DAGEN[wd])}">${esc(g)}<i>${perG(g)}</i></span>`).join("");
   $("#kop").textContent = (FILTER ? `Filter: ${$("#filter").value.trim()}. ` : "") + `Rijdag ${fmtD(datum)} (${R.dag}), meldingen van ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}.`;
   $("#kpis").innerHTML = [[R.gebieden,"postcodegebieden gereden"],[R.plaatsen.length,"plaatsen met hinder"],[R.meldingen,"meldingen"],[R.hoog,"hoge hinder",1],[S.length,"gebieden samen te voegen"]]
     .map(([n,t,a]) => `<div class="kpi${a?" alert":""}"><b>${n}</b><span>${t}</span></div>`).join("");
@@ -167,7 +171,14 @@ function toon(){
   $("#sync").innerHTML = S.length ? `<div class="panel"><p class="meta">Postcodegebieden waar de gekozen diensten op verschillende dagen rijden. "Samen" = dagen waarop ze er allemaal al komen.</p>
     <div style="overflow-x:auto"><table><tr><th>Plaats</th><th>PC4</th>${gs.map(g => `<th>${esc(g)}</th>`).join("")}<th>Samen</th></tr>${S.map(s => `<tr><td>${esc(s.plaats)}</td><td>${esc(s.pc4)}</td>${gs.map(g => `<td>${esc(s.diensten[g] ?? "")}</td>`).join("")}<td class="sam">${esc(s.samen)}</td></tr>`).join("")}</table></div></div>`
     : '<div class="panel">Alle gekozen diensten rijden in dezelfde gebieden op dezelfde dagen.</div>';
-  $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#kaartvak").hidden = TAB !== "kaart";
+  const rijen = [...R.plaatsen.flatMap(p => p.rijen.map(r => ({plaats:p.plaats, pc4:r.pc4.join(", "), groepen:r.groepen.join(", "), x:r.x}))),
+    ...R.zonder.flatMap(z => z.rijen.map(x => ({plaats:z.plaatsen.join(", "), pc4:"", groepen:"gemeente-breed", x})))];
+  const orde = {hoog:0, middel:1, laag:2, geen:2}, wa = (r, k) => k === "hinder" ? orde[r.x.hinder] : k === "soort" ? r.x.label : k === "titel" ? r.x.titel : k === "wanneer" ? (r.x.start || "9") : String(r[k] || "");
+  rijen.sort((a, b) => { const x = wa(a, SORT.k), y = wa(b, SORT.k), c = typeof x === "number" ? x - y : String(x).localeCompare(String(y), "nl", {numeric:true}); return (SORT.op ? c : -c) || a.plaats.localeCompare(b.plaats, "nl"); });
+  const kol = [["plaats","Plaats"],["pc4","Postcode"],["groepen","Diensten"],["hinder","Hinder"],["soort","Soort"],["titel","Melding"],["wanneer","Wanneer"]];
+  $("#tabel").innerHTML = rijen.length ? `<div class="tw"><table><thead><tr>${kol.map(([k,t]) => `<th data-k="${k}" class="${SORT.k===k?"s"+(SORT.op?"":" op"):""}">${t}</th>`).join("")}<th>Bron</th></tr></thead><tbody>${rijen.map(r => `<tr><td>${esc(r.plaats)}</td><td>${esc(r.pc4)}</td><td>${esc(r.groepen)}</td><td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.label)}</td><td>${esc(r.x.titel)}</td><td>${esc(wanneer(r.x))}</td><td>${esc(r.x.bron)}${r.x.url?` · <a href="${esc(r.x.url)}" target="_blank" rel="noopener noreferrer">link</a>`:""}</td></tr>`).join("")}</tbody></table></div>`
+    : `<div class="panel">Geen hinder binnen dit filter op ${esc(fmtD(datum))}.</div>`;
+  $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#kaartvak").hidden = TAB !== "kaart"; $("#tabel").hidden = TAB !== "tabel";
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.t === TAB));
   $("#uit").hidden = false; R.sync = S; R.gs = gs; R.datum = datum;
   if (TAB === "kaart") tekenKaart();
@@ -208,13 +219,20 @@ const drop = $("#drop");
 drop.addEventListener("drop", e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) leesExcel(f); });
 document.querySelectorAll("[data-plus]").forEach(b => b.addEventListener("click", () => { $("#datum").value = plusDag(+b.dataset.plus); toon(); }));
 $("#datum").addEventListener("change", toon);
-$("#groepen").addEventListener("click", e => { const g = e.target.dataset.g; if (!g) return; AAN.has(g) ? AAN.delete(g) : AAN.add(g); if (!AAN.size) AAN = new Set(G.groepen); toon(); });
+$("#groepen").addEventListener("click", e => { const c = e.target.closest("[data-g]"); if (!c) return; const g = c.dataset.g;
+  if (g === "*") AAN = new Set(G.groepen); else if (AAN.size === G.groepen.length) AAN = new Set([g]); else { AAN.has(g) ? AAN.delete(g) : AAN.add(g); if (!AAN.size) AAN = new Set(G.groepen); }
+  toon(); });
+$("#tabel").addEventListener("click", e => { const t = e.target.closest("th[data-k]"); if (!t) return; SORT = SORT.k === t.dataset.k ? {k:t.dataset.k, op:!SORT.op} : {k:t.dataset.k, op:true}; toon(); });
 $("#uit").addEventListener("click", e => { const c = e.target.closest("[data-h],[data-s]"); if (!c) return;
   if (c.dataset.h) { FH.has(c.dataset.h) ? FH.delete(c.dataset.h) : FH.add(c.dataset.h); if (!FH.size) FH = nieuwH(); }
   else { FS.has(c.dataset.s) ? FS.delete(c.dataset.s) : FS.add(c.dataset.s); if (!FS.size) FS = new Set(Object.keys(SOORT)); }
   toon(); });
 $("#reset").addEventListener("click", () => { FH = nieuwH(); FS = new Set(Object.keys(SOORT)); FILTER = null; $("#filter").value = ""; if (G) AAN = new Set(G.groepen); toon(); });
-$("#filter").addEventListener("input", e => { clearTimeout(FT); FT = setTimeout(() => { FILTER = K.maakFilter(e.target.value); toon(); }, 200); });
+$("#filter").addEventListener("input", e => { clearTimeout(FT); FT = setTimeout(() => {  // een dienstnaam in het filter kiest die dienst
+  const t = e.target.value.split(/[,;]/).map(x => x.trim()).filter(Boolean), gk = new Map((G ? G.groepen : []).map(g => [g.toLowerCase(), g]));
+  const d = t.filter(x => gk.has(x.toLowerCase())).map(x => gk.get(x.toLowerCase()));
+  if (G) AAN = d.length ? new Set(d) : (AAN._filter ? new Set(G.groepen) : AAN); if (d.length) AAN._filter = true;
+  FILTER = K.maakFilter(t.filter(x => !gk.has(x.toLowerCase())).join(",")); toon(); }, 200); });
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => { TAB = t.dataset.t; toon(); }));
 $("#excel").addEventListener("click", excel);
 $("#print").addEventListener("click", () => window.print());
