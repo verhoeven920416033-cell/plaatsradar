@@ -66,7 +66,7 @@ td.sam{font-weight:700;color:#1f7a4d}
     </div>
     <div class="row" style="margin-bottom:10px"><span id="stand" class="meta"></span>
       <label class="btn" id="nieuw" hidden>Meldingenbestand kiezen<input type="file" id="meldingen" accept=".json" style="display:none"></label></div>
-    <label class="drop" id="drop"><input type="file" id="bestand" accept=".xlsx"><b>Kies of sleep het geogroepen-Excel of de optimiser-export hierheen</b><br><span class="meta">Geogroepen: Locatie groep, Omschrijving, Van, Tot, Maandag t/m Zondag · Optimiser: SRit, Laad-losplaats postcode/plaats, Vroegste laden</span></label>
+    <label class="drop" id="drop"><input type="file" id="bestand" accept=".xlsx"><b>Kies of sleep het geogroepen-Excel of de optimiser-export hierheen</b><br><span class="meta">Geogroepen: Locatie groep, Omschrijving, Van, Tot, Maandag t/m Zondag · Optimiser: SRit, Laad-losplaats kenmerk (klantcode)/straat/postcode/plaats, Vroegste laden</span></label>
     <div class="row" style="margin-top:10px"><label class="meta">Ritten overslaan (optimiser) <input id="skip" value="442, 443" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;width:160px" aria-label="Ritten overslaan"></label><span class="meta">(komma's ertussen)</span></div>
   </section>
   <div id="uit" hidden>
@@ -79,13 +79,18 @@ td.sam{font-weight:700;color:#1f7a4d}
     </section>
     <p class="meta"><b>Vertrouwelijk: dit overzicht bevat planningsgegevens.</b> <span id="kop"></span></p>
     <div class="kpis" id="kpis"></div>
-    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Hinder op de rijdag</button><button class="tab" data-t="tabel">Tabel</button><button class="tab" data-t="kaart">Kaart</button><button class="tab" data-t="sync">Diensten samenvoegen</button></div>
+    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Hinder op de rijdag</button><button class="tab" data-t="tabel">Tabel</button><button class="tab" data-t="kaart">Kaart</button><button class="tab" data-t="klant" id="tabKlant" hidden>Klantcodes</button><button class="tab" data-t="sync">Diensten samenvoegen</button></div>
     <div id="hinder"></div>
     <div id="tabel" hidden></div>
     <div id="kaartvak" hidden>
       <div class="row geenprint" style="margin-bottom:8px"><span class="leg"><b style="background:#c8102e"></b>hoog</span><span class="leg"><b style="background:#f3a712"></b>middel</span><span class="leg"><b style="background:#7b8794"></b>laag</span><span class="leg"><b style="background:#fff;border:2px dashed #7b8794"></b>plek ongeveer</span><span class="leg"><b class="vk"></b>postcodegebied gereden op de rijdag</span></div>
       <div id="kaart"></div>
       <p class="meta">Kaart zonder internet: gemeentegrenzen en postcodegebieden (CBS/PDOK), geen straten. Scrollen of +/− om te zoomen, slepen om te schuiven, klik op een punt of postcodegebied voor details.</p>
+    </div>
+    <div id="klant" hidden>
+      <div class="row geenprint" style="margin-bottom:8px"><span class="chip" id="fGebied">Ook zelfde postcodegebied (straat niet genoemd)</span>
+        <label class="meta">Klantcode uit kolom <select id="klantKol" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit"></select></label></div>
+      <div id="klantUit"></div>
     </div>
     <div id="sync" hidden></div>
   </div>
@@ -106,7 +111,7 @@ const rand = (t, n) => `${n} ${n===1?t[0]:t[1]}`;
 let NET_DICHT = false, D = null, WP = [], G = null, AAN = null, TAB = "hinder", R = null, FILTER = null, FT = 0, KAART = null, KAART_DATA = window.PR_KAART || null;
 const HINDER = ["hoog","middel","laag"], SOORT = {weg:"Weg / werk", evenement:"Evenement / kermis"}, soortVan = x => x.cat === "evenement" || x.cat === "kermis" ? "evenement" : "weg";
 const nieuwH = () => new Set(["hoog","middel"]);
-let FH = nieuwH(), FS = new Set(Object.keys(SOORT)), SORT = {k:"hinder", op:true};
+let FH = nieuwH(), FS = new Set(Object.keys(SOORT)), SORT = {k:"hinder", op:true}, RUW = null, GEBIED = false, KR = [];
 const fout = t => { const e = $("#fout"); e.hidden = !t; e.textContent = t || ""; };
 const plusDag = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
 $("#datum").value = plusDag(2);
@@ -137,7 +142,8 @@ async function leesExcel(f){
   fout(""); await klaar; if (!D) return;
   try {
     if (!/\.xlsx$/i.test(f.name)) throw new Error("Kies een .xlsx-bestand (oud .xls: eerst opslaan als .xlsx).");
-    G = K.leesGeogroepen(await X.lees(await f.arrayBuffer()), {skip:$("#skip").value.split(/[,;\s]+/).filter(Boolean)});
+    RUW = await X.lees(await f.arrayBuffer());  // alleen in het geheugen, voor het wisselen van de klantcode-kolom
+    G = K.leesGeogroepen(RUW, {skip:$("#skip").value.split(/[,;\s]+/).filter(Boolean)});
     if (!G.gebieden.length) throw new Error(G.bron === "optimiser" ? "Geen ritten met postcode gevonden (alle ritten overgeslagen?)." : "Geen postcodegebieden gevonden.");
     if (G.bron === "optimiser") { const vandaag = iso(new Date()), d = G.datums.filter(x => x >= vandaag); if (d.length) $("#datum").value = d[0]; else if (G.datums.length) $("#datum").value = G.datums[G.datums.length - 1]; }
     AAN = new Set(G.groepen); toon();
@@ -165,7 +171,7 @@ function toon(){
     (G.bron === "optimiser" ? ` Bron: optimiser-export, ${G.groepen.length} ritten${G.datums.length ? " op " + G.datums.map(fmtD).join(", ") : ""}${G.overgeslagen.length ? ", overgeslagen: " + G.overgeslagen.join(", ") : ""}.` +
       (G.datums.length && !G.datums.includes(datum) ? " Let op: de rijdag staat niet in het bestand, dus er rijdt niets." : "") : "");
   document.querySelector("#groepen").previousElementSibling.textContent = G.bron === "optimiser" ? "Ritten" : "Diensten";
-  $("#kpis").innerHTML = [[R.gebieden,"postcodegebieden gereden"],[R.plaatsen.length,"plaatsen met hinder"],[R.meldingen,"meldingen"],[R.hoog,"hoge hinder",1],[S.length,"gebieden samen te voegen"]]
+  $("#kpis").innerHTML = [[R.gebieden,"postcodegebieden gereden"],[R.plaatsen.length,"plaatsen met hinder"],[R.meldingen,"meldingen"],[R.hoog,"hoge hinder",1],[S.length,"gebieden samen te voegen"], ...(G.stops && G.stops.length ? [[new Set(K.klantHinder(G.stops, D.items, {datum, hinder:FH, soort:x => FS.has(soortVan(x)), groepen:AAN.size === G.groepen.length ? null : AAN}).map(r => r.klant)).size, "klantcodes met hinder in hun straat", 1]] : [])]
     .map(([n,t,a]) => `<div class="kpi${a?" alert":""}"><b>${n}</b><span>${t}</span></div>`).join("");
   $("#hinder").innerHTML = (R.plaatsen.length ? R.plaatsen.map(p => `<div class="place"><h2>${esc(p.plaats)} <small>${rand(["melding","meldingen"],p.rijen.length)} · ${esc(p.pc4.join(", "))}</small></h2>
       <div class="empty" style="padding:8px 14px"><b>Rijden op ${esc(R.dag)}:</b> ${p.groepen.map(g => `<span class="grp">${esc(g)}</span>`).join("")}</div>
@@ -183,7 +189,23 @@ function toon(){
   const kol = [["plaats","Plaats"],["pc4","Postcode"],["groepen","Diensten"],["hinder","Hinder"],["soort","Soort"],["titel","Melding"],["wanneer","Wanneer"]];
   $("#tabel").innerHTML = rijen.length ? `<div class="tw"><table><thead><tr>${kol.map(([k,t]) => `<th data-k="${k}" class="${SORT.k===k?"s"+(SORT.op?"":" op"):""}">${t}</th>`).join("")}<th>Bron</th></tr></thead><tbody>${rijen.map(r => `<tr><td>${esc(r.plaats)}</td><td>${esc(r.pc4)}</td><td>${esc(r.groepen)}</td><td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.label)}</td><td>${esc(r.x.titel)}</td><td>${esc(wanneer(r.x))}</td><td>${esc(r.x.bron)}${r.x.url?` · <a href="${esc(r.x.url)}" target="_blank" rel="noopener noreferrer">link</a>`:""}</td></tr>`).join("")}</tbody></table></div>`
     : `<div class="panel">Geen hinder binnen dit filter op ${esc(fmtD(datum))}.</div>`;
-  $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#kaartvak").hidden = TAB !== "kaart"; $("#tabel").hidden = TAB !== "tabel";
+  // klantcodes (alleen bij de optimiser-export: daar staan adressen in)
+  const metKlant = !!(G.stops && G.stops.length); $("#tabKlant").hidden = !metKlant; if (!metKlant && TAB === "klant") TAB = "hinder";
+  KR = [];
+  if (metKlant) {
+    KR = K.klantHinder(G.stops, D.items, {datum, hinder:FH, soort:x => FS.has(soortVan(x)), groepen:AAN.size === G.groepen.length ? null : AAN, gebied:GEBIED})
+      .filter(r => !FILTER || FILTER.pc.some(([a, b]) => +r.pc4 >= a && +r.pc4 <= b) || FILTER.tk.some(w => K.straatKern(`${r.klant} ${r.straat} ${r.plaats} ${r.rit} ${r.x.titel}`).includes(" " + w)));
+    $("#klantKol").innerHTML = G.kolommen.map((k, i) => `<option value="${i}" ${i === G.klantKolom ? "selected" : ""}>${String.fromCharCode(65 + (i % 26))}${i >= 26 ? "+" : ""}: ${esc(k || "(leeg)")}</option>`).join("");
+    $("#fGebied").classList.toggle("on", GEBIED);
+    const kl = new Set(KR.map(r => r.klant)), klS = new Set(KR.filter(r => r.niveau === "straat").map(r => r.klant));
+    $("#klantUit").innerHTML = KR.length ? `<p class="meta"><b>${klS.size}</b> klantcode(s) met een melding in hun straat${GEBIED ? `, <b>${kl.size}</b> in totaal incl. zelfde postcodegebied` : ""} op ${esc(fmtD(datum))}.</p>
+      <div class="tw"><table><thead><tr><th>Klantcode</th><th>Rit</th><th>Adres</th><th>Plaats</th><th>PC4</th><th>Hinder</th><th>Soort</th><th>Melding</th><th>Wanneer</th><th>Match</th></tr></thead><tbody>${KR.map(r => `<tr>
+        <td><b>${esc(r.klant || "?")}</b></td><td>${esc(r.rit.replace(/^Rit /, ""))}</td><td>${esc(`${r.straat} ${r.nr}`.trim())}</td><td>${esc(r.plaats)}</td><td>${esc(r.pc4)}</td>
+        <td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.label)}</td><td>${esc(r.x.titel)}</td><td>${esc(wanneer(r.x))}</td>
+        <td>${r.niveau === "straat" ? "<b>straat</b>" : "postcodegebied"}${r.x.url ? ` · <a href="${esc(r.x.url)}" target="_blank" rel="noopener noreferrer">bron</a>` : ""}</td></tr>`).join("")}</tbody></table></div>`
+      : `<div class="panel">Geen klantcodes met een melding in hun straat op ${esc(fmtD(datum))}${FILTER ? " binnen dit filter" : ""}.${GEBIED ? "" : " Zet <i>Ook zelfde postcodegebied</i> aan voor een ruimer beeld."}</div>`;
+  }
+  $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#klant").hidden = TAB !== "klant"; $("#kaartvak").hidden = TAB !== "kaart"; $("#tabel").hidden = TAB !== "tabel";
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.t === TAB));
   $("#uit").hidden = false; R.sync = S; R.gs = gs; R.datum = datum;
   if (TAB === "kaart") tekenKaart();
@@ -214,7 +236,10 @@ function excel(){
   R.plaatsen.forEach(p => p.rijen.forEach(r => h.push([R.datum, p.plaats, r.pc4.join(", "), r.groepen.join(", "), r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.x.bron, r.x.url || ""])));
   R.zonder.forEach(z => z.rijen.forEach(x => h.push([R.datum, z.plaatsen.join(", "), "", "gemeente-breed", x.hinder, x.label, x.titel, wanneer(x), x.bron, x.url || ""])));
   const s = [["Plaats","PC4", ...R.gs, "Samen"], ...R.sync.map(r => [r.plaats, r.pc4, ...R.gs.map(g => r.diensten[g] ?? ""), r.samen])];
-  const a = document.createElement("a"); a.href = URL.createObjectURL(X.schrijf([{naam:"Hinder " + R.datum, rijen:h}, {naam:"Samenvoegen", rijen:s}]));
+  const bladen = [{naam:"Hinder " + R.datum, rijen:h}, {naam:"Samenvoegen", rijen:s}];
+  if (KR.length) bladen.splice(1, 0, {naam:"Klantcodes", rijen:[["Klantcode","Rit","Adres","Postcode","Plaats","Hinder","Soort","Melding","Wanneer","Match","Link"],
+    ...KR.map(r => [r.klant, r.rit, `${r.straat} ${r.nr}`.trim(), r.postcode, r.plaats, r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.niveau, r.x.url || ""])]});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(X.schrijf(bladen));
   a.download = `planning-${R.datum}${FILTER ? "-filter" : ""}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 $("#bestand").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) leesExcel(f); });
@@ -227,6 +252,8 @@ $("#datum").addEventListener("change", toon);
 $("#groepen").addEventListener("click", e => { const c = e.target.closest("[data-g]"); if (!c) return; const g = c.dataset.g;
   if (g === "*") AAN = new Set(G.groepen); else if (AAN.size === G.groepen.length) AAN = new Set([g]); else { AAN.has(g) ? AAN.delete(g) : AAN.add(g); if (!AAN.size) AAN = new Set(G.groepen); }
   toon(); });
+$("#fGebied").addEventListener("click", () => { GEBIED = !GEBIED; toon(); });
+$("#klantKol").addEventListener("change", e => { if (!RUW) return; G = K.leesGeogroepen(RUW, {skip:$("#skip").value.split(/[,;\s]+/).filter(Boolean), klantKolom:+e.target.value}); toon(); });
 $("#tabel").addEventListener("click", e => { const t = e.target.closest("th[data-k]"); if (!t) return; SORT = SORT.k === t.dataset.k ? {k:t.dataset.k, op:!SORT.op} : {k:t.dataset.k, op:true}; toon(); });
 $("#uit").addEventListener("click", e => { const c = e.target.closest("[data-h],[data-s]"); if (!c) return;
   if (c.dataset.h) { FH.has(c.dataset.h) ? FH.delete(c.dataset.h) : FH.add(c.dataset.h); if (!FH.size) FH = nieuwH(); }
@@ -241,7 +268,7 @@ $("#filter").addEventListener("input", e => { clearTimeout(FT); FT = setTimeout(
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => { TAB = t.dataset.t; toon(); }));
 $("#excel").addEventListener("click", excel);
 $("#print").addEventListener("click", () => window.print());
-$("#wis").addEventListener("click", () => { G = null; R = null; $("#uit").hidden = true; ["hinder","sync","kpis"].forEach(i => $("#"+i).innerHTML = ""); fout(""); });
+$("#wis").addEventListener("click", () => { G = null; R = null; RUW = null; KR = []; $("#uit").hidden = true; ["hinder","sync","kpis","tabel","klantUit"].forEach(i => $("#"+i).innerHTML = ""); fout(""); });
 $("#meldingen").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return;
   try { const d = JSON.parse(await f.text()); if (!Array.isArray(d.items) || !d.gegenereerd) throw 0; D = d; zetStand("uit bestand"); fout(""); if (G) toon(); }
   catch { fout("Dit is geen geldig meldingenbestand (data.json)."); } });

@@ -74,3 +74,17 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
   if (g.datums.join() !== "2026-11-11,2026-11-12" || !g.gebieden[0].dagen[2] || g.gebieden[0].dagen[3] || !g.gebieden[1].dagen[3]) fout("dagen");
   console.log("optimiser-plan OK");
 }
+// klantcodes: straat genoemd = straat, alleen zelfde PC4 = gebied (optioneel)
+{
+  const P = require("../site/plan-kern.js");
+  const kop = ["Kenmerk 1","Type","Depot","SRit","Laad-losplaats kenmerk","Laad-losplaats straat","Laad-losplaats huisnr.","Laad-losplaats postcode","Laad-losplaats plaats","Vroegste laden"];
+  const g = P.leesGeogroepen([kop, ["a","L","E","101","K1","Hoofdstr.","1","5611 AB","Eindhoven","2026-11-12"], ["b","L","E","101","K2","Kerkstraat","2","5611 AC","Eindhoven","2026-11-12"]], {});
+  const items = [{id:"m1", plaats:"Eindhoven", cat:"weg", hinder:"hoog", titel:"Hoofdstraat dicht", pc4:["5611"], start:"2026-11-01", eind:"2026-11-30"}];
+  const fout = m => { console.error("klantcodes FOUT", m); process.exit(1); };
+  if (g.klantKolom !== 4 || g.stops.length !== 2) fout("kolom");
+  const a = P.klantHinder(g.stops, items, {datum:"2026-11-12"}), b = P.klantHinder(g.stops, items, {datum:"2026-11-12", gebied:true});
+  if (a.length !== 1 || a[0].klant !== "K1" || a[0].niveau !== "straat") fout("straat " + JSON.stringify(a));
+  if (b.length !== 2 || b[1].niveau !== "gebied") fout("gebied");
+  if (P.klantHinder(g.stops, items, {datum:"2026-11-13"}).length) fout("andere dag");
+  console.log("klantcodes OK");
+}

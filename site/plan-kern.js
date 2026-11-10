@@ -6,7 +6,7 @@ const ja = v => /^(ja|j|yes|y|x|1|waar|true)$/i.test(String(v ?? "").trim());
 const kern = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
 
 /** Optimiser-export (SRit + Laad-losplaats postcode/plaats + Vroegste laden) -> gebieden per rit, postcodegebied en rijdag.
-    Alleen rit, postcode, plaats en datum worden gelezen; naam, straat, waarde en tijden niet. */
+    Alleen rit, klantcode, adres, postcode, plaats en datum worden gelezen; naam, waarde en tijden niet. */
 function datumVan(v) {
   const t = String(v ?? "").trim();
   if (/^\d+(\.\d+)?$/.test(t) && +t > 30000) return new Date(Date.UTC(1899, 11, 30) + Math.floor(+t) * 864e5).toISOString().slice(0, 10);
@@ -18,9 +18,14 @@ function leesOptimiserPlan(rijen, opt) {
   const k = rijen.slice(0, 10).findIndex(r => r.some(c => /^s?rit$/i.test(kop(c))) && r.some(c => /laad-?losplaats (postcode|straat)/i.test(kop(c))));
   if (k < 0) return null;
   const ci = re => rijen[k].findIndex(c => re.test(kop(c)));
-  const c = {rit: ci(/^s?rit$/i), pc: ci(/laad-?losplaats postcode|^postcode$/i), plaats: ci(/laad-?losplaats plaats|^plaats$/i), datum: ci(/vroegste laden|^datum$/i)};
+  const c = {rit: ci(/^s?rit$/i), pc: ci(/laad-?losplaats postcode|^postcode$/i), plaats: ci(/laad-?losplaats plaats|^plaats$/i), datum: ci(/vroegste laden|^datum$/i),
+    straat: ci(/laad-?losplaats straat|^straat$/i), nr: ci(/laad-?losplaats huisn|^huisn/i)};
+  // klantcode: standaard kolom 'Laad-losplaats kenmerk' (kolom E in de export), anders te kiezen
+  const kolommen = rijen[k].map(kop);
+  let kk = opt && Number.isInteger(opt.klantKolom) ? opt.klantKolom : ci(/^klant ?(code|nr|nummer)$|laad-?losplaats kenmerk/i);
+  if (kk < 0 && kolommen.length > 4) kk = 4;
   if (c.pc < 0) throw new Error("Optimiser-export zonder kolom 'Laad-losplaats postcode'.");
-  const skip = new Set(((opt || {}).skip || []).map(String)), per = new Map(), datums = new Set(), fout = [], overgeslagen = new Set();
+  const skip = new Set(((opt || {}).skip || []).map(String)), per = new Map(), datums = new Set(), fout = [], overgeslagen = new Set(), stops = [], gezien = new Set();
   for (const r of rijen.slice(k + 1)) {
     const rit = kop(r[c.rit]); if (!rit) continue;
     if (skip.has(rit)) { overgeslagen.add(rit); continue; }
@@ -31,9 +36,13 @@ function leesOptimiserPlan(rijen, opt) {
     const key = rit + "|" + m[1];
     if (!per.has(key)) per.set(key, {groep: "Rit " + rit, plaats: c.plaats >= 0 ? kop(r[c.plaats]) : "", van: m[1], tot: m[1], pc4: [m[1]], dagen: Array(7).fill(false)});
     const g = per.get(key); if (wd < 0) g.dagen.fill(true); else g.dagen[wd] = true;
+    const st = {rit: "Rit " + rit, klant: kk >= 0 ? kop(r[kk]) : "", straat: c.straat >= 0 ? kop(r[c.straat]) : "", nr: c.nr >= 0 ? kop(r[c.nr]) : "",
+      postcode: kop(r[c.pc]).replace(/^[A-Z]\s+/, ""), pc4: m[1], plaats: c.plaats >= 0 ? kop(r[c.plaats]) : "", datum: d, wd};
+    const sk = [st.rit, st.klant, st.straat, st.nr, st.postcode, d].join("|");
+    if (!gezien.has(sk)) { gezien.add(sk); stops.push(st); }
   }
   const gebieden = [...per.values()], groepen = [...new Set(gebieden.map(g => g.groep))].sort((a, b) => a.localeCompare(b, "nl", {numeric: true}));
-  return {gebieden, fout, groepen, datums: [...datums].sort(), bron: "optimiser", overgeslagen: [...overgeslagen]};
+  return {gebieden, fout, groepen, datums: [...datums].sort(), bron: "optimiser", overgeslagen: [...overgeslagen], stops, kolommen, klantKolom: kk};
 }
 
 /** Rijen uit het Excel -> gebieden {groep, plaats, van, tot, pc4[], dagen[7]}. Kolommen op kopnaam. */
@@ -122,6 +131,34 @@ function planDag(gebieden, items, opt) {
           hoog: relevant.filter(x => ids.has(x.id) && x.hinder === "hoog").length, filter: !!opt.filter};
 }
 
+/** Klantcodes met hinder op de rijdag: per stop (optimiser) de meldingen in zijn postcodegebied.
+    niveau "straat" = de melding noemt de straat van de stop; "gebied" = alleen hetzelfde postcodegebied. */
+const straatKern = s => " " + String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+  .replace(/[^a-z0-9]+/g, " ").replace(/str\b/g, "straat").replace(/\s+/g, " ").trim() + " ";
+function klantHinder(stops, items, opt) {
+  const wd = weekdag(opt.datum), orde = {hoog: 0, middel: 1, laag: 2, geen: 2};
+  const hOk = x => opt.hinder ? opt.hinder.has(x.hinder === "geen" ? "laag" : x.hinder) : x.hinder !== "laag";
+  const zonderOml = t => String(t || "").split(/(?<=[.!?])\s+|\s·\s/).filter(z => !/omgeleid|omleiding/i.test(z)).join(" ");
+  const perPc = new Map();
+  for (const x of items) if (x.pc4 && !x.fiets && x.cat !== "markt" && hOk(x) && (!opt.soort || opt.soort(x)) && actief(x, opt.datum)) {
+    const t = straatKern(`${x.titel} ${x.locatie || ""} ${zonderOml(x.toelichting)}`);
+    for (const q of x.pc4) { if (!perPc.has(q)) perPc.set(q, []); perPc.get(q).push({x, t}); }
+  }
+  const rijen = [];
+  for (const s of stops) {
+    if (s.wd >= 0 && s.wd !== wd) continue;
+    if (opt.groepen && !opt.groepen.has(s.rit)) continue;
+    const sk = straatKern(s.straat).trim();
+    for (const {x, t} of perPc.get(s.pc4) || []) {
+      const niveau = sk.length >= 5 && t.includes(" " + sk + " ") ? "straat" : "gebied";
+      if (niveau === "gebied" && !opt.gebied) continue;
+      rijen.push({...s, x, niveau});
+    }
+  }
+  rijen.sort((a, b) => (a.niveau === "straat" ? 0 : 1) - (b.niveau === "straat" ? 0 : 1) || orde[a.x.hinder] - orde[b.x.hinder] || a.klant.localeCompare(b.klant, "nl", {numeric: true}));
+  return rijen;
+}
+
 /** Postcodegebieden waar gekozen diensten op verschillende dagen rijden (kandidaten om samen te voegen). */
 function synchronisatie(gebieden, groepen, f) {
   const per = new Map();
@@ -138,5 +175,5 @@ function synchronisatie(gebieden, groepen, f) {
   }
   return uit.filter(r => !f || pcIn(f, r.pc4) || tekstIn(f, r.plaats)).sort((a, b) => a.plaats.localeCompare(b.plaats) || a.pc4.localeCompare(b.pc4));
 }
-return {DAGEN, KORT, maakFilter, leesGeogroepen, leesOptimiserPlan, planDag, synchronisatie, weekdag, actief};
+return {DAGEN, KORT, maakFilter, leesGeogroepen, leesOptimiserPlan, klantHinder, straatKern, planDag, synchronisatie, weekdag, actief};
 });
