@@ -39,6 +39,7 @@ Knop **Routecheck** op de site, of `routecheck.html`. Kies een of meer routelijs
 Knop **Planning** op de site, of `planning.html`. Voor de planners: kies een rijdag (standaard over 2 dagen) en sleep het geogroepen-Excel erin (kolommen *Locatie groep, Omschrijving, Van, Tot, Maandag … Zondag* met Ja/Nee). Je ziet:
 - **Hinder op de rijdag:** per plaats de meldingen die die dag actief zijn in postcodegebieden (4 cijfers) die dan gereden worden, met welke diensten er komen. Fiets-/voetpaden, markten en meldingen zonder datum tellen niet; lage hinder staat standaard uit.
 - **Diensten samenvoegen:** postcodegebieden waar de gekozen diensten op verschillende dagen rijden, met de dagen waarop ze er al samen komen.
+- **Filter** op postcodes en straten, gescheiden door komma's: `5611, 5612-5615, Vestdijk, Tilburg`. Een volledige postcode (5611 AB) telt als het gebied 5611. Een plaatsnaam toont alles in die plaats. Het filter geldt ook voor het samenvoeg-overzicht en de Excel.
 - **Download Excel** met beide overzichten.
 
 Meldingen krijgen hun postcodegebied uit de openbare CBS-postcodevlakken (PDOK, maandelijks ververst). Gemeenteblad-meldingen zonder coördinaten staan apart onder *Zonder exacte plek*. Het Excel blijft op je computer; voor de werk-pc is er `Planning-werk.html` (zelfde werkwijze als de routecheck).

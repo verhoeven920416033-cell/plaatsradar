@@ -84,7 +84,7 @@ footer a{color:var(--mut)}
         <option value="0">Vandaag</option><option value="1">Vandaag + morgen</option><option value="2">Komende 3 dagen</option>
         <option value="6" selected>Komende 7 dagen</option><option value="13">Komende 14 dagen</option><option value="29">Komende 30 dagen</option>
       </select>
-      <input type="search" id="q" placeholder="Zoek straat, evenement…">
+      <input type="search" id="q" placeholder="Zoek straat, postcode (4 cijfers) of evenement…">
     </div>
     <div class="row" style="margin-bottom:8px"><span class="lbl">Provincie</span><span id="prov" class="row"></span></div>
     <div class="row" style="margin-bottom:8px"><span class="lbl">Plaats</span>
@@ -176,7 +176,7 @@ function visible(){
       const s = x.start.slice(0,10), e = (x.eind || (x.cat === "weg" ? "9999" : x.start)).slice(0,10);
       if (s > we || e < ws) return false;
     }
-    if (q && !(`${x.titel} ${x.locatie} ${x.toelichting} ${x.bron} ${x.plaats}`.toLowerCase().includes(q))) return false;
+    if (q && !(`${x.titel} ${x.locatie} ${x.toelichting} ${x.bron} ${x.plaats} ${(x.pc4||[]).join(" ")}`.toLowerCase().includes(q))) return false;
     return true;
   });
 }

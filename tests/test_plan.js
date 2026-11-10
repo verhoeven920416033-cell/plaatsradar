@@ -33,6 +33,27 @@ assert.deepEqual(d.plaatsen.map(p => [p.plaats, p.rijen.map(r => r.x.id).join()]
 d = K.planDag(g.gebieden, items, {datum: "2026-11-09", laag: true});
 assert.deepEqual(d.plaatsen[0].rijen.map(r => r.x.id), ["1", "3"]);
 
+// filter op postcode, straat of plaats
+const F = K.maakFilter("2223, Weg dicht");
+assert.deepEqual(F, {pc: [[2223, 2223]], tk: ["weg dicht"]});
+assert.deepEqual(K.maakFilter("5611 AB; 5600-5615 , Vestdijk").pc, [[5611, 5611], [5600, 5615]]);
+assert.equal(K.maakFilter("  "), null);
+const alle = {datum: "2026-11-10", woonplaatsen: wp};  // dinsdag: Teststad (2222-2223), ook Testdorp via GROEP_B
+const wk = [...items, {id: "7", plaats: "Testgem", cat: "weg", titel: "Kerkstraat dicht", hinder: "middel", pc4: ["1111"], start: "2026-11-01", eind: "2026-11-30"}];
+let f1 = K.planDag(g.gebieden, wk, {...alle, filter: K.maakFilter("2223")});
+assert.deepEqual(f1.plaatsen.map(p => p.rijen.map(r => r.x.id).join()), ["2"]); assert.equal(f1.meldingen, 1);
+f1 = K.planDag(g.gebieden, wk, {...alle, filter: K.maakFilter("kerkstraat")});
+assert.deepEqual(f1.plaatsen.map(p => [p.plaats, p.rijen.map(r => r.x.id).join()]), [["Testdorp", "7"]]);
+f1 = K.planDag(g.gebieden, wk, {...alle, filter: K.maakFilter("teststad")});
+assert.deepEqual(f1.plaatsen.map(p => p.plaats), ["Teststad"]);
+const wk2 = [...wk, {id: "8", plaats: "Testgem", cat: "weg", titel: "Kerkstraat richting Teststad", hinder: "hoog", pc4: ["1111"], start: "2026-11-01", eind: "2026-11-30"}];
+f1 = K.planDag(g.gebieden, wk2, {...alle, filter: K.maakFilter("teststad")});
+assert.deepEqual(f1.plaatsen.map(p => p.plaats), ["Teststad"], "plaatsnaam in de tekst van een andere plaats telt niet");
+f1 = K.planDag(g.gebieden, wk, {...alle, filter: K.maakFilter("9999")});
+assert.equal(f1.plaatsen.length, 0); assert.equal(f1.zonder.length, 0);
+assert.equal(K.synchronisatie(g.gebieden, null, K.maakFilter("2222")).length, 0);
+assert.equal(K.synchronisatie(g.gebieden, null, K.maakFilter("1100-1200")).length, 1);
+
 const s = K.synchronisatie(g.gebieden);
 assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROEP_B]), [["1111", "ma do", "ma do", "ma di wo do vr"]]);  // Teststad is gelijk
 (async () => {

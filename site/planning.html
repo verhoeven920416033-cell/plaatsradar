@@ -68,6 +68,7 @@ td.sam{font-weight:700;color:#1f7a4d}
   <div id="uit" hidden>
     <section class="panel geenprint">
       <div class="row" style="margin-bottom:8px"><span class="lbl">Diensten</span><span id="groepen" class="row"></span></div>
+      <div class="row" style="margin-bottom:8px"><span class="lbl">Filter</span><input type="search" id="filter" style="flex:1 1 320px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit" placeholder="Postcodes of straten, gescheiden door komma's: 5611, 5612-5615, Vestdijk, Tilburg" aria-label="Filter op postcode of straat"><span id="filterInfo" class="meta"></span></div>
       <div class="row"><span class="chip" id="fLaag">Incl. lage hinder</span><span style="flex:1"></span>
         <button class="btn pri" id="excel">Download Excel</button><button class="btn" id="print">Print</button><button class="btn" id="wis">Wis</button></div>
     </section>
@@ -90,7 +91,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const pad = n => String(n).padStart(2,"0"), iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const fmtD = s => { const d = new Date(s.length > 10 ? s : s+"T00:00"); return isNaN(d) ? s : d.toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"}); };
 const rand = (t, n) => `${n} ${n===1?t[0]:t[1]}`;
-let NET_DICHT = false, D = null, WP = [], G = null, AAN = null, LAAG = false, TAB = "hinder", R = null;
+let NET_DICHT = false, D = null, WP = [], G = null, AAN = null, LAAG = false, TAB = "hinder", R = null, FILTER = null, FT = 0;
 const fout = t => { const e = $("#fout"); e.hidden = !t; e.textContent = t || ""; };
 const plusDag = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
 $("#datum").value = plusDag(2);
@@ -133,17 +134,18 @@ function wanneer(x){ const d = $("#datum").value, p = x.perioden && x.perioden.f
 function toon(){
   const datum = $("#datum").value; if (!datum || !G) return;
   $("#dagnaam").textContent = K.DAGEN[K.weekdag(datum)];
-  R = K.planDag(G.gebieden, D.items, {datum, groepen:AAN, laag:LAAG, woonplaatsen:WP});
-  const S = K.synchronisatie(G.gebieden, AAN);
+  R = K.planDag(G.gebieden, D.items, {datum, groepen:AAN, laag:LAAG, woonplaatsen:WP, filter:FILTER});
+  const S = K.synchronisatie(G.gebieden, AAN, FILTER);
+  $("#filterInfo").textContent = FILTER ? `${FILTER.pc.length ? FILTER.pc.length + " postcode(s)" : ""}${FILTER.pc.length && FILTER.tk.length ? " + " : ""}${FILTER.tk.length ? FILTER.tk.length + " straat/plaats" : ""}` : "";
   $("#groepen").innerHTML = G.groepen.map(g => `<span class="chip ${AAN.has(g)?"on":""}" data-g="${esc(g)}">${esc(g)}</span>`).join("");
   $("#fLaag").classList.toggle("on", LAAG);
-  $("#kop").textContent = `Rijdag ${fmtD(datum)} (${R.dag}), meldingen van ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}.`;
+  $("#kop").textContent = (FILTER ? `Filter: ${$("#filter").value.trim()}. ` : "") + `Rijdag ${fmtD(datum)} (${R.dag}), meldingen van ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}.`;
   $("#kpis").innerHTML = [[R.gebieden,"postcodegebieden gereden"],[R.plaatsen.length,"plaatsen met hinder"],[R.meldingen,"meldingen"],[R.hoog,"hoge hinder",1],[S.length,"gebieden samen te voegen"]]
     .map(([n,t,a]) => `<div class="kpi${a?" alert":""}"><b>${n}</b><span>${t}</span></div>`).join("");
   $("#hinder").innerHTML = (R.plaatsen.length ? R.plaatsen.map(p => `<div class="place"><h2>${esc(p.plaats)} <small>${rand(["melding","meldingen"],p.rijen.length)} · ${esc(p.pc4.join(", "))}</small></h2>
       <div class="empty" style="padding:8px 14px"><b>Rijden op ${esc(R.dag)}:</b> ${p.groepen.map(g => `<span class="grp">${esc(g)}</span>`).join("")}</div>
       ${p.rijen.map(r => `<div class="item"><div class="st">${esc(r.pc4.join(", "))}<small>${r.groepen.map(esc).join(", ")}</small></div><div><div class="ttl">${esc(r.x.titel)}</div><div class="meta">${bron(r.x)}</div></div><span class="h h-${r.x.hinder}">${r.x.hinder}</span></div>`).join("")}</div>`).join("")
-    : `<div class="panel">Geen hinder in de gereden postcodegebieden op ${esc(fmtD(datum))}.</div>`)
+    : `<div class="panel">Geen hinder in de gereden postcodegebieden op ${esc(fmtD(datum))}${FILTER ? " binnen dit filter" : ""}.</div>`)
     + (R.zonder.length ? `<div class="place"><h2>Zonder exacte plek <small>gemeente-breed, controleren</small></h2>${R.zonder.map(z => z.rijen.map(x => `<div class="item"><div class="st">${esc(z.gemeente)}<small>${esc(z.plaatsen.slice(0,4).join(", "))}${z.plaatsen.length>4?" e.a.":""}</small></div><div><div class="ttl">${esc(x.titel)}</div><div class="meta">${bron(x)}</div></div><span class="h h-${x.hinder}">${x.hinder}</span></div>`).join("")).join("")}</div>` : "");
   const gs = G.groepen.filter(g => AAN.has(g));
   $("#sync").innerHTML = S.length ? `<div class="panel"><p class="meta">Postcodegebieden waar de gekozen diensten op verschillende dagen rijden. "Samen" = dagen waarop ze er allemaal al komen.</p>
@@ -159,7 +161,7 @@ function excel(){
   R.zonder.forEach(z => z.rijen.forEach(x => h.push([R.datum, z.plaatsen.join(", "), "", "gemeente-breed", x.hinder, x.label, x.titel, wanneer(x), x.bron, x.url || ""])));
   const s = [["Plaats","PC4", ...R.gs, "Samen"], ...R.sync.map(r => [r.plaats, r.pc4, ...R.gs.map(g => r.diensten[g] ?? ""), r.samen])];
   const a = document.createElement("a"); a.href = URL.createObjectURL(X.schrijf([{naam:"Hinder " + R.datum, rijen:h}, {naam:"Samenvoegen", rijen:s}]));
-  a.download = `planning-${R.datum}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  a.download = `planning-${R.datum}${FILTER ? "-filter" : ""}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 $("#bestand").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) leesExcel(f); });
 const drop = $("#drop");
@@ -170,6 +172,7 @@ document.querySelectorAll("[data-plus]").forEach(b => b.addEventListener("click"
 $("#datum").addEventListener("change", toon);
 $("#groepen").addEventListener("click", e => { const g = e.target.dataset.g; if (!g) return; AAN.has(g) ? AAN.delete(g) : AAN.add(g); if (!AAN.size) AAN = new Set(G.groepen); toon(); });
 $("#fLaag").addEventListener("click", () => { LAAG = !LAAG; toon(); });
+$("#filter").addEventListener("input", e => { clearTimeout(FT); FT = setTimeout(() => { FILTER = K.maakFilter(e.target.value); toon(); }, 200); });
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => { TAB = t.dataset.t; toon(); }));
 $("#excel").addEventListener("click", excel);
 $("#print").addEventListener("click", () => window.print());

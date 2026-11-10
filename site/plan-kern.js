@@ -24,6 +24,22 @@ function leesGeogroepen(rijen) {
   return {gebieden, fout, groepen: [...new Set(gebieden.map(g => g.groep))].sort()};
 }
 
+/** Filtertekst -> {pc:[[van,tot]], tk:[tekst]}. Postcodes: 5611, 5611 AB (telt als 5611), 5611-5615. Rest = straat of plaats. */
+function maakFilter(s) {
+  const pc = [], tk = [];
+  for (let t of String(s || "").split(/[,;\n]+/)) {
+    t = t.trim(); if (!t) continue;
+    let m = /^(\d{4})\s*(?:-|t\/m|tot)\s*(\d{4})$/i.exec(t);
+    if (m) { const a = +m[1], b = +m[2]; pc.push([Math.min(a, b), Math.max(a, b)]); continue; }
+    m = /^(\d{4})\s*(?:[A-Za-z]{2})?$/.exec(t);
+    if (m) { pc.push([+m[1], +m[1]]); continue; }
+    const k = kern(t); if (k.length >= 2) tk.push(k);
+  }
+  return pc.length || tk.length ? {pc, tk} : null;
+}
+const pcIn = (f, q) => f.pc.some(([a, b]) => +q >= a && +q <= b);
+const tekstIn = (f, t) => { const k = " " + kern(t) + " "; return f.tk.some(w => k.includes(w)); };
+
 const actief = (x, d) => {
   if (x.perioden) return x.perioden.some(([s, e]) => s.slice(0, 10) <= d && e.slice(0, 10) >= d);
   if (!x.start) return false;  // zonder datum niet op een planningsdag zetten
@@ -57,12 +73,24 @@ function planDag(gebieden, items, opt) {
   const lijst = [...perPlaats.values()].map(p => ({...p, groepen: [...p.groepen].sort(), pc4: [...p.pc4].sort(),
     rijen: p.rijen.sort((a, b) => orde[a.x.hinder] - orde[b.x.hinder] || (a.x.titel > b.x.titel ? 1 : -1))}))
     .sort((a, b) => b.rijen.filter(r => r.x.hinder === "hoog").length - a.rijen.filter(r => r.x.hinder === "hoog").length || b.rijen.length - a.rijen.length);
-  return {dag: DAGEN[dag], gebieden: pc.size, plaatsen: lijst, zonder: [...zonder.values()], meldingen: geteld.size,
-          hoog: relevant.filter(x => geteld.has(x.id) && x.hinder === "hoog").length};
+  let plaatsen = lijst, zonderL = [...zonder.values()];
+  let f = opt.filter, fp = null;
+  if (f) {  // postcode, straat of plaats; termen onderling = of. Een plaatsnaam selecteert die plaats, niet elke melding die hem noemt.
+    const bekend = new Set([...[...pc.values()].map(v => kern(v.plaats)), ...(opt.woonplaatsen || []).map(w => kern(w.naam))]);
+    fp = {pc: [], tk: f.tk.filter(t => bekend.has(t))};
+    f = {pc: f.pc, tk: f.tk.filter(t => !bekend.has(t))};
+    const melding = x => `${x.titel} ${x.locatie || ""} ${x.toelichting || ""}`;
+    plaatsen = lijst.map(p => tekstIn(fp, p.plaats) ? p : {...p, rijen: p.rijen.filter(r => r.pc4.some(q => pcIn(f, q)) || tekstIn(f, melding(r.x)))})
+      .filter(p => p.rijen.length).map(p => ({...p, pc4: [...new Set(p.rijen.flatMap(r => r.pc4))].sort(), groepen: [...new Set(p.rijen.flatMap(r => r.groepen))].sort()}));
+    zonderL = zonderL.map(z => z.plaatsen.some(pl => tekstIn(fp, pl)) ? {...z, plaatsen: z.plaatsen.filter(pl => tekstIn(fp, pl))} : {...z, rijen: z.rijen.filter(x => tekstIn(f, melding(x)))}).filter(z => z.rijen.length);
+  }
+  const ids = new Set(plaatsen.flatMap(p => p.rijen.map(r => r.x.id)));
+  return {dag: DAGEN[dag], gebieden: pc.size, plaatsen, zonder: zonderL, meldingen: ids.size,
+          hoog: relevant.filter(x => ids.has(x.id) && x.hinder === "hoog").length, filter: !!opt.filter};
 }
 
 /** Postcodegebieden waar gekozen diensten op verschillende dagen rijden (kandidaten om samen te voegen). */
-function synchronisatie(gebieden, groepen) {
+function synchronisatie(gebieden, groepen, f) {
   const per = new Map();
   for (const g of gebieden) { if (groepen && !groepen.has(g.groep)) continue;
     for (const p of g.pc4) { const k = p; if (!per.has(k)) per.set(k, {pc4: p, plaats: g.plaats, d: new Map()});
@@ -75,7 +103,7 @@ function synchronisatie(gebieden, groepen) {
     const samen = [0, 1, 2, 3, 4, 5, 6].filter(i => [...o.d.values()].every(d => d[i]));
     uit.push({pc4: o.pc4, plaats: o.plaats, diensten: Object.fromEntries([...o.d].map(([g, d]) => [g, d.map((v, i) => v ? KORT[i] : "").filter(Boolean).join(" ") || "-"])), samen: samen.map(i => KORT[i]).join(" ") || "geen"});
   }
-  return uit.sort((a, b) => a.plaats.localeCompare(b.plaats) || a.pc4.localeCompare(b.pc4));
+  return uit.filter(r => !f || pcIn(f, r.pc4) || tekstIn(f, r.plaats)).sort((a, b) => a.plaats.localeCompare(b.plaats) || a.pc4.localeCompare(b.pc4));
 }
-return {DAGEN, KORT, leesGeogroepen, planDag, synchronisatie, weekdag, actief};
+return {DAGEN, KORT, maakFilter, leesGeogroepen, planDag, synchronisatie, weekdag, actief};
 });
