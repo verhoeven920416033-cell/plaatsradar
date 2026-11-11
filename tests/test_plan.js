@@ -88,3 +88,12 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
   if (P.klantHinder(g.stops, items, {datum:"2026-11-13"}).length) fout("andere dag");
   console.log("klantcodes OK");
 }
+// volgorde klantcodes: hinder, dan postcode
+{
+  const P = require("../site/plan-kern.js");
+  const st = (k, pc) => ({rit:"Rit 1", klant:k, straat:"Hoofdstraat", nr:"1", postcode:pc, pc4:pc.slice(0,4), plaats:"X", datum:"", wd:-1});
+  const it = (id, h, pc) => ({id, plaats:"X", cat:"weg", hinder:h, titel:"Hoofdstraat dicht", pc4:[pc], start:"2026-11-01", eind:"2026-11-30"});
+  const r = P.klantHinder([st("A","5700 AA"), st("B","5611 AA"), st("C","5612 AA")], [it("1","middel","5611"), it("2","hoog","5700"), it("3","hoog","5612")], {datum:"2026-11-12"});
+  if (r.map(x => x.klant).join() !== "C,A,B") { console.error("volgorde FOUT", r.map(x => x.klant)); process.exit(1); }
+  console.log("volgorde OK");
+}

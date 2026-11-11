@@ -185,7 +185,7 @@ function toon(){
   const rijen = [...R.plaatsen.flatMap(p => p.rijen.map(r => ({plaats:p.plaats, pc4:r.pc4.join(", "), groepen:r.groepen.join(", "), x:r.x}))),
     ...R.zonder.flatMap(z => z.rijen.map(x => ({plaats:z.plaatsen.join(", "), pc4:"", groepen:"gemeente-breed", x})))];
   const orde = {hoog:0, middel:1, laag:2, geen:2}, wa = (r, k) => k === "hinder" ? orde[r.x.hinder] : k === "soort" ? r.x.label : k === "titel" ? r.x.titel : k === "wanneer" ? (r.x.start || "9") : String(r[k] || "");
-  rijen.sort((a, b) => { const x = wa(a, SORT.k), y = wa(b, SORT.k), c = typeof x === "number" ? x - y : String(x).localeCompare(String(y), "nl", {numeric:true}); return (SORT.op ? c : -c) || a.plaats.localeCompare(b.plaats, "nl"); });
+  rijen.sort((a, b) => { const x = wa(a, SORT.k), y = wa(b, SORT.k), c = typeof x === "number" ? x - y : String(x).localeCompare(String(y), "nl", {numeric:true}); return (SORT.op ? c : -c) || a.pc4.localeCompare(b.pc4) || a.plaats.localeCompare(b.plaats, "nl"); });
   const kol = [["plaats","Plaats"],["pc4","Postcode"],["groepen","Diensten"],["hinder","Hinder"],["soort","Soort"],["titel","Melding"],["wanneer","Wanneer"]];
   $("#tabel").innerHTML = rijen.length ? `<div class="tw"><table><thead><tr>${kol.map(([k,t]) => `<th data-k="${k}" class="${SORT.k===k?"s"+(SORT.op?"":" op"):""}">${t}</th>`).join("")}<th>Bron</th></tr></thead><tbody>${rijen.map(r => `<tr><td>${esc(r.plaats)}</td><td>${esc(r.pc4)}</td><td>${esc(r.groepen)}</td><td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.label)}</td><td>${esc(r.x.titel)}</td><td>${esc(wanneer(r.x))}</td><td>${esc(r.x.bron)}${r.x.url?` · <a href="${esc(r.x.url)}" target="_blank" rel="noopener noreferrer">link</a>`:""}</td></tr>`).join("")}</tbody></table></div>`
     : `<div class="panel">Geen hinder binnen dit filter op ${esc(fmtD(datum))}.</div>`;
@@ -233,7 +233,9 @@ function kaartInfo(p, soort){
 }
 function excel(){
   const h = [["Rijdag","Plaats","Postcode (PC4)","Diensten die dag","Hinder","Soort","Melding","Wanneer","Bron","Link"]];
-  R.plaatsen.forEach(p => p.rijen.forEach(r => h.push([R.datum, p.plaats, r.pc4.join(", "), r.groepen.join(", "), r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.x.bron, r.x.url || ""])));
+  const ho = {hoog:0, middel:1, laag:2, geen:2};  // Excel: 1. hinder, 2. postcode
+  R.plaatsen.flatMap(p => p.rijen.map(r => ({p, r}))).sort((a, b) => ho[a.r.x.hinder] - ho[b.r.x.hinder] || String(a.r.pc4[0] || "").localeCompare(String(b.r.pc4[0] || "")))
+    .forEach(({p, r}) => h.push([R.datum, p.plaats, r.pc4.join(", "), r.groepen.join(", "), r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.x.bron, r.x.url || ""]));
   R.zonder.forEach(z => z.rijen.forEach(x => h.push([R.datum, z.plaatsen.join(", "), "", "gemeente-breed", x.hinder, x.label, x.titel, wanneer(x), x.bron, x.url || ""])));
   const s = [["Plaats","PC4", ...R.gs, "Samen"], ...R.sync.map(r => [r.plaats, r.pc4, ...R.gs.map(g => r.diensten[g] ?? ""), r.samen])];
   const bladen = [{naam:"Hinder " + R.datum, rijen:h}, {naam:"Samenvoegen", rijen:s}];

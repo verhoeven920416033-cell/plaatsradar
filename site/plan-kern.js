@@ -113,7 +113,7 @@ function planDag(gebieden, items, opt) {
     }
   }
   const lijst = [...perPlaats.values()].map(p => ({...p, groepen: [...p.groepen].sort(), pc4: [...p.pc4].sort(),
-    rijen: p.rijen.sort((a, b) => orde[a.x.hinder] - orde[b.x.hinder] || (a.x.titel > b.x.titel ? 1 : -1))}))
+    rijen: p.rijen.sort((a, b) => orde[a.x.hinder] - orde[b.x.hinder] || String(a.pc4[0] || "").localeCompare(String(b.pc4[0] || "")) || (a.x.titel > b.x.titel ? 1 : -1))}))
     .sort((a, b) => b.rijen.filter(r => r.x.hinder === "hoog").length - a.rijen.filter(r => r.x.hinder === "hoog").length || b.rijen.length - a.rijen.length);
   let plaatsen = lijst, zonderL = [...zonder.values()];
   let f = opt.filter, fp = null;
@@ -155,7 +155,9 @@ function klantHinder(stops, items, opt) {
       rijen.push({...s, x, niveau});
     }
   }
-  rijen.sort((a, b) => (a.niveau === "straat" ? 0 : 1) - (b.niveau === "straat" ? 0 : 1) || orde[a.x.hinder] - orde[b.x.hinder] || a.klant.localeCompare(b.klant, "nl", {numeric: true}));
+  // volgorde: 1. hinder, 2. postcode (daarna straat-match vóór gebied, dan klantcode)
+  rijen.sort((a, b) => orde[a.x.hinder] - orde[b.x.hinder] || a.postcode.replace(/\s/g, "").localeCompare(b.postcode.replace(/\s/g, "")) ||
+    (a.niveau === "straat" ? 0 : 1) - (b.niveau === "straat" ? 0 : 1) || a.klant.localeCompare(b.klant, "nl", {numeric: true}));
   return rijen;
 }
 
