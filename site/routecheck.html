@@ -45,6 +45,16 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
 .tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}.tab{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 14px;font:600 13px system-ui,sans-serif;cursor:pointer}.tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}.tw table{font-size:13px}.tw th{position:sticky;top:0;background:#eef2f7;cursor:pointer;white-space:nowrap}.tw th.s::after{content:" ▾"}.tw th.s.op::after{content:" ▴"}.tw td{vertical-align:top}
 .leg{display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:12.5px;color:var(--mut)}.leg b{display:inline-block;width:11px;height:11px;border-radius:50%}.leg b.vk{border-radius:2px;background:#003366}
+[hidden]{display:none!important}
+main{max-width:1240px}footer{max-width:1240px}body{background:#eef1f5}
+header{padding:18px 24px 15px;background:linear-gradient(120deg,#001a35 0%,#003366 70%,#0a4a86 100%)}header h1{font-size:24px;letter-spacing:-.2px}
+.panel,.place,.kpi,.tw{box-shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);border-color:#e3e8ef}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{position:relative;border-radius:12px;padding:12px 14px 12px 18px;min-width:0;overflow:hidden}.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:#c9d3df}.kpi.alert::before{background:var(--red)}
+.kpi b{font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.5px}.kpi span{font-size:12.5px}
+.tabs{position:sticky;top:0;z-index:5;background:#eef1f5;padding:8px 0;margin-bottom:4px;overflow-x:auto}.tab{white-space:nowrap;flex:0 0 auto}.tab{border-radius:10px;padding:8px 14px}
+.item{border-left:4px solid transparent}.place h2{background:#f6f8fb}.tw tbody tr:hover{background:#f6f9fd}.tw td,.tw th{padding:7px 10px}
+@media print{.tabs{position:static}body{background:#fff}}
 #huddle{font:12px/1.35 Arial,Helvetica,sans-serif;color:#000;background:#fff}
 #huddle h1{font-size:18px;margin:0 0 2px}#huddle .hk{display:flex;justify-content:space-between;gap:12px;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px;font-size:12.5px}
 #huddle table{width:100%;border-collapse:collapse;font-size:11.5px}#huddle th{background:#e6e6e6;text-align:left;border:1px solid #000;padding:4px 5px}

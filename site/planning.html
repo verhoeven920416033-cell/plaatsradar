@@ -39,6 +39,45 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
 @media(max-width:700px){.item{grid-template-columns:1fr auto}.item .st{grid-column:1/-1}}
 @media print{header{background:none;color:#000;border-bottom:2px solid #000}header a,.geenprint,.toast,footer{display:none!important}body{background:#fff}.place,.kpi{border-color:#999}.item{font-size:12px;padding:5px 10px}}
 
+[hidden]{display:none!important}
+main{max-width:1240px}footer{max-width:1240px}
+body{background:#eef1f5}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;padding:18px 24px 15px;background:linear-gradient(120deg,#001a35 0%,#003366 70%,#0a4a86 100%)}
+header h1{font-size:24px;letter-spacing:-.2px}
+.pil{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:5px 12px;font-size:12.5px;white-space:nowrap}
+.pil b{width:9px;height:9px;border-radius:50%;background:#9aa5b1}.pil.ok b{background:#3ddc84}.pil.oud b{background:#ffb020}
+.panel,.place,.kpi,.tw{box-shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);border-color:#e3e8ef}
+.stappen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+.stap{background:#fff;border:1px solid #e3e8ef;border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+.stap b.n{flex:0 0 30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:14px}
+.stap h3{margin:0 0 2px;font-size:15px}.stap p{margin:0;font-size:13px;color:var(--mut)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{position:relative;border-radius:12px;padding:12px 14px 12px 18px;min-width:0;overflow:hidden;text-align:left;font:inherit;color:inherit;background:#fff;border:1px solid #e3e8ef}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:#c9d3df}
+.kpi.alert::before{background:var(--red)}.kpi.info::before{background:var(--navy2)}
+.kpi b{font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.5px}.kpi span{font-size:12.5px}
+button.kpi{cursor:pointer;transition:transform .08s,box-shadow .12s}button.kpi:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(16,24,40,.12)}
+button.kpi em{position:absolute;right:10px;top:9px;font-style:normal;font-size:11px;color:var(--mut)}
+.blik{display:grid;grid-template-columns:1fr 1.25fr 1.25fr;gap:12px;margin-bottom:12px}
+.krt{background:#fff;border:1px solid #e3e8ef;border-radius:12px;padding:13px 15px;box-shadow:0 1px 2px rgba(16,24,40,.05);min-width:0}
+.krt h3{margin:0 0 2px;font-size:14px}.krt .sub{font-size:12px;color:var(--mut);margin:0 0 10px}
+.stk{display:flex;gap:2px;height:26px;border-radius:6px;overflow:hidden}.stk span{min-width:3px;cursor:pointer}
+.sg-hoog{background:#c8102e}.sg-middel{background:#f3b23c}.sg-laag{background:#9aa5b1}
+.lgd{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13px}.lgd span{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.lgd i{width:11px;height:11px;border-radius:3px;display:inline-block}.lgd b{font-variant-numeric:tabular-nums}
+.br{display:grid;grid-template-columns:minmax(74px,34%) 1fr 34px;gap:8px;align-items:center;padding:3px 4px;border-radius:6px;cursor:pointer;font-size:13px;border:0;background:none;width:100%;text-align:left;font-family:inherit;color:inherit}
+.br:hover{background:#f1f5fa}.br .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.br .nm small{color:var(--mut)}
+.br .bk{display:flex;gap:2px;height:12px}.br .bk span{border-radius:0;min-width:2px}.br .bk span:last-child{border-radius:0 4px 4px 0}
+.br .vl{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.drop.klein{padding:9px 14px;font-size:13.5px}.drop.klein .meta{display:none}
+.fts{margin-top:12px;padding-top:10px;border-top:1px solid #eef1f5;font-size:12.5px;color:var(--mut);display:grid;gap:3px}.fts b{color:var(--ink);font-variant-numeric:tabular-nums}
+.leeg{color:var(--mut);font-size:13px;padding:6px 0}
+.tab{display:inline-flex;align-items:center;gap:7px;border-radius:10px;padding:8px 14px}.tab i{font-style:normal;font-size:11.5px;font-weight:700;background:#e8eef6;color:var(--navy);border-radius:999px;padding:1px 7px}.tab.on i{background:rgba(255,255,255,.22);color:#fff}
+.tabs{position:sticky;top:0;z-index:5;background:#eef1f5;padding:8px 0;margin-bottom:4px;overflow-x:auto}.tab{white-space:nowrap;flex:0 0 auto}
+.item{border-left:4px solid transparent}.item.i-hoog{border-left-color:#c8102e}.item.i-middel{border-left-color:#f3b23c}.item.i-laag{border-left-color:#c9d3df}
+.place h2{background:#f6f8fb}
+.tw tbody tr:hover{background:#f6f9fd}.tw td,.tw th{padding:7px 10px}
+@media(max-width:980px){.blik{grid-template-columns:1fr}.stappen{grid-template-columns:1fr}}
+@media print{.blik,.kpis{break-inside:avoid}.tabs{position:static}.stappen{display:none}body{background:#fff}}
 .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;user-select:none}.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
 .tabs{display:flex;gap:6px;margin-bottom:10px}.tab{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 14px;font:600 13px system-ui,sans-serif;cursor:pointer}.tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .grp{display:inline-block;font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin:0 4px 2px 0;color:var(--navy2);background:#f4f7fb}
@@ -50,10 +89,17 @@ td.sam{font-weight:700;color:#1f7a4d}
 </head>
 <body>
 <header>
-  <h1>Planning vooruit</h1>
+  <div><h1>Planning vooruit</h1>
   <p id="sub">Hinder per postcodegebied op de rijdag, uit je geogroepen — <a href="index.html" class="geenprint">PlaatsRadar</a> · <a href="routecheck.html" class="geenprint">Routecheck</a> · <a href="planning-offline.html" download="Planning-werk.html" class="geenprint">versie voor werk-pc downloaden</a></p>
+</div>
+  <span class="pil" id="pil"><b></b><span>meldingen laden…</span></span>
 </header>
 <main>
+  <div class="stappen geenprint" id="stappen">
+    <div class="stap"><b class="n">1</b><div><h3>Kies de rijdag</h3><p>Standaard over 2 dagen. Eén klik voor vandaag, morgen of later.</p></div></div>
+    <div class="stap"><b class="n">2</b><div><h3>Sleep je Excel erin</h3><p>Geogroepen of de optimiser-export. Het bestand blijft op deze pc.</p></div></div>
+    <div class="stap"><b class="n">3</b><div><h3>Zie waar het knelt</h3><p>Hinder per postcode, dienst en klantcode. Filter, kaart en Excel.</p></div></div>
+  </div>
   <section class="panel veilig geenprint">
     <b>Je geogroepen blijven op deze computer.</b> Het Excel-bestand wordt alleen in deze browser gelezen, niet verstuurd en niet bewaard. Nadat de meldingen zijn opgehaald gaat het netwerk van deze pagina dicht, vóór je een bestand kiest.
   </section>
@@ -79,7 +125,8 @@ td.sam{font-weight:700;color:#1f7a4d}
     </section>
     <p class="meta"><b>Vertrouwelijk: dit overzicht bevat planningsgegevens.</b> <span id="kop"></span></p>
     <div class="kpis" id="kpis"></div>
-    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Hinder op de rijdag</button><button class="tab" data-t="tabel">Tabel</button><button class="tab" data-t="kaart">Kaart</button><button class="tab" data-t="klant" id="tabKlant" hidden>Klantcodes</button><button class="tab" data-t="sync">Diensten samenvoegen</button></div>
+    <div class="blik" id="blik"></div>
+    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Per plaats<i id="nHinder"></i></button><button class="tab" data-t="tabel">Tabel<i id="nTabel"></i></button><button class="tab" data-t="klant" id="tabKlant" hidden>Klantcodes<i id="nKlant"></i></button><button class="tab" data-t="kaart">Kaart</button><button class="tab" data-t="sync">Diensten samenvoegen<i id="nSync"></i></button></div>
     <div id="hinder"></div>
     <div id="tabel" hidden></div>
     <div id="kaartvak" hidden>
@@ -126,6 +173,8 @@ function zetStand(bron){
     (uur > 24 ? ` · <b style="color:var(--red)">${Math.round(uur/24)} dag(en) oud</b>` : "") + ` · netwerk ${NET_DICHT ? "dicht" : "open"}` +
     (pc ? "" : ' · <b style="color:var(--red)">postcodes ontbreken nog</b>');
   $("#nieuw").hidden = !window.PR_DATA;
+  const pil = $("#pil"); pil.className = "pil " + (uur > 24 ? "oud" : "ok");
+  pil.lastElementChild.textContent = `Meldingen ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${bron}` + (uur > 24 ? ` · ${Math.round(uur/24)} dag(en) oud` : "");
 }
 async function laad(){
   let bron = "live";
@@ -174,11 +223,34 @@ function toon(){
     (G.bron === "optimiser" ? ` Bron: optimiser-export, ${G.groepen.length} ritten${G.datums.length ? " op " + G.datums.map(fmtD).join(", ") : ""}${G.overgeslagen.length ? ", overgeslagen: " + G.overgeslagen.join(", ") : ""}.` +
       (G.datums.length && !G.datums.includes(datum) ? " Let op: de rijdag staat niet in het bestand, dus er rijdt niets." : "") : "");
   document.querySelector("#groepen").previousElementSibling.textContent = G.bron === "optimiser" ? "Ritten" : "Diensten";
-  $("#kpis").innerHTML = [[R.gebieden,"postcodegebieden gereden"],[R.plaatsen.length,"plaatsen met hinder"],[R.meldingen,"meldingen"],[R.hoog,"hoge hinder",1],[S.length,"gebieden samen te voegen"], ...(G.stops && G.stops.length ? [[new Set(K.klantHinder(G.stops, D.items, {datum, hinder:FH, soort:x => FS.has(soortVan(x)), groepen:AAN.size === G.groepen.length ? null : AAN}).map(r => r.klant)).size, "klantcodes met hinder in hun straat", 1]] : [])]
-    .map(([n,t,a]) => `<div class="kpi${a?" alert":""}"${/klantcodes/.test(t) ? ' data-naar="klant" style="cursor:pointer" title="Open de tab Klantcodes"' : ""}><b>${n}</b><span>${t}</span></div>`).join("");
+  const nKl = G.stops && G.stops.length ? new Set(K.klantHinder(G.stops, D.items, {datum, hinder:FH, soort:x => FS.has(soortVan(x)), groepen:AAN.size === G.groepen.length ? null : AAN}).map(r => r.klant)).size : null;
+  // [waarde, label, stijl, actie, hint]
+  const kp = [[R.hoog, "hoge hinder", "alert", "hoog", "toon alleen hoog"], [R.meldingen, "meldingen op de rijdag", "info", "tabel", "open tabel"],
+    ...(nKl === null ? [] : [[nKl, "klantcodes met hinder in hun straat", "alert", "klant", "open klantcodes"]]),
+    [R.plaatsen.length, "plaatsen met hinder", "", "hinder", "per plaats"], [R.gebieden, "postcodegebieden gereden", "", "kaart", "open kaart"], [S.length, "gebieden samen te voegen", "", "sync", "bekijk"]];
+  $("#kpis").innerHTML = kp.map(([n, t, st, act, hint]) => `<button type="button" class="kpi ${st}" data-act="${act}" title="${esc(hint)}"><em>${esc(hint)} ›</em><b>${n}</b><span>${esc(t)}</span></button>`).join("");
+  // ---- in één oogopslag: verdeling, drukste postcodegebieden, per dienst/rit
+  const uniek = new Map(), perPcH = new Map(), perGr = new Map(), tel = (m, k, h, extra) => { if (!m.has(k)) m.set(k, {hoog:0, middel:0, laag:0, ...extra}); m.get(k)[h]++; };
+  R.plaatsen.forEach(p => p.rijen.forEach(r => { const h = r.x.hinder === "geen" ? "laag" : r.x.hinder; uniek.set(r.x.id, h);
+    r.pc4.forEach(q => tel(perPcH, q, h, {plaats:p.plaats})); r.groepen.forEach(g => tel(perGr, g, h)); }));
+  R.zonder.forEach(z => z.rijen.forEach(x => uniek.set(x.id, x.hinder === "geen" ? "laag" : x.hinder)));
+  const vd = {hoog:0, middel:0, laag:0}; uniek.forEach(h => vd[h]++); const tot = vd.hoog + vd.middel + vd.laag;
+  const top = m => [...m].map(([k, v]) => ({k, ...v, n:v.hoog + v.middel + v.laag})).sort((a, b) => b.hoog - a.hoog || b.n - a.n || String(a.k).localeCompare(String(b.k), "nl", {numeric:true})).slice(0, 7);
+  const balk = (lijst, soort, naam) => { const mx = Math.max(1, ...lijst.map(x => x.n));
+    return lijst.length ? lijst.map(x => `<button type="button" class="br" data-${soort}="${esc(x.k)}" title="${esc(naam(x).replace(/<[^>]+>/g, ""))}: ${x.hoog} hoog, ${x.middel} middel, ${x.laag} laag — klik om te filteren">
+      <span class="nm">${naam(x)}</span><span class="bk" style="width:${Math.max(6, x.n / mx * 100)}%">${HINDER.filter(h => x[h]).map(h => `<span class="sg-${h}" style="flex:${x[h]}"></span>`).join("")}</span><span class="vl">${x.n}</span></button>`).join("") : '<div class="leeg">Geen hinder binnen dit filter.</div>'; };
+  const gNaam = G.bron === "optimiser" ? "rit" : "dienst";
+  $("#blik").innerHTML = `<div class="krt"><h3>Hinder op ${esc(fmtD(datum))}</h3><p class="sub">${tot} unieke meldingen in de gereden gebieden</p>
+      ${tot ? `<div class="stk" role="img" aria-label="${vd.hoog} hoog, ${vd.middel} middel, ${vd.laag} laag">${HINDER.filter(h => vd[h]).map(h => `<span class="sg-${h}" style="flex:${vd[h]}" data-solo="${h}" title="${h}: ${vd[h]} (${Math.round(vd[h] / tot * 100)}%) — klik voor alleen ${h}"></span>`).join("")}</div>` : '<div class="leeg">Geen hinder binnen dit filter.</div>'}
+      <div class="lgd">${HINDER.map(h => `<span data-solo="${h}" title="Toon alleen ${h}"><i class="sg-${h}"></i>${h} <b>${vd[h]}</b></span>`).join("")}</div>
+      <div class="fts"><span><b>${R.gebieden}</b> postcodegebieden gereden door <b>${AAN.size}</b> ${AAN.size === 1 ? gNaam : (gNaam === "rit" ? "ritten" : "diensten")}</span>
+        <span><b>${perPcH.size}</b> daarvan met hinder${R.gebieden ? ` (${Math.round(perPcH.size / R.gebieden * 100)}%)` : ""}</span>
+        ${R.zonder.length ? `<span><b>${R.zonder.reduce((n, z) => n + z.rijen.length, 0)}</b> gemeente-breed zonder exacte plek</span>` : ""}</div></div>
+    <div class="krt"><h3>Drukste postcodegebieden</h3><p class="sub">Meeste hoge hinder eerst · klik om te filteren</p>${balk(top(perPcH), "pc", x => `<b>${esc(x.k)}</b> <small>${esc(x.plaats || "")}</small>`)}</div>
+    <div class="krt"><h3>Per ${gNaam}</h3><p class="sub">Meldingen in de gebieden van elke ${gNaam} · klik om te kiezen</p>${balk(top(perGr), "gr", x => esc(x.k))}</div>`;
   $("#hinder").innerHTML = (R.plaatsen.length ? R.plaatsen.map(p => `<div class="place"><h2>${esc(p.plaats)} <small>${rand(["melding","meldingen"],p.rijen.length)} · ${esc(p.pc4.join(", "))}</small></h2>
       <div class="empty" style="padding:8px 14px"><b>Rijden op ${esc(R.dag)}:</b> ${p.groepen.map(g => `<span class="grp">${esc(g)}</span>`).join("")}</div>
-      ${p.rijen.map(r => `<div class="item"><div class="st">${esc(r.pc4.join(", "))}<small>${r.groepen.map(esc).join(", ")}</small></div><div><div class="ttl">${esc(r.x.titel)}</div><div class="meta">${bron(r.x)}</div></div><span class="h h-${r.x.hinder}">${r.x.hinder}</span></div>`).join("")}</div>`).join("")
+      ${p.rijen.map(r => `<div class="item i-${r.x.hinder}"><div class="st">${esc(r.pc4.join(", "))}<small>${r.groepen.map(esc).join(", ")}</small></div><div><div class="ttl">${esc(r.x.titel)}</div><div class="meta">${bron(r.x)}</div></div><span class="h h-${r.x.hinder}">${r.x.hinder}</span></div>`).join("")}</div>`).join("")
     : `<div class="panel">Geen hinder in de gereden postcodegebieden op ${esc(fmtD(datum))}${FILTER ? " binnen dit filter" : ""}.</div>`)
     + (R.zonder.length ? `<div class="place"><h2>Zonder exacte plek <small>gemeente-breed, controleren</small></h2>${R.zonder.map(z => z.rijen.map(x => `<div class="item"><div class="st">${esc(z.gemeente)}<small>${esc(z.plaatsen.slice(0,4).join(", "))}${z.plaatsen.length>4?" e.a.":""}</small></div><div><div class="ttl">${esc(x.titel)}</div><div class="meta">${bron(x)}</div></div><span class="h h-${x.hinder}">${x.hinder}</span></div>`).join("")).join("")}</div>` : "");
   const gs = G.groepen.filter(g => AAN.has(g));
@@ -222,6 +294,8 @@ function toon(){
   }
   $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#klant").hidden = TAB !== "klant"; $("#kaartvak").hidden = TAB !== "kaart"; $("#tabel").hidden = TAB !== "tabel";
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.t === TAB));
+  $("#nHinder").textContent = R.plaatsen.length; $("#nTabel").textContent = rijen.length; $("#nSync").textContent = S.length; $("#nKlant").textContent = nKl === null ? "" : new Set(KR.map(r => r.klant)).size;
+  $("#stappen").hidden = true; $("#drop").classList.add("klein");
   $("#uit").hidden = false; R.sync = S; R.gs = gs; R.datum = datum;
   if (TAB === "kaart") tekenKaart();
 }
@@ -277,7 +351,15 @@ $("#klant").addEventListener("click", e => {
   else if (h) { KSORT = KSORT && KSORT.k === h.dataset.ks ? {k:h.dataset.ks, op:!KSORT.op} : {k:h.dataset.ks, op:true}; toon(); }
   else if (e.target.id === "kpWis") { KPC = null; KPREF = ""; $("#kpZoek").value = ""; toon(); }
 });
-$("#kpis").addEventListener("click", e => { if (e.target.closest("[data-naar]")) { TAB = "klant"; toon(); $("#klant").scrollIntoView({behavior:"smooth", block:"start"}); } });
+$("#kpis").addEventListener("click", e => { const k = e.target.closest("[data-act]"); if (!k) return; const a = k.dataset.act;
+  if (a === "hoog") { FH = FH.size === 1 && FH.has("hoog") ? nieuwH() : new Set(["hoog"]); } else TAB = a;
+  toon(); if (a !== "hoog") document.querySelector(".tabs").scrollIntoView({behavior:"smooth", block:"start"}); });
+$("#blik").addEventListener("click", e => {
+  const so = e.target.closest("[data-solo]"), pc = e.target.closest("[data-pc]"), gr = e.target.closest("[data-gr]");
+  if (so) { const h = so.dataset.solo; FH = FH.size === 1 && FH.has(h) ? nieuwH() : new Set([h]); toon(); }
+  else if (pc) { const f = $("#filter"), v = pc.dataset.pc; f.value = f.value.trim() === v ? "" : v; FILTER = K.maakFilter(f.value); toon(); }
+  else if (gr) { const g = gr.dataset.gr; AAN = AAN.size === 1 && AAN.has(g) ? new Set(G.groepen) : new Set([g]); toon(); }
+});
 $("#klantKol").addEventListener("change", e => { if (!RUW) return; G = K.leesGeogroepen(RUW, {skip:$("#skip").value.split(/[,;\s]+/).filter(Boolean), klantKolom:+e.target.value}); toon(); });
 $("#tabel").addEventListener("click", e => { const t = e.target.closest("th[data-k]"); if (!t) return; SORT = SORT.k === t.dataset.k ? {k:t.dataset.k, op:!SORT.op} : {k:t.dataset.k, op:true}; toon(); });
 $("#uit").addEventListener("click", e => { const c = e.target.closest("[data-h],[data-s]"); if (!c) return;
@@ -293,7 +375,7 @@ $("#filter").addEventListener("input", e => { clearTimeout(FT); FT = setTimeout(
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => { TAB = t.dataset.t; toon(); }));
 $("#excel").addEventListener("click", excel);
 $("#print").addEventListener("click", () => window.print());
-$("#wis").addEventListener("click", () => { G = null; R = null; RUW = null; KR = []; $("#uit").hidden = true; ["hinder","sync","kpis","tabel","klantUit"].forEach(i => $("#"+i).innerHTML = ""); fout(""); });
+$("#wis").addEventListener("click", () => { $("#stappen").hidden = false; $("#drop").classList.remove("klein"); G = null; R = null; RUW = null; KR = []; $("#uit").hidden = true; ["hinder","sync","kpis","tabel","klantUit"].forEach(i => $("#"+i).innerHTML = ""); fout(""); });
 $("#meldingen").addEventListener("change", async e => { const f = e.target.files[0]; e.target.value = ""; if (!f) return;
   try { const d = JSON.parse(await f.text()); if (!Array.isArray(d.items) || !d.gegenereerd) throw 0; D = d; zetStand("uit bestand"); fout(""); if (G) toon(); }
   catch { fout("Dit is geen geldig meldingenbestand (data.json)."); } });
