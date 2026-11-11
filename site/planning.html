@@ -90,6 +90,9 @@ td.sam{font-weight:700;color:#1f7a4d}
     <div id="klant" hidden>
       <div class="row geenprint" style="margin-bottom:8px"><span class="chip" id="fGebied">Ook zelfde postcodegebied (straat niet genoemd)</span>
         <label class="meta">Klantcode uit kolom <select id="klantKol" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit"></select></label></div>
+      <div class="row geenprint" style="margin-bottom:8px;align-items:flex-start"><span class="lbl" style="padding-top:5px">Postcode</span>
+        <input type="search" id="kpZoek" inputmode="numeric" placeholder="Typ: 56, 5611 of 5611AB" style="width:190px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font:inherit" aria-label="Postcode begint met">
+        <span id="kpChips" class="row" style="gap:6px;flex:1;max-height:96px;overflow:auto"></span></div>
       <div id="klantUit"></div>
     </div>
     <div id="sync" hidden></div>
@@ -111,7 +114,7 @@ const rand = (t, n) => `${n} ${n===1?t[0]:t[1]}`;
 let NET_DICHT = false, D = null, WP = [], G = null, AAN = null, TAB = "hinder", R = null, FILTER = null, FT = 0, KAART = null, KAART_DATA = window.PR_KAART || null;
 const HINDER = ["hoog","middel","laag"], SOORT = {weg:"Weg / werk", evenement:"Evenement / kermis"}, soortVan = x => x.cat === "evenement" || x.cat === "kermis" ? "evenement" : "weg";
 const nieuwH = () => new Set(["hoog","middel"]);
-let FH = nieuwH(), FS = new Set(Object.keys(SOORT)), SORT = {k:"hinder", op:true}, RUW = null, GEBIED = false, KR = [];
+let FH = nieuwH(), FS = new Set(Object.keys(SOORT)), SORT = {k:"hinder", op:true}, RUW = null, GEBIED = false, KR = [], KPC = null, KPREF = "", KSORT = null;
 const fout = t => { const e = $("#fout"); e.hidden = !t; e.textContent = t || ""; };
 const plusDag = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
 $("#datum").value = plusDag(2);
@@ -146,7 +149,7 @@ async function leesExcel(f){
     G = K.leesGeogroepen(RUW, {skip:$("#skip").value.split(/[,;\s]+/).filter(Boolean)});
     if (!G.gebieden.length) throw new Error(G.bron === "optimiser" ? "Geen ritten met postcode gevonden (alle ritten overgeslagen?)." : "Geen postcodegebieden gevonden.");
     if (G.bron === "optimiser") { const vandaag = iso(new Date()), d = G.datums.filter(x => x >= vandaag); if (d.length) $("#datum").value = d[0]; else if (G.datums.length) $("#datum").value = G.datums[G.datums.length - 1]; }
-    AAN = new Set(G.groepen); toon();
+    AAN = new Set(G.groepen); KPC = null; toon();
   } catch (e) { G = null; $("#uit").hidden = true; fout(e.message || "Excel lezen mislukt."); }
 }
 const bron = x => `${esc(x.label)} · ${esc(wanneer(x))} · ${esc(x.bron)}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">bron</a>`:""}`;
@@ -172,7 +175,7 @@ function toon(){
       (G.datums.length && !G.datums.includes(datum) ? " Let op: de rijdag staat niet in het bestand, dus er rijdt niets." : "") : "");
   document.querySelector("#groepen").previousElementSibling.textContent = G.bron === "optimiser" ? "Ritten" : "Diensten";
   $("#kpis").innerHTML = [[R.gebieden,"postcodegebieden gereden"],[R.plaatsen.length,"plaatsen met hinder"],[R.meldingen,"meldingen"],[R.hoog,"hoge hinder",1],[S.length,"gebieden samen te voegen"], ...(G.stops && G.stops.length ? [[new Set(K.klantHinder(G.stops, D.items, {datum, hinder:FH, soort:x => FS.has(soortVan(x)), groepen:AAN.size === G.groepen.length ? null : AAN}).map(r => r.klant)).size, "klantcodes met hinder in hun straat", 1]] : [])]
-    .map(([n,t,a]) => `<div class="kpi${a?" alert":""}"><b>${n}</b><span>${t}</span></div>`).join("");
+    .map(([n,t,a]) => `<div class="kpi${a?" alert":""}"${/klantcodes/.test(t) ? ' data-naar="klant" style="cursor:pointer" title="Open de tab Klantcodes"' : ""}><b>${n}</b><span>${t}</span></div>`).join("");
   $("#hinder").innerHTML = (R.plaatsen.length ? R.plaatsen.map(p => `<div class="place"><h2>${esc(p.plaats)} <small>${rand(["melding","meldingen"],p.rijen.length)} · ${esc(p.pc4.join(", "))}</small></h2>
       <div class="empty" style="padding:8px 14px"><b>Rijden op ${esc(R.dag)}:</b> ${p.groepen.map(g => `<span class="grp">${esc(g)}</span>`).join("")}</div>
       ${p.rijen.map(r => `<div class="item"><div class="st">${esc(r.pc4.join(", "))}<small>${r.groepen.map(esc).join(", ")}</small></div><div><div class="ttl">${esc(r.x.titel)}</div><div class="meta">${bron(r.x)}</div></div><span class="h h-${r.x.hinder}">${r.x.hinder}</span></div>`).join("")}</div>`).join("")
@@ -195,14 +198,26 @@ function toon(){
   if (metKlant) {
     KR = K.klantHinder(G.stops, D.items, {datum, hinder:FH, soort:x => FS.has(soortVan(x)), groepen:AAN.size === G.groepen.length ? null : AAN, gebied:GEBIED})
       .filter(r => !FILTER || FILTER.pc.some(([a, b]) => +r.pc4 >= a && +r.pc4 <= b) || FILTER.tk.some(w => K.straatKern(`${r.klant} ${r.straat} ${r.plaats} ${r.rit} ${r.x.titel}`).includes(" " + w)));
+    // postcodeknoppen: alle postcodegebieden met een getroffen klant, getal = aantal klantcodes
+    const perPc = new Map(); KR.forEach(r => { if (!perPc.has(r.pc4)) perPc.set(r.pc4, new Set()); perPc.get(r.pc4).add(r.klant); });
+    if (KPC) { KPC = new Set([...KPC].filter(c => perPc.has(c))); if (!KPC.size) KPC = null; }
+    $("#kpChips").innerHTML = perPc.size ? `<span class="chip ${KPC ? "" : "on"}" data-kp="">Alle</span>` + [...perPc].sort((a, b) => a[0].localeCompare(b[0])).map(([c, k]) => `<span class="chip ${KPC && KPC.has(c) ? "on" : ""}" data-kp="${c}">${c}<i>${k.size}</i></span>`).join("") : "";
+    const pref = KPREF.replace(/\s/g, "").toUpperCase(), nKR = KR.length;
+    KR = KR.filter(r => (!KPC || KPC.has(r.pc4)) && (!pref || r.postcode.replace(/\s/g, "").toUpperCase().startsWith(pref)));
+    if (KSORT) { const ho = {hoog:0, middel:1, laag:2, geen:2}, w = (r, k) => k === "hinder" ? ho[r.x.hinder] : k === "postcode" ? r.postcode.replace(/\s/g, "") : k === "soort" ? r.x.label : k === "titel" ? r.x.titel : k === "wanneer" ? (r.x.start || "9") : k === "adres" ? `${r.straat} ${r.nr}` : String(r[k] || "");
+      KR.sort((a, b) => { const x = w(a, KSORT.k), y = w(b, KSORT.k), c = typeof x === "number" ? x - y : String(x).localeCompare(String(y), "nl", {numeric:true}); return KSORT.op ? c : -c; }); }
+    const kkol = [["klant","Klantcode"],["rit","Rit"],["adres","Adres"],["plaats","Plaats"],["postcode","Postcode"],["hinder","Hinder"],["soort","Soort"],["titel","Melding"],["wanneer","Wanneer"],["niveau","Match"]];
+    const kkop = kkol.map(([k, t]) => `<th data-ks="${k}" class="${KSORT && KSORT.k === k ? "s" + (KSORT.op ? "" : " op") : ""}">${t}</th>`).join("");
+    const gefilterd = KPC || pref ? ` Postcodefilter: ${KR.length} van ${nKR} regels.` : "";
     $("#klantKol").innerHTML = G.kolommen.map((k, i) => `<option value="${i}" ${i === G.klantKolom ? "selected" : ""}>${String.fromCharCode(65 + (i % 26))}${i >= 26 ? "+" : ""}: ${esc(k || "(leeg)")}</option>`).join("");
     $("#fGebied").classList.toggle("on", GEBIED);
     const kl = new Set(KR.map(r => r.klant)), klS = new Set(KR.filter(r => r.niveau === "straat").map(r => r.klant));
-    $("#klantUit").innerHTML = KR.length ? `<p class="meta"><b>${klS.size}</b> klantcode(s) met een melding in hun straat${GEBIED ? `, <b>${kl.size}</b> in totaal incl. zelfde postcodegebied` : ""} op ${esc(fmtD(datum))}.</p>
-      <div class="tw"><table><thead><tr><th>Klantcode</th><th>Rit</th><th>Adres</th><th>Plaats</th><th>PC4</th><th>Hinder</th><th>Soort</th><th>Melding</th><th>Wanneer</th><th>Match</th></tr></thead><tbody>${KR.map(r => `<tr>
-        <td><b>${esc(r.klant || "?")}</b></td><td>${esc(r.rit.replace(/^Rit /, ""))}</td><td>${esc(`${r.straat} ${r.nr}`.trim())}</td><td>${esc(r.plaats)}</td><td>${esc(r.pc4)}</td>
+    $("#klantUit").innerHTML = KR.length ? `<p class="meta"><b>${klS.size}</b> klantcode(s) met een melding in hun straat${GEBIED ? `, <b>${kl.size}</b> in totaal incl. zelfde postcodegebied` : ""} op ${esc(fmtD(datum))}.${gefilterd}</p>
+      <div class="tw"><table><thead><tr>${kkop}</tr></thead><tbody>${KR.map(r => `<tr>
+        <td><b>${esc(r.klant || "?")}</b></td><td>${esc(r.rit.replace(/^Rit /, ""))}</td><td>${esc(`${r.straat} ${r.nr}`.trim())}</td><td>${esc(r.plaats)}</td><td>${esc(r.postcode || r.pc4)}</td>
         <td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.label)}</td><td>${esc(r.x.titel)}</td><td>${esc(wanneer(r.x))}</td>
         <td>${r.niveau === "straat" ? "<b>straat</b>" : "postcodegebied"}${r.x.url ? ` · <a href="${esc(r.x.url)}" target="_blank" rel="noopener noreferrer">bron</a>` : ""}</td></tr>`).join("")}</tbody></table></div>`
+      : nKR ? `<div class="panel">Geen klantcodes in deze postcode. <button class="btn" id="kpWis">Postcodefilter wissen</button></div>`
       : `<div class="panel">Geen klantcodes met een melding in hun straat op ${esc(fmtD(datum))}${FILTER ? " binnen dit filter" : ""}.${GEBIED ? "" : " Zet <i>Ook zelfde postcodegebied</i> aan voor een ruimer beeld."}</div>`;
   }
   $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#klant").hidden = TAB !== "klant"; $("#kaartvak").hidden = TAB !== "kaart"; $("#tabel").hidden = TAB !== "tabel";
@@ -255,13 +270,21 @@ $("#groepen").addEventListener("click", e => { const c = e.target.closest("[data
   if (g === "*") AAN = new Set(G.groepen); else if (AAN.size === G.groepen.length) AAN = new Set([g]); else { AAN.has(g) ? AAN.delete(g) : AAN.add(g); if (!AAN.size) AAN = new Set(G.groepen); }
   toon(); });
 $("#fGebied").addEventListener("click", () => { GEBIED = !GEBIED; toon(); });
+$("#kpZoek").addEventListener("input", e => { clearTimeout(e.target._t); e.target._t = setTimeout(() => { KPREF = e.target.value; toon(); }, 150); });
+$("#klant").addEventListener("click", e => {
+  const c = e.target.closest("[data-kp]"), h = e.target.closest("th[data-ks]");
+  if (c) { const v = c.dataset.kp; if (!v) KPC = null; else { if (!KPC) KPC = new Set(); KPC.has(v) ? KPC.delete(v) : KPC.add(v); if (!KPC.size) KPC = null; } toon(); }
+  else if (h) { KSORT = KSORT && KSORT.k === h.dataset.ks ? {k:h.dataset.ks, op:!KSORT.op} : {k:h.dataset.ks, op:true}; toon(); }
+  else if (e.target.id === "kpWis") { KPC = null; KPREF = ""; $("#kpZoek").value = ""; toon(); }
+});
+$("#kpis").addEventListener("click", e => { if (e.target.closest("[data-naar]")) { TAB = "klant"; toon(); $("#klant").scrollIntoView({behavior:"smooth", block:"start"}); } });
 $("#klantKol").addEventListener("change", e => { if (!RUW) return; G = K.leesGeogroepen(RUW, {skip:$("#skip").value.split(/[,;\s]+/).filter(Boolean), klantKolom:+e.target.value}); toon(); });
 $("#tabel").addEventListener("click", e => { const t = e.target.closest("th[data-k]"); if (!t) return; SORT = SORT.k === t.dataset.k ? {k:t.dataset.k, op:!SORT.op} : {k:t.dataset.k, op:true}; toon(); });
 $("#uit").addEventListener("click", e => { const c = e.target.closest("[data-h],[data-s]"); if (!c) return;
   if (c.dataset.h) { FH.has(c.dataset.h) ? FH.delete(c.dataset.h) : FH.add(c.dataset.h); if (!FH.size) FH = nieuwH(); }
   else { FS.has(c.dataset.s) ? FS.delete(c.dataset.s) : FS.add(c.dataset.s); if (!FS.size) FS = new Set(Object.keys(SOORT)); }
   toon(); });
-$("#reset").addEventListener("click", () => { FH = nieuwH(); FS = new Set(Object.keys(SOORT)); FILTER = null; $("#filter").value = ""; if (G) AAN = new Set(G.groepen); toon(); });
+$("#reset").addEventListener("click", () => { KPC = null; KPREF = ""; KSORT = null; $("#kpZoek").value = ""; FH = nieuwH(); FS = new Set(Object.keys(SOORT)); FILTER = null; $("#filter").value = ""; if (G) AAN = new Set(G.groepen); toon(); });
 $("#filter").addEventListener("input", e => { clearTimeout(FT); FT = setTimeout(() => {  // een dienstnaam in het filter kiest die dienst
   const t = e.target.value.split(/[,;]/).map(x => x.trim()).filter(Boolean), gk = new Map((G ? G.groepen : []).map(g => [g.toLowerCase(), g]));
   const d = t.filter(x => gk.has(x.toLowerCase())).map(x => gk.get(x.toLowerCase()));
