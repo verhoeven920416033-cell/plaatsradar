@@ -207,7 +207,7 @@ const actief = (x, van, tot) => {
 function vergelijk(stops, items, plaatsen, opt) {
   const {van, tot} = opt;
   const zonderOmleiding = t => String(t || "").split(/(?<=[.!?])\s+|\s·\s/).filter(z => !/omgeleid|omleiding/i.test(z)).join(" ");
-  const akt = items.filter(x => !x.fiets && actief(x, van, tot)).map(x => ({x, t: norm(`${x.titel} ${x.locatie || ""} ${zonderOmleiding(x.toelichting)}`)}));
+  const akt = items.filter(x => !x.fiets && actief(x, van, tot) && (!opt.extra || opt.extra(x))).map(x => ({x, t: norm(`${x.titel} ${x.locatie || ""} ${zonderOmleiding(x.toelichting)}`)}));
   const perGem = new Map(); akt.forEach(a => { if (!perGem.has(a.x.plaats)) perGem.set(a.x.plaats, []); perGem.get(a.x.plaats).push(a); });
   const orde = {hoog:0, middel:1, laag:2}, onbekend = new Map(), routes = new Map(), treffers = [];
   for (const s of stops) {
@@ -216,7 +216,7 @@ function vergelijk(stops, items, plaatsen, opt) {
     const opties = plaatsVan(plaatsen, s.plaats), naam = (opties[0] || {}).naam || s.plaats || "(geen plaats)", pk = kern(naam) || "?";
     if (!r.plaatsen.has(pk)) r.plaatsen.set(pk, {plaats:naam, pk, opties, stops:0, straten:new Map()});
     const p = r.plaatsen.get(pk); p.stops++;
-    const sk = kern(s.straat); if (sk) { if (!p.straten.has(sk)) p.straten.set(sk, {straat:s.straat, aantal:0}); p.straten.get(sk).aantal++; }
+    const sk = kern(s.straat); if (sk) { if (!p.straten.has(sk)) p.straten.set(sk, {straat:s.straat, aantal:0, pcs:new Set()}); const q = p.straten.get(sk); q.aantal++; if (s.postcode) q.pcs.add(s.postcode); }
   }
   for (const r of routes.values()) {
     r.plaatsen = [...r.plaatsen.values()].map(p => {
@@ -227,9 +227,21 @@ function vergelijk(stops, items, plaatsen, opt) {
       for (const [sk, st] of p.straten) if (sk.length >= 5) for (const a of kand) if (a.t.includes(" " + sk + " ") && !ids.has(a.x.id)) {
         ids.add(a.x.id);
         const zeker = a.t.includes(" " + p.pk + " ") || a.x.plaats === p.plaats;
-        hits.push({straat:st.straat, plaats:p.plaats, aantal:st.aantal, x:a.x, zeker});
+        hits.push({straat:st.straat, plaats:p.plaats, aantal:st.aantal, x:a.x, zeker, niveau:"straat"});
       }
-      hits.sort((a, b) => orde[a.x.hinder] - orde[b.x.hinder] || b.zeker - a.zeker);
+      // om de hoek: melding binnen opt.straal meter van de stop (plek uit de 6-cijferige postcode), andere straat
+      if (opt.plek && opt.afstand) {
+        const straal = opt.straal || 250;
+        for (const [, st] of p.straten) {
+          const plekken = [...st.pcs].map(opt.plek).filter(Boolean); if (!plekken.length) continue;
+          for (const a of kand) {
+            if (ids.has(a.x.id)) continue;
+            const d = Math.min(...plekken.map(([lon, lat]) => opt.afstand(a.x, lon, lat)));
+            if (d <= straal) { ids.add(a.x.id); hits.push({straat:st.straat, plaats:p.plaats, aantal:st.aantal, x:a.x, zeker:false, niveau:"dichtbij", afstand:Math.round(d / 10) * 10}); }
+          }
+        }
+      }
+      hits.sort((a, b) => orde[a.x.hinder] - orde[b.x.hinder] || (a.niveau === "straat" ? 0 : 1) - (b.niveau === "straat" ? 0 : 1) || b.zeker - a.zeker || (a.afstand || 0) - (b.afstand || 0));
       treffers.push(...hits.map(h => ({...h, route:r.naam})));
       const o = p.opties[0] || {};
       return {plaats:p.plaats, stops:p.stops, bekend:!!p.opties.length, hits, lat:o.lat, lon:o.lon, gemeente:o.gemeente, straten:[...p.straten.values()].map(x => x.straat)};

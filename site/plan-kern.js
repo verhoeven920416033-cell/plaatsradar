@@ -97,7 +97,7 @@ function planDag(gebieden, items, opt) {
   const gemVan = new Map((opt.woonplaatsen || []).map(w => [kern(w.naam), w.gemeente]));
   const plaatsGem = new Map(); for (const v of pc.values()) { const gm = gemVan.get(kern(v.plaats)); if (gm) plaatsGem.set(v.plaats, gm); }
   const hOk = x => opt.hinder ? opt.hinder.has(x.hinder === "geen" ? "laag" : x.hinder) : (opt.laag || x.hinder !== "laag");
-  const relevant = items.filter(x => !x.fiets && x.cat !== "markt" && hOk(x) && (!opt.soort || opt.soort(x)) && actief(x, opt.datum));
+  const relevant = items.filter(x => !x.fiets && x.cat !== "markt" && hOk(x) && (!opt.soort || opt.soort(x)) && (!opt.extra || opt.extra(x)) && actief(x, opt.datum));
   const perPlaats = new Map(), zonder = new Map(), geteld = new Set();
   const voeg = (plaats, rij) => { if (!perPlaats.has(plaats)) perPlaats.set(plaats, {plaats, groepen: new Set(), pc4: new Set(), rijen: []}); const p = perPlaats.get(plaats);
     if (!p.rijen.some(r => r.x.id === rij.x.id)) p.rijen.push(rij); rij.groepen.forEach(g => p.groepen.add(g)); rij.pc4.forEach(q => p.pc4.add(q)); };
@@ -139,25 +139,37 @@ function klantHinder(stops, items, opt) {
   const wd = weekdag(opt.datum), orde = {hoog: 0, middel: 1, laag: 2, geen: 2};
   const hOk = x => opt.hinder ? opt.hinder.has(x.hinder === "geen" ? "laag" : x.hinder) : x.hinder !== "laag";
   const zonderOml = t => String(t || "").split(/(?<=[.!?])\s+|\s·\s/).filter(z => !/omgeleid|omleiding/i.test(z)).join(" ");
-  const perPc = new Map();
-  for (const x of items) if (x.pc4 && !x.fiets && x.cat !== "markt" && hOk(x) && (!opt.soort || opt.soort(x)) && actief(x, opt.datum)) {
-    const t = straatKern(`${x.titel} ${x.locatie || ""} ${zonderOml(x.toelichting)}`);
-    for (const q of x.pc4) { if (!perPc.has(q)) perPc.set(q, []); perPc.get(q).push({x, t}); }
+  const perPc = new Map(), alle = [];
+  for (const x of items) if (!x.fiets && x.cat !== "markt" && hOk(x) && (!opt.soort || opt.soort(x)) && (!opt.extra || opt.extra(x)) && actief(x, opt.datum)) {
+    const t = straatKern(`${x.titel} ${x.locatie || ""} ${zonderOml(x.toelichting)}`), a = {x, t};
+    alle.push(a);
+    for (const q of x.pc4 || []) { if (!perPc.has(q)) perPc.set(q, []); perPc.get(q).push(a); }
   }
+  const straal = opt.straal || 250;
   const rijen = [];
   for (const s of stops) {
     if (s.wd >= 0 && s.wd !== wd) continue;
     if (opt.groepen && !opt.groepen.has(s.rit)) continue;
-    const sk = straatKern(s.straat).trim();
+    const sk = straatKern(s.straat).trim(), gehad = new Set(), pl = opt.plek ? opt.plek(s.postcode) : null;
     for (const {x, t} of perPc.get(s.pc4) || []) {
-      const niveau = sk.length >= 5 && t.includes(" " + sk + " ") ? "straat" : "gebied";
+      const d = pl && opt.afstand ? opt.afstand(x, pl[0], pl[1]) : Infinity;
+      const niveau = sk.length >= 5 && t.includes(" " + sk + " ") ? "straat" : d <= straal ? "dichtbij" : "gebied";
+      gehad.add(x.id);
       if (niveau === "gebied" && !opt.gebied) continue;
-      rijen.push({...s, x, niveau});
+      if (niveau === "dichtbij" && opt.dichtbij === false) continue;
+      rijen.push({...s, x, niveau, afstand: isFinite(d) ? Math.round(d / 10) * 10 : null});
+    }
+    // om de hoek, ook net over de grens van het postcodegebied
+    if (pl && opt.afstand && opt.dichtbij !== false) for (const {x} of alle) {
+      if (gehad.has(x.id)) continue;
+      const d = opt.afstand(x, pl[0], pl[1]);
+      if (d <= straal) rijen.push({...s, x, niveau:"dichtbij", afstand:Math.round(d / 10) * 10});
     }
   }
   // volgorde: 1. hinder, 2. postcode (daarna straat-match vóór gebied, dan klantcode)
+  const nv = {straat:0, dichtbij:1, gebied:2};
   rijen.sort((a, b) => orde[a.x.hinder] - orde[b.x.hinder] || a.postcode.replace(/\s/g, "").localeCompare(b.postcode.replace(/\s/g, "")) ||
-    (a.niveau === "straat" ? 0 : 1) - (b.niveau === "straat" ? 0 : 1) || a.klant.localeCompare(b.klant, "nl", {numeric: true}));
+    nv[a.niveau] - nv[b.niveau] || a.klant.localeCompare(b.klant, "nl", {numeric: true}));
   return rijen;
 }
 

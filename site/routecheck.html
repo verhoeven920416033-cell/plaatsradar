@@ -46,6 +46,25 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
 .tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}.tw table{font-size:13px}.tw th{position:sticky;top:0;background:#eef2f7;cursor:pointer;white-space:nowrap}.tw th.s::after{content:" ▾"}.tw th.s.op::after{content:" ▴"}.tw td{vertical-align:top}
 .leg{display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:12.5px;color:var(--mut)}.leg b{display:inline-block;width:11px;height:11px;border-radius:50%}.leg b.vk{border-radius:2px;background:#003366}
 [hidden]{display:none!important}
+.item{grid-template-columns:190px 1fr auto auto}.item.i-hoog{border-left-color:#c8102e}.item.i-middel{border-left-color:#f3b23c}.item.i-laag{border-left-color:#c9d3df}
+.ctl.hk{border-color:#5a86b8;color:#0a4a86}
+.nw{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:#e6f0ff;color:#0a4a86;border:1px solid #b9d3f5;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px}
+.vk{width:28px;height:28px;border-radius:7px;border:1px solid #c9d3df;background:#fff;color:#c9d3df;font:700 14px system-ui;cursor:pointer;flex:0 0 auto}.vk:hover{border-color:#1f7a4d;color:#1f7a4d}.vk.aan{background:#1f7a4d;border-color:#1f7a4d;color:#fff}
+.verw{opacity:.5}.verw .ttl{text-decoration:line-through}
+button.kpi{cursor:pointer;text-align:left;font:inherit;color:inherit;background:#fff;border:1px solid #e3e8ef;transition:transform .08s,box-shadow .12s}button.kpi:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(16,24,40,.12)}
+button.kpi em{position:absolute;right:10px;top:9px;font-style:normal;font-size:11px;color:var(--navy2);opacity:0;transition:opacity .12s;background:#fff;padding-left:6px}button.kpi:hover em,button.kpi:focus-visible em{opacity:1}.kpi.info::before{background:var(--navy2)}
+.blik{display:grid;grid-template-columns:1fr 1.25fr 1.25fr;gap:12px;margin-bottom:12px}
+.krt{background:#fff;border:1px solid #e3e8ef;border-radius:12px;padding:13px 15px;box-shadow:0 1px 2px rgba(16,24,40,.05);min-width:0}
+.krt h3{margin:0 0 2px;font-size:14px}.krt .sub{font-size:12px;color:var(--mut);margin:0 0 10px}
+.stk{display:flex;gap:2px;height:26px;border-radius:6px;overflow:hidden}.stk span{min-width:3px;cursor:pointer}
+.sg-hoog{background:#c8102e}.sg-middel{background:#f3b23c}.sg-laag{background:#9aa5b1}
+.lgd{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13px}.lgd span{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.lgd i{width:11px;height:11px;border-radius:3px;display:inline-block}.lgd b{font-variant-numeric:tabular-nums}
+.fts{margin-top:12px;padding-top:10px;border-top:1px solid #eef1f5;font-size:12.5px;color:var(--mut);display:grid;gap:3px}.fts b{color:var(--ink);font-variant-numeric:tabular-nums}
+.br{display:grid;grid-template-columns:minmax(74px,34%) 1fr 34px;gap:8px;align-items:center;padding:3px 4px;border-radius:6px;cursor:pointer;font-size:13px;border:0;background:none;width:100%;text-align:left;font-family:inherit;color:inherit}
+.br:hover{background:#f1f5fa}.br .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.br .nm small{color:var(--mut)}
+.br .bk{display:flex;gap:2px;height:12px}.br .bk span:last-child{border-radius:0 4px 4px 0}.br .vl{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.leeg{color:var(--mut);font-size:13px;padding:6px 0}
+@media(max-width:980px){.blik{grid-template-columns:1fr}}
 main{max-width:1240px}footer{max-width:1240px}body{background:#eef1f5}
 header{padding:18px 24px 15px;background:linear-gradient(120deg,#001a35 0%,#003366 70%,#0a4a86 100%)}header h1{font-size:24px;letter-spacing:-.2px}
 .panel,.place,.kpi,.tw{box-shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);border-color:#e3e8ef}
@@ -95,10 +114,13 @@ body.huddle>header,body.huddle>main,body.huddle>footer,body.huddle>.toast{displa
       <div class="row"><input type="search" id="zoek" class="zoek" placeholder="Zoek: route, plaats, straat, postcode of melding. Komma = of. Bijv. 5299, Maastricht, Vestdijk" aria-label="Zoeken"><button class="btn" id="reset">Filters wissen</button><span id="telling" class="meta"></span></div>
       <div class="row"><span class="lbl">Periode</span><span class="chip" data-p="0">Vandaag</span><span class="chip" data-p="1">Morgen</span><span class="chip" data-p="2">Over 2 dagen</span><span class="chip" data-p="7">Komende 7 dagen</span><span class="meta">of kies datums bovenaan</span></div>
       <div class="row"><span class="lbl">Hinder</span><span id="fHinder" class="row" style="gap:6px"></span><span class="lbl" style="margin-left:8px">Soort</span><span id="fSoort" class="row" style="gap:6px"></span></div>
-      <div class="row"><span class="lbl">Tonen</span><span class="chip" id="fMet">Alleen routes met problemen</span><span class="chip" id="fZeker">Alleen zeker (zonder "controleren")</span></div>
+      <div class="row"><span class="lbl">Tonen</span><span class="chip" id="fMet">Alleen routes met problemen</span><span class="chip" id="fZeker">Alleen zeker (zonder "controleren")</span><span class="chip" id="fHoek" title="Melding binnen 250 m van de stop, andere straat. Plek uit de 6-cijferige postcode.">Om de hoek (≤ 250 m)</span><span class="chip" id="fNieuw">Alleen nieuw</span><span class="chip" id="fVerb">Verberg verwerkt</span></div>
+      <div class="row"><span class="lbl">Tijdvak</span><span class="chip" data-tv="">Hele dag</span><span class="chip" data-tv="06:00-19:00">06–19 uur</span><span class="chip" data-tv="07:00-17:00">07–17 uur</span>
+        <input type="time" id="tvVan" aria-label="Tijdvak van" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit">–<input type="time" id="tvTot" aria-label="Tijdvak tot" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit"><span class="meta">alleen hinder die (deels) in dit tijdvak valt</span></div>
       <div class="row" style="align-items:flex-start"><span class="lbl" style="padding-top:4px">Routes</span><span id="routeChips" class="row"></span></div>
     </section>
     <div class="kpis" id="kpis"></div>
+    <div class="blik" id="blik"></div>
     <div class="tabs geenprint"><button class="tab on" data-t="route">Per route</button><button class="tab" data-t="tabel">Tabel</button><button class="tab" data-t="kaart">Kaart</button></div>
     <div id="routes"></div>
     <div id="tabel" hidden></div>
@@ -118,11 +140,13 @@ body.huddle>header,body.huddle>main,body.huddle>footer,body.huddle>.toast{displa
 <div class="toast" id="toast"></div>
 <script src="vendor/pdf.min.js"></script>
 <script src="route-kern.js"></script>
+<script src="hulp.js"></script>
 <script src="kaart.js"></script>
 <script>
 (() => {
 "use strict";
-const K = window.RouteKern, $ = s => document.querySelector(s);
+const K = window.RouteKern, H = window.PR_Hulp, V = H.verwerkt(), $ = s => document.querySelector(s);
+let PC6 = new Map();
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const pad = n => String(n).padStart(2,"0"), iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const fmtD = s => { const d = new Date(s.length > 10 ? s : s+"T00:00"); return isNaN(d) ? s : d.toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"}); };
@@ -155,8 +179,10 @@ async function laad(){
     D = await (await fetch("data.json?t="+Date.now())).json();
     let w = []; try { w = await (await fetch("woonplaatsen.json?t="+Date.now())).json(); } catch {}
     try { KAART_DATA = await (await fetch("kaart.json")).json(); } catch {}
+    try { PC6 = H.maakPc6(await (await fetch("pc6.json")).json()); } catch {}
     P = K.maakPlaatsen(D.plaatsen, w);
   }
+  if (window.PR_PC6) PC6 = H.maakPc6(window.PR_PC6);
   sluitNetwerk(); zetStand(bron);
 }
 const klaar = laad().catch(e => fout("Meldingen laden mislukt: " + e.message));
@@ -240,18 +266,23 @@ const wanneer = (x, van, tot) => { const p = x.perioden && (x.perioden.find(([s,
   return fmtD(s) + (e && e.slice(0,10) !== s.slice(0,10) ? " t/m " + fmtD(e) : ""); };
 const rand = (t, n) => `${n} ${n===1?t[0]:t[1]}`;
 const bron = x => `${esc(x.label)} · ${esc(wanneer(x,LAATST.van,LAATST.tot))} · ${esc(x.bron)}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">bron</a>`:""}`;
-const hitHtml = h => `<div class="item"><div class="st">${esc(h.straat)}<small>${rand(["stop","stops"],h.aantal)}</small></div>
-  <div><div class="ttl">${esc(h.x.titel)}${h.zeker?"":'<span class="ctl">controleren</span>'}</div><div class="meta">${bron(h.x)}</div></div><span class="h h-${h.x.hinder}">${h.x.hinder}</span></div>`;
+const nw = x => H.isNieuw(x, D.gegenereerd) ? '<span class="nw" title="Voor het eerst gezien in de laatste 24 uur">nieuw</span>' : "";
+const vk = x => `<button type="button" class="vk ${V.has(x.id) ? "aan" : ""}" data-vk="${esc(x.id)}" title="${V.has(x.id) ? "Verwerkt (klik om terug te zetten)" : "Markeer als verwerkt (alleen op deze pc)"}" aria-pressed="${V.has(x.id)}">✓</button>`;
+const tag = h => h.niveau === "dichtbij" ? `<span class="ctl hk">om de hoek · ${h.afstand} m</span>` : h.zeker ? "" : '<span class="ctl">controleren</span>';
+const tagT = h => h.niveau === "dichtbij" ? ` (om de hoek, ${h.afstand} m)` : h.zeker ? "" : " (controleren)";
+const hitHtml = h => `<div class="item i-${h.x.hinder}${V.has(h.x.id) ? " verw" : ""}"><div class="st">${esc(h.straat)}<small>${rand(["stop","stops"],h.aantal)}</small></div>
+  <div><div class="ttl">${esc(h.x.titel)}${tag(h)}${nw(h.x)}</div><div class="meta">${bron(h.x)}</div></div><span class="h h-${h.x.hinder}">${h.x.hinder}</span>${vk(h.x)}</div>`;
 // ---- filters: alles wat je ziet (lijst, tabel, kaart, huddle, kopie) gaat door dezelfde filter
 const SOORT = {weg:"Weg / werk", evenement:"Evenement", markt:"Markt / kermis"}, HINDER = ["hoog","middel","laag"];
 const soortVan = x => x.cat === "kermis" || x.cat === "markt" ? "markt" : x.cat === "evenement" ? "evenement" : "weg";
-const nieuwF = () => ({zoek:[], tekst:"", routes:null, hinder:new Set(HINDER), soort:new Set(Object.keys(SOORT)), met:false, zeker:false, overig:false});
+const nieuwF = () => ({zoek:[], tekst:"", routes:null, hinder:new Set(HINDER), soort:new Set(Object.keys(SOORT)), met:false, zeker:false, overig:false, hoek:true, nieuw:false, verb:false, tv:"", tt:""});
 let F = nieuwF(), TAB = "route", SORT = {k:"hinder", op:true}, KAART = null, KAART_DATA = window.PR_KAART || null;
 const maakZoek = t => t.split(/[,;]/).map(a => K.kern(a).split(" ").filter(Boolean)).filter(a => a.length);
 const past = hay => !F.zoek.length || F.zoek.some(alt => alt.every(w => hay.includes(" " + w)));
 const hitHay = (r, p, h) => K.norm(`${r.naam} ${p.plaats} ${p.gemeente || ""} ${h.straat} ${h.x.titel} ${h.x.label} ${h.x.locatie || ""} ${(h.x.pc4 || []).join(" ")} ${h.x.bron}`);
 const routeHay = r => K.norm(`${r.naam} ${r.plaatsen.map(p => `${p.plaats} ${p.gemeente || ""} ${p.straten.join(" ")}`).join(" ")} ${(r.pcs || []).join(" ")}`);
-const hitOk = h => F.hinder.has(h.x.hinder === "geen" ? "laag" : h.x.hinder) && F.soort.has(soortVan(h.x)) && (!F.zeker || h.zeker);
+const hitOk = h => F.hinder.has(h.x.hinder === "geen" ? "laag" : h.x.hinder) && F.soort.has(soortVan(h.x)) && (!F.zeker || h.zeker) && (F.hoek || h.niveau !== "dichtbij")
+  && (!F.nieuw || H.isNieuw(h.x, D.gegenereerd)) && (!F.verb || !V.has(h.x.id));
 function zicht(v){  // gefilterde kopie van de vergelijking
   return v.routes.filter(r => !F.routes || F.routes.has(r.naam)).map(r => {
     const rh = past(routeHay(r)), plaatsen = r.plaatsen.map(p => ({...p, hits:p.hits.filter(h => hitOk(h) && (rh && !F.zoek.length || past(hitHay(r, p, h))))}));
@@ -260,11 +291,11 @@ function zicht(v){  // gefilterde kopie van de vergelijking
     return {...r, plaatsen, knelpunten:knel, hoog:plaatsen.reduce((n, p) => n + p.hits.filter(h => h.x.hinder === "hoog").length, 0)};
   }).filter(Boolean);
 }
-const filterAan = () => F.zoek.length || F.routes || F.hinder.size < 3 || F.soort.size < 3 || F.met || F.zeker;
+const filterAan = () => F.zoek.length || F.routes || F.hinder.size < 3 || F.soort.size < 3 || F.met || F.zeker || !F.hoek || F.nieuw || F.verb || F.tv || F.tt;
 function toon(){
   const van = $("#van").value, tot = $("#tot").value;
   if (!van || !tot || tot < van) { fout("Kies een geldige periode."); return; }
-  const v = K.vergelijk(GEL, D.items, P, {van, tot});
+  const v = K.vergelijk(GEL, D.items, P, {van, tot, plek:pc => H.plek(PC6, pc), afstand:H.afstand, extra:x => H.tijdOk(x, van, tot, F.tv, F.tt)});
   const pcPerRoute = new Map(); GEL.forEach(s => { const pc = (s.postcode || "").replace(/\s/g, ""); if (pc) { if (!pcPerRoute.has(s.route)) pcPerRoute.set(s.route, new Set()); pcPerRoute.get(s.route).add(pc); pcPerRoute.get(s.route).add(pc.slice(0,4)); } });
   v.routes.forEach(r => r.pcs = [...(pcPerRoute.get(r.naam) || [])]);
   const eerst = $("#uit").hidden; LAATST = {v, van, tot}; render();
@@ -281,14 +312,36 @@ function render(){
   const hoog = hits.filter(h => h.x.hinder === "hoog").length, stops = rs.reduce((n, r) => n + r.stops, 0);
   const oud = DAT.filter(d => d < iso(new Date()));
   $("#kop").textContent = `Periode ${fmtD(van)} t/m ${fmtD(tot)}, meldingen van ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}.` + (oud.length ? ` Let op: routelijst van ${[...new Set(oud)].map(fmtD).join(", ")}; dit is de hinder in de gekozen periode.` : "") + (filterAan() ? " Filter actief." : "");
-  $("#kpis").innerHTML = [[rs.length + (rs.length < v.routes.length ? ` / ${v.routes.length}` : ""),"routes"],[stops,"stops"],[hits.length,"problemen bij stops"],[hoog,"hoge hinder",1],[v.onbekend.length,"plaatsen onbekend"]]
-    .map(([n,t,a]) => `<div class="kpi${a?" alert":""}"><b>${n}</b><span>${t}</span></div>`).join("");
+  const uniek = new Map(); hits.forEach(h => uniek.set(h.x.id, h.x));
+  const nHoek = hits.filter(h => h.niveau === "dichtbij").length, nNieuw = [...uniek.values()].filter(x => H.isNieuw(x, D.gegenereerd)).length;
+  const kp = [[hoog, "hoge hinder bij stops", "alert", "hoog", F.hinder.size === 1 ? "toon alles" : "toon alleen hoog"], [hits.length, "problemen bij stops", "info", "tabel", "open tabel"],
+    [rs.filter(r => r.knelpunten).length + " / " + rs.length, "routes met problemen", "", "met", F.met ? "toon alle routes" : "alleen deze routes"],
+    [nHoek, "om de hoek (≤ 250 m)", "", "hoek", F.hoek ? "verberg om de hoek" : "toon om de hoek"], [nNieuw, "nieuw sinds gisteren", "info", "nieuw", F.nieuw ? "toon alles" : "toon alleen nieuw"],
+    ...(v.onbekend.length ? [[v.onbekend.length, "plaatsen onbekend", "alert", "controle", "bekijk"]] : [])];
+  $("#kpis").innerHTML = kp.map(([n, t, st, act, hint]) => `<button type="button" class="kpi ${st}" data-act="${act}" title="${esc(hint)}"><em>${esc(hint)} ›</em><b>${n}</b><span>${esc(t)}</span></button>`).join("");
+  // in één oogopslag
+  const vd = {hoog:0, middel:0, laag:0}; uniek.forEach(x => vd[x.hinder === "geen" ? "laag" : x.hinder]++); const nU = vd.hoog + vd.middel + vd.laag;
+  const tel3 = (m, k, h, extra) => { if (!m.has(k)) m.set(k, {hoog:0, middel:0, laag:0, ...extra}); m.get(k)[h === "geen" ? "laag" : h]++; };
+  const perR = new Map(), perP = new Map(); hits.forEach(h => { tel3(perR, h.route, h.x.hinder); tel3(perP, mooi(h.plaats), h.x.hinder); });
+  const top = m => [...m].map(([k, w]) => ({k, ...w, n:w.hoog + w.middel + w.laag})).sort((a, b) => b.hoog - a.hoog || b.n - a.n || a.k.localeCompare(b.k, "nl", {numeric:true})).slice(0, 7);
+  const balk = (lijst, soort) => { const mx = Math.max(1, ...lijst.map(x => x.n));
+    return lijst.length ? lijst.map(x => `<button type="button" class="br" data-${soort}="${esc(x.k)}" title="${esc(x.k)}: ${x.hoog} hoog, ${x.middel} middel, ${x.laag} laag — klik om te filteren"><span class="nm"><b>${esc(x.k.replace(/^Route\s+/i, ""))}</b></span><span class="bk" style="width:${Math.max(6, x.n / mx * 100)}%">${HINDER.filter(h => x[h]).map(h => `<span class="sg-${h}" style="flex:${x[h]}"></span>`).join("")}</span><span class="vl">${x.n}</span></button>`).join("") : '<div class="leeg">Geen problemen binnen dit filter.</div>'; };
+  $("#blik").innerHTML = `<div class="krt"><h3>Hinder bij de stops</h3><p class="sub">${nU} unieke meldingen · ${fmtD(van)}${van !== tot ? " t/m " + fmtD(tot) : ""}</p>
+      ${nU ? `<div class="stk" role="img" aria-label="${vd.hoog} hoog, ${vd.middel} middel, ${vd.laag} laag">${HINDER.filter(h => vd[h]).map(h => `<span class="sg-${h}" style="flex:${vd[h]}" data-solo="${h}" title="${h}: ${vd[h]} — klik voor alleen ${h}"></span>`).join("")}</div>` : '<div class="leeg">Geen problemen binnen dit filter.</div>'}
+      <div class="lgd">${HINDER.map(h => `<span data-solo="${h}" title="Toon alleen ${h}"><i class="sg-${h}"></i>${h} <b>${vd[h]}</b></span>`).join("")}</div>
+      <div class="fts"><span><b>${hits.filter(h => h.niveau === "straat").length}</b> in de straat van een stop</span><span><b>${nHoek}</b> om de hoek (andere straat, ≤ 250 m)</span><span><b>${PC6.size ? "" : "Let op: "}</b>${PC6.size ? `plek van stops uit ${PC6.size.toLocaleString("nl-NL")} postcodes` : "postcodeplekken nog niet geladen: alleen straatmatch"}</span></div></div>
+    <div class="krt"><h3>Drukste routes</h3><p class="sub">Meeste hoge hinder eerst · klik om alleen die route te zien</p>${balk(top(perR), "rt")}</div>
+    <div class="krt"><h3>Per plaats</h3><p class="sub">Klik om op die plaats te zoeken</p>${balk(top(perP), "pl")}</div>`;
   // filterknoppen met aantallen (van alle treffers in de periode)
   const alle = v.routes.flatMap(r => r.plaatsen.flatMap(p => p.hits));
   const tel = f => alle.filter(f).length;
   $("#fHinder").innerHTML = HINDER.map(h => `<span class="chip c-${h} ${F.hinder.has(h)?"on":""}" data-h="${h}">${h}<i>${tel(x => (x.x.hinder === "geen" ? "laag" : x.x.hinder) === h)}</i></span>`).join("");
   $("#fSoort").innerHTML = Object.entries(SOORT).map(([k,t]) => `<span class="chip ${F.soort.has(k)?"on":""}" data-s="${k}">${t}<i>${tel(x => soortVan(x.x) === k)}</i></span>`).join("");
   $("#fMet").classList.toggle("on", F.met); $("#fZeker").classList.toggle("on", F.zeker); $("#fOverig").classList.toggle("on", F.overig);
+  $("#fHoek").classList.toggle("on", F.hoek); $("#fNieuw").classList.toggle("on", F.nieuw); $("#fVerb").classList.toggle("on", F.verb);
+  $("#fHoek").innerHTML = `Om de hoek (≤ 250 m)<i>${tel(x => x.niveau === "dichtbij")}</i>`; $("#fNieuw").innerHTML = `Alleen nieuw<i>${new Set(alle.filter(x => H.isNieuw(x.x, D.gegenereerd)).map(x => x.x.id)).size}</i>`;
+  $("#fVerb").innerHTML = `Verberg verwerkt<i>${new Set(alle.filter(x => V.has(x.x.id)).map(x => x.x.id)).size}</i>`;
+  document.querySelectorAll("[data-tv]").forEach(c => c.classList.toggle("on", c.dataset.tv === (F.tv || F.tt ? `${F.tv}-${F.tt}` : ""))); $("#tvVan").value = F.tv; $("#tvTot").value = F.tt;
   const alleR = v.routes.slice().sort((a,b) => a.naam.localeCompare(b.naam, "nl", {numeric:true}));
   $("#routeChips").innerHTML = `<span class="chip ${F.routes?"":"on"}" data-r="">Alle</span>` + alleR.map(r => `<span class="chip ${F.routes && F.routes.has(r.naam)?"on":""}" data-r="${esc(r.naam)}" title="${rand(["stop","stops"],r.stops)}">${esc(r.naam.replace(/^Route\s+/i, ""))}${r.knelpunten?`<i>${r.knelpunten}</i>`:""}</span>`).join("");
   document.querySelectorAll("[data-p]").forEach(c => { const d = new Date(); d.setDate(d.getDate() + (+c.dataset.p === 7 ? 0 : +c.dataset.p)); const a = iso(d), e = new Date(d); if (+c.dataset.p === 7) e.setDate(e.getDate() + 6);
@@ -309,7 +362,7 @@ function render(){
     return (SORT.op ? c : -c) || a.route.localeCompare(b.route, "nl", {numeric:true}); });
   $("#tabel").innerHTML = rij.length ? `<div class="tw"><table><thead><tr>${kol.map(([k,t]) => `<th data-k="${k}" class="${SORT.k===k?"s"+(SORT.op?"":" op"):""}">${t}</th>`).join("")}<th>Bron</th></tr></thead><tbody>${rij.map(h => `<tr>
     <td><b>${esc(h.route.replace(/^Route\s+/i, ""))}</b></td><td>${esc(mooi(h.plaats))}</td><td>${esc(h.straat)}</td><td>${h.aantal}</td><td><span class="h h-${h.x.hinder}">${h.x.hinder}</span></td><td>${esc(h.x.label)}</td>
-    <td>${esc(h.x.titel)}${h.zeker?"":'<span class="ctl">controleren</span>'}</td><td>${esc(wanneer(h.x,van,tot))}</td><td>${esc(h.x.bron)}${h.x.url?` · <a href="${esc(h.x.url)}" target="_blank" rel="noopener noreferrer">link</a>`:""}</td></tr>`).join("")}</tbody></table></div>`
+    <td>${esc(h.x.titel)}${tag(h)}${nw(h.x)}</td><td>${esc(wanneer(h.x,van,tot))}</td><td>${esc(h.x.bron)}${h.x.url?` · <a href="${esc(h.x.url)}" target="_blank" rel="noopener noreferrer">link</a>`:""}</td></tr>`).join("")}</tbody></table></div>`
     : '<div class="panel">Geen problemen bij de stops binnen dit filter.</div>';
   LAATST.hits = hits; LAATST.rs = rs;
   ["route","tabel","kaart"].forEach(t => { $("#" + (t === "route" ? "routes" : t === "tabel" ? "tabel" : "kaartvak")).hidden = TAB !== t; });
@@ -348,12 +401,30 @@ $("#uit").addEventListener("click", e => {
   else if (c.dataset.r !== undefined) { const r = c.dataset.r; if (!r) F.routes = null; else { if (!F.routes) F.routes = new Set(); F.routes.has(r) ? F.routes.delete(r) : F.routes.add(r); if (!F.routes.size) F.routes = null; } }
   else if (c.dataset.p !== undefined) { const n = +c.dataset.p, d = new Date(); d.setDate(d.getDate() + (n === 7 ? 0 : n)); $("#van").value = iso(d); if (n === 7) d.setDate(d.getDate() + 6); $("#tot").value = iso(d); toon(); return; }
   else if (c.id === "fMet") F.met = !F.met; else if (c.id === "fZeker") F.zeker = !F.zeker; else if (c.id === "fOverig") F.overig = !F.overig;
+  else if (c.id === "fHoek") F.hoek = !F.hoek; else if (c.id === "fNieuw") F.nieuw = !F.nieuw; else if (c.id === "fVerb") F.verb = !F.verb;
+  else if (c.dataset.tv !== undefined) { [F.tv, F.tt] = c.dataset.tv ? c.dataset.tv.split("-") : ["", ""]; toon(); return; }
   else if (c.dataset.reset !== undefined) { F = nieuwF(); $("#zoek").value = ""; }
   else if (c.dataset.t) TAB = c.dataset.t;
   else if (c.dataset.k) { SORT = SORT.k === c.dataset.k ? {k:c.dataset.k, op:!SORT.op} : {k:c.dataset.k, op:true}; }
   else return;
   render();
 });
+$("#uit").addEventListener("click", e => {
+  if (!LAATST) return;
+  const b = e.target.closest("[data-vk]"); if (b) { e.stopPropagation(); V.wissel(b.dataset.vk); render(); return; }
+  const k = e.target.closest("[data-act]");
+  if (k) { const a = k.dataset.act;
+    if (a === "hoog") F.hinder = F.hinder.size === 1 && F.hinder.has("hoog") ? new Set(HINDER) : new Set(["hoog"]);
+    else if (a === "met") F.met = !F.met; else if (a === "hoek") F.hoek = !F.hoek; else if (a === "nieuw") F.nieuw = !F.nieuw;
+    else if (a === "controle") { $("#controle").open = true; $("#controle").scrollIntoView({behavior:"smooth"}); return; }
+    else { TAB = a === "kaart" ? "kaart" : "tabel"; render(); document.querySelector(".tabs").scrollIntoView({behavior:"smooth", block:"start"}); return; }
+    render(); return; }
+  const so = e.target.closest("[data-solo]"), rt = e.target.closest("[data-rt]"), pl = e.target.closest("[data-pl]");
+  if (so) { const h = so.dataset.solo; F.hinder = F.hinder.size === 1 && F.hinder.has(h) ? new Set(HINDER) : new Set([h]); render(); }
+  else if (rt) { const n = rt.dataset.rt; F.routes = F.routes && F.routes.size === 1 && F.routes.has(n) ? null : new Set([n]); render(); }
+  else if (pl) { const z = $("#zoek"), t = pl.dataset.pl; z.value = z.value.trim().toLowerCase() === t.toLowerCase() ? "" : t; F.zoek = maakZoek(z.value); render(); }
+}, true);
+["tvVan","tvTot"].forEach(i => $("#" + i).addEventListener("change", () => { F.tv = $("#tvVan").value; F.tt = $("#tvTot").value; if (LAATST) toon(); }));
 $("#reset").addEventListener("click", () => { F = nieuwF(); $("#zoek").value = ""; if (LAATST) render(); });
 $("#bestand").addEventListener("change", e => { const f = [...e.target.files]; if (f.length) start(() => leesAlle(f)); e.target.value = ""; });
 const drop = $("#drop");
@@ -382,7 +453,7 @@ function huddle(){
     const nr = esc(r.naam.replace(/^Route\s+/i, ""));
     if (!h.length) { rijen += `<tr class="rk"><td><b>${nr}</b></td><td colspan="4">Geen bijzonderheden bij de stops</td><td class="act"></td></tr>`; continue; }
     h.forEach((x, i) => { rijen += `<tr${i ? "" : ' class="rk"'}><td>${i ? "" : `<b>${nr}</b>`}</td><td>${esc(mooi(x.plaats))}</td><td>${esc(x.straat)}</td>
-      <td><span class="ic">${ic[x.x.hinder] || ""}</span> ${esc(x.x.label)}: ${esc(x.x.titel.length > 90 ? x.x.titel.slice(0, 88) + "…" : x.x.titel)}${x.zeker ? "" : " (controleren)"}</td>
+      <td><span class="ic">${ic[x.x.hinder] || ""}</span> ${esc(x.x.label)}: ${esc(x.x.titel.length > 90 ? x.x.titel.slice(0, 88) + "…" : x.x.titel)}${esc(tagT(x))}</td>
       <td>${esc(van === tot ? tijdOp(x.x, van) : wanneer(x.x, van, tot))}</td><td class="act"></td></tr>`; });
   }
   $("#huddle").innerHTML = `<div class="hk"><div><h1>Daily Huddle – hinder op route</h1>${esc(dagen)} · meldingen van ${esc(new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))}</div>
@@ -403,7 +474,7 @@ function toast(t){ const e = $("#toast"); e.textContent = t; e.classList.add("on
 $("#kopie").addEventListener("click", async () => { const {z, van, tot} = LAATST, v = {routes:z}, L = [`ROUTECHECK ${fmtD(van)} t/m ${fmtD(tot)} — VERTROUWELIJK`, ""], ic = h => h==="hoog"?"🔴":h==="middel"?"🟠":"⚪";
   v.routes.forEach(r => { L.push(`▶ ${r.naam.toUpperCase()} — komt in ${r.plaatsen.map(p => mooi(p.plaats)).join(", ")}`);
     r.plaatsen.filter(p => p.hits.length).forEach(p => { L.push(`  ${mooi(p.plaats)}:`);
-      p.hits.forEach(h => L.push(`  ${ic(h.x.hinder)} ${h.straat}: ${h.x.titel} (${wanneer(h.x,van,tot)})${h.zeker?"":" [controleren]"}`)); });
+      p.hits.forEach(h => L.push(`  ${ic(h.x.hinder)} ${h.straat}: ${h.x.titel} (${wanneer(h.x,van,tot)})${tagT(h)}`)); });
     if (!r.knelpunten) L.push("  Geen problemen bij de stops."); L.push(""); });
   try { await navigator.clipboard.writeText(L.join("\n")); toast("Verslag gekopieerd"); } catch { toast("Kopiëren geblokkeerd door browser"); } });
 })();

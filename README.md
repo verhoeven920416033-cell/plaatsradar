@@ -52,6 +52,21 @@ Meldingen krijgen hun postcodegebied uit de openbare CBS-postcodevlakken (PDOK, 
 - **Dashboard:** bovenaan klikbare kerncijfers (hoge hinder, meldingen, klantcodes, plaatsen, gebieden) en drie overzichten: verdeling hoog/middel/laag, drukste postcodegebieden en hinder per dienst of rit. Klik op een balk om daarop te filteren; nog een klik zet het filter weer uit.
 - **Filters, tabel en kaart:** zoekveld voor postcode, straat, plaats, dienst of melding (komma = of), dienstknoppen met aantal gebieden (eerste klik kiest alleen die dienst, *Alle* zet alles terug), hinder (standaard hoog + middel), soort, rijdag met één klik (vandaag t/m over 3 dagen) en *Filters wissen*. Tab *Tabel* sorteert op elke kolom. Tab *Kaart* toont de postcodegebieden die op de rijdag gereden worden (blauw) met de hinder erin; klik op een gebied voor de diensten van die dag.
 
+## Om de hoek, nieuw, tijdvak, verwerkt, week
+- **Om de hoek (≤ 250 m):** de pagina zoekt de plek van elke stop op via de 6-cijferige postcode (openbare PDOK-lijst, zit in de pagina) en meet de afstand tot de melding. Zo vind je ook een afsluiting op de toegangsweg of het kruispunt ernaast. Er wordt niets verstuurd. Werkt alleen als de stop een volledige postcode heeft. De postcodelijst wordt in de eerste runs na deze update stap voor stap opgebouwd.
+- **Nieuw:** label *nieuw* bij meldingen die in de laatste 24 uur voor het eerst in de feed stonden. Knop *Alleen nieuw* en kerncijfer *nieuw sinds gisteren*.
+- **Tijdvak:** *06–19 uur*, *07–17 uur* of eigen tijden: alleen hinder die (deels) in dat tijdvak valt. Nachtwerk valt dan weg.
+- **Verwerkt (✓):** vink een melding af als hij geregeld is. Alleen bewaard in deze browser op deze pc (45 dagen); niets gaat naar buiten. *Verberg verwerkt* haalt ze uit beeld.
+- **Week (Planning):** 7 dagen vanaf de rijdag, per dienst of rit het aantal hoge en middel meldingen. Klik op een vak om die dag en dienst te openen.
+
+## Elk half uur verversen (externe timer)
+GitHub voert geplande taken vaak uren te laat uit. Een gratis timer (bijv. cron-job.org) kan de update elk half uur starten:
+1. GitHub → Settings → Developer settings → Fine-grained tokens → *Generate new token*. Alleen deze repo, permissie **Actions: Read and write**. Vervaldatum 1 jaar.
+2. cron-job.org → nieuwe cronjob, elke 30 minuten, methode **POST**, URL `https://api.github.com/repos/<eigenaar>/plaatsradar/actions/workflows/bijwerken.yml/dispatches`.
+3. Headers: `Authorization: Bearer <token>`, `Accept: application/vnd.github+json`. Body: `{"ref":"main"}`.
+4. Test: in tab Actions verschijnt een run met *workflow_dispatch*.
+De token kan alleen workflows starten in deze repo. Lekt hij, trek hem in bij GitHub.
+
 ## Goed om te weten
 
 - **GitHub zet geplande taken na 60 dagen zonder activiteit in de repo stil.** Je krijgt daar een mail over. Klik dan in Actions op **Enable workflow**, of doe af en toe een kleine wijziging in `config.json`.

@@ -112,6 +112,8 @@ class Cache:
         self.d.setdefault("wp", {})
         self.d.setdefault("pc4", {})
         self.d.setdefault("kaart", {})
+        self.d.setdefault("pc6", {"t": {}, "d": {}})
+        self.d.setdefault("eerst", {})
         if self.d.get("v") != 3:  # oude cache had geen omschrijving/afsluiting-info
             self.d.update(v=3, gmb={}, sru={})
 
@@ -894,7 +896,7 @@ def ken_pc4(items, vlakken):
         return 0
     n = 0
     for it in items:
-        pts = it.pop("_pts", None) or ([(it["lat"], it["lon"])] if it.get("lat") else [])
+        pts = it.get("_pts") or ([(it["lat"], it["lon"])] if it.get("lat") else [])
         gevonden = []
         for la, lo in pts:
             for v in vlakken:
@@ -1007,10 +1009,75 @@ def kaart(uit: Path, cache: Cache, gemeenten, vlakken, nu: float, ttl_dagen=60):
         rs = [plat(r) for r in (vereenvoudig(r, 0.0011) for r in v["r"]) if len(r) >= 4]
         if rs:
             pc4.append({"c": v["pc4"], "r": rs})
+    if pc4:
+        cache.d["kaart"]["pc4lijst"] = sorted({v["c"] for v in pc4})
     if not w.get("gem") and not pc4:
         return 0
     uit.write_text(json.dumps({"gemeenten": w.get("gem", []), "pc4": pc4}, ensure_ascii=False, separators=(",", ":")), "utf-8")
     return uit.stat().st_size
+
+
+# ---------------------------------------------------------------- nieuw sinds (eerste keer gezien)
+def markeer_nieuw(items, cache: Cache, now):
+    """Zet per melding 'sinds' = moment waarop hij voor het eerst in de feed stond. Markten niet."""
+    eerst, nu_s = cache.d["eerst"], now.astimezone(TZ).isoformat(timespec="minutes")
+    leeg = not eerst
+    gezien, n = set(), 0
+    for it in items:
+        if it.get("cat") == "markt" or not it.get("id"):
+            continue
+        k = str(it["id"])
+        gezien.add(k)
+        if k not in eerst:
+            eerst[k] = [nu_s if not leeg else "", nu_s]  # eerste run: alles 'bestaand'
+            n += 0 if leeg else 1
+        eerst[k][1] = nu_s
+        if eerst[k][0]:
+            it["sinds"] = eerst[k][0]
+    grens = (now - dt.timedelta(days=30)).astimezone(TZ).isoformat(timespec="minutes")
+    cache.d["eerst"] = {k: v for k, v in eerst.items() if k in gezien or v[1] >= grens}
+    return {"nieuw_deze_run": n, "bekend": len(cache.d["eerst"])}
+
+
+# ---------------------------------------------------------------- 6-cijferige postcodes (plek van een stop, zonder adres te versturen)
+def pc6_punten(uit: Path, cache: Cache, nu: float, budget_s=240, ttl_dagen=90):
+    """Middelpunt van elke 6-cijferige postcode (PDOK, openbaar) in de eigen postcodegebieden.
+    Per run maximaal budget_s seconden ophalen; de rest volgt in de volgende runs."""
+    lijst = cache.d["kaart"].get("pc4lijst") or []
+    w = cache.d["pc6"]
+    t0, opgehaald = time.monotonic(), 0
+    for c in sorted(lijst, key=lambda c: w["t"].get(c, 0)):
+        if nu - w["t"].get(c, 0) < ttl_dagen * 86400:
+            continue
+        if time.monotonic() - t0 > budget_s:
+            break
+        punten = []
+        try:
+            for start in range(0, 2000, 100):
+                q = urllib.parse.urlencode({"q": "*:*", "rows": 100, "start": start, "wt": "json", "fl": "postcode,centroide_ll"})
+                docs = json.loads(http_get(f"{PDOK}?{q}&fq=type:postcode&fq=postcode:{c}*", timeout=30))["response"]["docs"]
+                for d in docs:
+                    m = re.search(r"POINT\(([\d.]+) ([\d.]+)\)", d.get("centroide_ll", ""))
+                    pc = str(d.get("postcode", ""))
+                    if m and len(pc) == 6 and pc[:4] == c:
+                        punten.append([pc[4:], round(float(m[1]) * 1e4), round(float(m[2]) * 1e4)])
+                if len(docs) < 100:
+                    break
+        except Exception as e:
+            log(f"  pc6 {c} FOUT", str(e)[:100])
+            continue
+        w["d"][c], w["t"][c] = punten, nu
+        opgehaald += 1
+    uitv = {}
+    for c, punten in w["d"].items():
+        if c not in lijst or not punten:
+            continue
+        x0, y0 = min(p[1] for p in punten), min(p[2] for p in punten)
+        uitv[c] = [x0, y0] + [v for p in sorted(punten) for v in (p[0], p[1] - x0, p[2] - y0)]
+    uit.write_text(json.dumps(uitv, separators=(",", ":")), "utf-8")
+    klaar = sum(1 for c in lijst if c in w["d"])
+    log(f"  pc6: {opgehaald} gebieden opgehaald, {klaar}/{len(lijst)} compleet, {uit.stat().st_size / 1e3:.0f} kB")
+    return {"opgehaald": opgehaald, "compleet": klaar, "totaal": len(lijst)}
 
 
 # ---------------------------------------------------------------- woonplaatsen (voor routecheck)
@@ -1064,6 +1131,7 @@ def main():
     cache = Cache(Path(a.cache))
     if a.alleen_kaart:
         n = kaart(Path(a.uit).with_name("kaart.json"), cache, plaatsen, pc4_vlakken(cache, plaatsen, time.time()), time.time())
+        pc6_punten(Path(a.uit).with_name("pc6.json"), cache, time.time(), budget_s=float(os.environ.get("PC6_BUDGET", "240")))
         cache.save()
         log(f"kaart.json: {n / 1e3:.0f} kB")
         return
@@ -1101,9 +1169,13 @@ def main():
     # 4. Postcodegebieden
     vlakken = [] if a.geen_gemeenteblad else pc4_vlakken(cache, plaatsen, time.time())
     status["postcodes"] = {"ok": bool(vlakken), "met_pc4": ken_pc4(items, vlakken)}
-    for it in items:
-        it.pop("_pts", None)
+    for it in items:  # vorm van de melding (max 16 punten) voor afstand tot stops in de browser
+        pts = it.pop("_pts", None) or []
+        if len(pts) > 1:
+            stap = max(1, len(pts) // 16)
+            it["pts"] = [v for la, lo in pts[::stap][:16] for v in (round(lo * 1e4), round(la * 1e4))]
     log(f"  postcodes: {status['postcodes']}")
+    status["nieuw"] = markeer_nieuw(items, cache, now)
 
     order = {"hoog": 0, "middel": 1, "laag": 2, "geen": 3}
     items.sort(key=lambda x: (x["plaats"], order.get(x["hinder"], 9), x["start"] or "0"))
@@ -1122,6 +1194,10 @@ def main():
             log(f"  kaart.json: {kaart(Path(a.uit).with_name('kaart.json'), cache, plaatsen, vlakken, time.time()) / 1e3:.0f} kB")
         except Exception as e:
             log("  kaart FOUT", str(e)[:160])
+        try:
+            status["pc6"] = pc6_punten(Path(a.uit).with_name("pc6.json"), cache, time.time())
+        except Exception as e:
+            log("  pc6 FOUT", str(e)[:160])
     Path(a.uit).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), "utf-8")
     cache.save()
     log(f"Klaar: {len(items)} items → {a.uit}")

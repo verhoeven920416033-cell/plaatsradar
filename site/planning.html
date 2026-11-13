@@ -57,7 +57,7 @@ header h1{font-size:24px;letter-spacing:-.2px}
 .kpi.alert::before{background:var(--red)}.kpi.info::before{background:var(--navy2)}
 .kpi b{font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.5px}.kpi span{font-size:12.5px}
 button.kpi{cursor:pointer;transition:transform .08s,box-shadow .12s}button.kpi:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(16,24,40,.12)}
-button.kpi em{position:absolute;right:10px;top:9px;font-style:normal;font-size:11px;color:var(--mut)}
+button.kpi em{position:absolute;right:10px;top:9px;font-style:normal;font-size:11px;color:var(--navy2);opacity:0;transition:opacity .12s;background:#fff;padding-left:6px}button.kpi:hover em,button.kpi:focus-visible em{opacity:1}
 .blik{display:grid;grid-template-columns:1fr 1.25fr 1.25fr;gap:12px;margin-bottom:12px}
 .krt{background:#fff;border:1px solid #e3e8ef;border-radius:12px;padding:13px 15px;box-shadow:0 1px 2px rgba(16,24,40,.05);min-width:0}
 .krt h3{margin:0 0 2px;font-size:14px}.krt .sub{font-size:12px;color:var(--mut);margin:0 0 10px}
@@ -70,6 +70,12 @@ button.kpi em{position:absolute;right:10px;top:9px;font-style:normal;font-size:1
 .br .vl{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 .drop.klein{padding:9px 14px;font-size:13.5px}.drop.klein .meta{display:none}
 .fts{margin-top:12px;padding-top:10px;border-top:1px solid #eef1f5;font-size:12.5px;color:var(--mut);display:grid;gap:3px}.fts b{color:var(--ink);font-variant-numeric:tabular-nums}
+.nw{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:#e6f0ff;color:#0a4a86;border:1px solid #b9d3f5;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px}
+.vk{width:28px;height:28px;border-radius:7px;border:1px solid #c9d3df;background:#fff;color:#c9d3df;font:700 14px system-ui;cursor:pointer;flex:0 0 auto}.vk:hover{border-color:#1f7a4d;color:#1f7a4d}.vk.aan{background:#1f7a4d;border-color:#1f7a4d;color:#fff}
+.verw{opacity:.5}.verw .ttl{text-decoration:line-through}
+.item{grid-template-columns:190px 1fr auto auto}
+.wk td{text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;min-width:62px}.wk td.nm{text-align:left;font-weight:600;cursor:default}.wk td b{display:block;font-size:15px}.wk td small{color:inherit;opacity:.8}
+.wk th{text-align:center}.wk th.vandaag{color:var(--red)}
 .leeg{color:var(--mut);font-size:13px;padding:6px 0}
 .tab{display:inline-flex;align-items:center;gap:7px;border-radius:10px;padding:8px 14px}.tab i{font-style:normal;font-size:11.5px;font-weight:700;background:#e8eef6;color:var(--navy);border-radius:999px;padding:1px 7px}.tab.on i{background:rgba(255,255,255,.22);color:#fff}
 .tabs{position:sticky;top:0;z-index:5;background:#eef1f5;padding:8px 0;margin-bottom:4px;overflow-x:auto}.tab{white-space:nowrap;flex:0 0 auto}
@@ -120,22 +126,26 @@ td.sam{font-weight:700;color:#1f7a4d}
       <div class="row" style="margin-bottom:8px"><span class="lbl">Diensten</span><span id="groepen" class="row"></span></div>
       <div class="row" style="margin-bottom:8px"><span class="lbl">Filter</span><input type="search" id="filter" style="flex:1 1 320px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit" placeholder="Postcode, straat, plaats, dienst of melding. Komma = of: 5611, 5612-5615, Vestdijk, Tilburg, CWC1" aria-label="Filter op postcode of straat"><span id="filterInfo" class="meta"></span></div>
       <div class="row" style="margin-bottom:8px"><span class="lbl">Hinder</span><span id="fHinder" class="row" style="gap:6px"></span><span class="lbl" style="margin-left:8px">Soort</span><span id="fSoort" class="row" style="gap:6px"></span></div>
+      <div class="row" style="margin-bottom:8px"><span class="lbl">Tijdvak</span><span class="chip" data-tv="">Hele dag</span><span class="chip" data-tv="06:00-19:00">06–19 uur</span><span class="chip" data-tv="07:00-17:00">07–17 uur</span>
+        <input type="time" id="tvVan" aria-label="Tijdvak van" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit">–<input type="time" id="tvTot" aria-label="Tijdvak tot" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit">
+        <span class="lbl" style="margin-left:8px">Tonen</span><span class="chip" id="fNieuw">Alleen nieuw</span><span class="chip" id="fVerb">Verberg verwerkt</span></div>
       <div class="row"><button class="btn" id="reset">Filters wissen</button><span style="flex:1"></span>
         <button class="btn pri" id="excel">Download Excel</button><button class="btn" id="print">Print</button><button class="btn" id="wis">Wis</button></div>
     </section>
     <p class="meta"><b>Vertrouwelijk: dit overzicht bevat planningsgegevens.</b> <span id="kop"></span></p>
     <div class="kpis" id="kpis"></div>
     <div class="blik" id="blik"></div>
-    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Per plaats<i id="nHinder"></i></button><button class="tab" data-t="tabel">Tabel<i id="nTabel"></i></button><button class="tab" data-t="klant" id="tabKlant" hidden>Klantcodes<i id="nKlant"></i></button><button class="tab" data-t="kaart">Kaart</button><button class="tab" data-t="sync">Diensten samenvoegen<i id="nSync"></i></button></div>
+    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Per plaats<i id="nHinder"></i></button><button class="tab" data-t="tabel">Tabel<i id="nTabel"></i></button><button class="tab" data-t="klant" id="tabKlant" hidden>Klantcodes<i id="nKlant"></i></button><button class="tab" data-t="week">Week</button><button class="tab" data-t="kaart">Kaart</button><button class="tab" data-t="sync">Diensten samenvoegen<i id="nSync"></i></button></div>
     <div id="hinder"></div>
     <div id="tabel" hidden></div>
+    <div id="week" hidden></div>
     <div id="kaartvak" hidden>
       <div class="row geenprint" style="margin-bottom:8px"><span class="leg"><b style="background:#c8102e"></b>hoog</span><span class="leg"><b style="background:#f3a712"></b>middel</span><span class="leg"><b style="background:#7b8794"></b>laag</span><span class="leg"><b style="background:#fff;border:2px dashed #7b8794"></b>plek ongeveer</span><span class="leg"><b class="vk"></b>postcodegebied gereden op de rijdag</span></div>
       <div id="kaart"></div>
       <p class="meta">Kaart zonder internet: gemeentegrenzen en postcodegebieden (CBS/PDOK), geen straten. Scrollen of +/− om te zoomen, slepen om te schuiven, klik op een punt of postcodegebied voor details.</p>
     </div>
     <div id="klant" hidden>
-      <div class="row geenprint" style="margin-bottom:8px"><span class="chip" id="fGebied">Ook zelfde postcodegebied (straat niet genoemd)</span>
+      <div class="row geenprint" style="margin-bottom:8px"><span class="chip on" id="fHoek" title="Melding binnen 250 m van de stop, andere straat. Plek uit de 6-cijferige postcode.">Om de hoek (≤ 250 m)</span><span class="chip" id="fGebied">Ook zelfde postcodegebied (verder weg)</span>
         <label class="meta">Klantcode uit kolom <select id="klantKol" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit"></select></label></div>
       <div class="row geenprint" style="margin-bottom:8px;align-items:flex-start"><span class="lbl" style="padding-top:5px">Postcode</span>
         <input type="search" id="kpZoek" inputmode="numeric" placeholder="Typ: 56, 5611 of 5611AB" style="width:190px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font:inherit" aria-label="Postcode begint met">
@@ -149,11 +159,12 @@ td.sam{font-weight:700;color:#1f7a4d}
 <div class="toast" id="toast"></div>
 <script src="xlsx.js"></script>
 <script src="plan-kern.js"></script>
+<script src="hulp.js"></script>
 <script src="kaart.js"></script>
 <script>
 (() => {
 "use strict";
-const K = window.PlanKern, X = window.Xlsx, $ = s => document.querySelector(s);
+const H = window.PR_Hulp, V = H.verwerkt(), K = window.PlanKern, X = window.Xlsx, $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const pad = n => String(n).padStart(2,"0"), iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const fmtD = s => { const d = new Date(s.length > 10 ? s : s+"T00:00"); return isNaN(d) ? s : d.toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"}); };
@@ -161,7 +172,7 @@ const rand = (t, n) => `${n} ${n===1?t[0]:t[1]}`;
 let NET_DICHT = false, D = null, WP = [], G = null, AAN = null, TAB = "hinder", R = null, FILTER = null, FT = 0, KAART = null, KAART_DATA = window.PR_KAART || null;
 const HINDER = ["hoog","middel","laag"], SOORT = {weg:"Weg / werk", evenement:"Evenement / kermis"}, soortVan = x => x.cat === "evenement" || x.cat === "kermis" ? "evenement" : "weg";
 const nieuwH = () => new Set(["hoog","middel"]);
-let FH = nieuwH(), FS = new Set(Object.keys(SOORT)), SORT = {k:"hinder", op:true}, RUW = null, GEBIED = false, KR = [], KPC = null, KPREF = "", KSORT = null;
+let FH = nieuwH(), FS = new Set(Object.keys(SOORT)), SORT = {k:"hinder", op:true}, RUW = null, GEBIED = false, HOEK = true, PC6 = new Map(), TV = "", TT = "", NIEUW = false, VERB = false, KR = [], KPC = null, KPREF = "", KSORT = null;
 const fout = t => { const e = $("#fout"); e.hidden = !t; e.textContent = t || ""; };
 const plusDag = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
 $("#datum").value = plusDag(2);
@@ -185,7 +196,9 @@ async function laad(){
     D = await (await fetch("data.json?t="+Date.now())).json();
     try { WP = await (await fetch("woonplaatsen.json?t="+Date.now())).json(); } catch {}
     try { KAART_DATA = await (await fetch("kaart.json")).json(); } catch {}
+    try { PC6 = H.maakPc6(await (await fetch("pc6.json")).json()); } catch {}
   }
+  if (window.PR_PC6) PC6 = H.maakPc6(window.PR_PC6);
   sluitNetwerk(); zetStand(bron);
 }
 const klaar = laad().catch(e => fout("Meldingen laden mislukt: " + e.message));
@@ -201,6 +214,9 @@ async function leesExcel(f){
     AAN = new Set(G.groepen); KPC = null; toon();
   } catch (e) { G = null; $("#uit").hidden = true; fout(e.message || "Excel lezen mislukt."); }
 }
+const nw = x => H.isNieuw(x, D.gegenereerd) ? '<span class="nw" title="Voor het eerst gezien in de laatste 24 uur">nieuw</span>' : "";
+const vk = x => `<button type="button" class="vk ${V.has(x.id) ? "aan" : ""}" data-vk="${esc(x.id)}" title="${V.has(x.id) ? "Verwerkt (klik om terug te zetten)" : "Markeer als verwerkt (alleen op deze pc)"}" aria-pressed="${V.has(x.id)}">✓</button>`;
+const vr = x => V.has(x.id) ? " verw" : "";
 const bron = x => `${esc(x.label)} · ${esc(wanneer(x))} · ${esc(x.bron)}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">bron</a>`:""}`;
 function wanneer(x){ const d = $("#datum").value, p = x.perioden && x.perioden.find(([s,e]) => s.slice(0,10) <= d && e.slice(0,10) >= d);
   const [s, e] = p || [x.start, x.eind]; if (!s) return "datum onbekend";
@@ -209,10 +225,16 @@ function wanneer(x){ const d = $("#datum").value, p = x.perioden && x.perioden.f
 function toon(){
   const datum = $("#datum").value; if (!datum || !G) return;
   $("#dagnaam").textContent = K.DAGEN[K.weekdag(datum)];
-  R = K.planDag(G.gebieden, D.items, {datum, groepen:AAN, hinder:FH, soort:x => FS.has(soortVan(x)), woonplaatsen:WP, filter:FILTER});
-  const alle = K.planDag(G.gebieden, D.items, {datum, groepen:AAN, hinder:new Set(HINDER), woonplaatsen:WP, filter:FILTER});
+  const extra = x => H.tijdOk(x, datum, datum, TV, TT) && (!NIEUW || H.isNieuw(x, D.gegenereerd)) && (!VERB || !V.has(x.id));
+  R = K.planDag(G.gebieden, D.items, {datum, groepen:AAN, hinder:FH, soort:x => FS.has(soortVan(x)), extra, woonplaatsen:WP, filter:FILTER});
+  const alle = K.planDag(G.gebieden, D.items, {datum, groepen:AAN, hinder:new Set(HINDER), extra:x => H.tijdOk(x, datum, datum, TV, TT), woonplaatsen:WP, filter:FILTER});
   const ar = [...new Map([...alle.plaatsen.flatMap(p => p.rijen.map(r => r.x)), ...alle.zonder.flatMap(z => z.rijen)].map(x => [x.id, x])).values()];
   $("#fHinder").innerHTML = HINDER.map(h => `<span class="chip c-${h} ${FH.has(h)?"on":""}" data-h="${h}">${h}<i>${ar.filter(x => (x.hinder === "geen" ? "laag" : x.hinder) === h).length}</i></span>`).join("");
+  const nNieuw = ar.filter(x => H.isNieuw(x, D.gegenereerd)).length, nVerw = ar.filter(x => V.has(x.id)).length;
+  $("#fNieuw").innerHTML = `Alleen nieuw<i>${nNieuw}</i>`; $("#fNieuw").classList.toggle("on", NIEUW);
+  $("#fVerb").innerHTML = `Verberg verwerkt<i>${nVerw}</i>`; $("#fVerb").classList.toggle("on", VERB);
+  document.querySelectorAll("[data-tv]").forEach(c => c.classList.toggle("on", c.dataset.tv === (TV || TT ? `${TV}-${TT}` : "")));
+  $("#tvVan").value = TV; $("#tvTot").value = TT;
   $("#fSoort").innerHTML = Object.entries(SOORT).map(([k,t]) => `<span class="chip ${FS.has(k)?"on":""}" data-s="${k}">${t}<i>${ar.filter(x => soortVan(x) === k).length}</i></span>`).join("");
   const S = K.synchronisatie(G.gebieden, AAN, FILTER);
   $("#filterInfo").textContent = FILTER ? `${FILTER.pc.length ? FILTER.pc.length + " postcode(s)" : ""}${FILTER.pc.length && FILTER.tk.length ? " + " : ""}${FILTER.tk.length ? FILTER.tk.length + " straat/plaats" : ""}` : "";
@@ -223,10 +245,12 @@ function toon(){
     (G.bron === "optimiser" ? ` Bron: optimiser-export, ${G.groepen.length} ritten${G.datums.length ? " op " + G.datums.map(fmtD).join(", ") : ""}${G.overgeslagen.length ? ", overgeslagen: " + G.overgeslagen.join(", ") : ""}.` +
       (G.datums.length && !G.datums.includes(datum) ? " Let op: de rijdag staat niet in het bestand, dus er rijdt niets." : "") : "");
   document.querySelector("#groepen").previousElementSibling.textContent = G.bron === "optimiser" ? "Ritten" : "Diensten";
-  const nKl = G.stops && G.stops.length ? new Set(K.klantHinder(G.stops, D.items, {datum, hinder:FH, soort:x => FS.has(soortVan(x)), groepen:AAN.size === G.groepen.length ? null : AAN}).map(r => r.klant)).size : null;
+  const uniekeX = () => [...new Map([...R.plaatsen.flatMap(p => p.rijen.map(r => r.x)), ...R.zonder.flatMap(z => z.rijen)].map(x => [x.id, x])).values()];
+  const nKl = G.stops && G.stops.length ? new Set(K.klantHinder(G.stops, D.items, {datum, hinder:FH, soort:x => FS.has(soortVan(x)), extra, groepen:AAN.size === G.groepen.length ? null : AAN, plek:pc => H.plek(PC6, pc), afstand:H.afstand, dichtbij:HOEK}).map(r => r.klant)).size : null;
   // [waarde, label, stijl, actie, hint]
   const kp = [[R.hoog, "hoge hinder", "alert", "hoog", "toon alleen hoog"], [R.meldingen, "meldingen op de rijdag", "info", "tabel", "open tabel"],
-    ...(nKl === null ? [] : [[nKl, "klantcodes met hinder in hun straat", "alert", "klant", "open klantcodes"]]),
+    ...(nKl === null ? [] : [[nKl, "klantcodes met hinder bij de stop", "alert", "klant", "open klantcodes"]]),
+    [uniekeX().filter(x => H.isNieuw(x, D.gegenereerd)).length, "nieuw sinds gisteren", "info", "nieuw", NIEUW ? "toon alles" : "toon alleen nieuw"],
     [R.plaatsen.length, "plaatsen met hinder", "", "hinder", "per plaats"], [R.gebieden, "postcodegebieden gereden", "", "kaart", "open kaart"], [S.length, "gebieden samen te voegen", "", "sync", "bekijk"]];
   $("#kpis").innerHTML = kp.map(([n, t, st, act, hint]) => `<button type="button" class="kpi ${st}" data-act="${act}" title="${esc(hint)}"><em>${esc(hint)} ›</em><b>${n}</b><span>${esc(t)}</span></button>`).join("");
   // ---- in één oogopslag: verdeling, drukste postcodegebieden, per dienst/rit
@@ -250,7 +274,7 @@ function toon(){
     <div class="krt"><h3>Per ${gNaam}</h3><p class="sub">Meldingen in de gebieden van elke ${gNaam} · klik om te kiezen</p>${balk(top(perGr), "gr", x => esc(x.k))}</div>`;
   $("#hinder").innerHTML = (R.plaatsen.length ? R.plaatsen.map(p => `<div class="place"><h2>${esc(p.plaats)} <small>${rand(["melding","meldingen"],p.rijen.length)} · ${esc(p.pc4.join(", "))}</small></h2>
       <div class="empty" style="padding:8px 14px"><b>Rijden op ${esc(R.dag)}:</b> ${p.groepen.map(g => `<span class="grp">${esc(g)}</span>`).join("")}</div>
-      ${p.rijen.map(r => `<div class="item i-${r.x.hinder}"><div class="st">${esc(r.pc4.join(", "))}<small>${r.groepen.map(esc).join(", ")}</small></div><div><div class="ttl">${esc(r.x.titel)}</div><div class="meta">${bron(r.x)}</div></div><span class="h h-${r.x.hinder}">${r.x.hinder}</span></div>`).join("")}</div>`).join("")
+      ${p.rijen.map(r => `<div class="item i-${r.x.hinder}${vr(r.x)}"><div class="st">${esc(r.pc4.join(", "))}<small>${r.groepen.map(esc).join(", ")}</small></div><div><div class="ttl">${esc(r.x.titel)}${nw(r.x)}</div><div class="meta">${bron(r.x)}</div></div><span class="h h-${r.x.hinder}">${r.x.hinder}</span>${vk(r.x)}</div>`).join("")}</div>`).join("")
     : `<div class="panel">Geen hinder in de gereden postcodegebieden op ${esc(fmtD(datum))}${FILTER ? " binnen dit filter" : ""}.</div>`)
     + (R.zonder.length ? `<div class="place"><h2>Zonder exacte plek <small>gemeente-breed, controleren</small></h2>${R.zonder.map(z => z.rijen.map(x => `<div class="item"><div class="st">${esc(z.gemeente)}<small>${esc(z.plaatsen.slice(0,4).join(", "))}${z.plaatsen.length>4?" e.a.":""}</small></div><div><div class="ttl">${esc(x.titel)}</div><div class="meta">${bron(x)}</div></div><span class="h h-${x.hinder}">${x.hinder}</span></div>`).join("")).join("")}</div>` : "");
   const gs = G.groepen.filter(g => AAN.has(g));
@@ -262,13 +286,13 @@ function toon(){
   const orde = {hoog:0, middel:1, laag:2, geen:2}, wa = (r, k) => k === "hinder" ? orde[r.x.hinder] : k === "soort" ? r.x.label : k === "titel" ? r.x.titel : k === "wanneer" ? (r.x.start || "9") : String(r[k] || "");
   rijen.sort((a, b) => { const x = wa(a, SORT.k), y = wa(b, SORT.k), c = typeof x === "number" ? x - y : String(x).localeCompare(String(y), "nl", {numeric:true}); return (SORT.op ? c : -c) || a.pc4.localeCompare(b.pc4) || a.plaats.localeCompare(b.plaats, "nl"); });
   const kol = [["plaats","Plaats"],["pc4","Postcode"],["groepen","Diensten"],["hinder","Hinder"],["soort","Soort"],["titel","Melding"],["wanneer","Wanneer"]];
-  $("#tabel").innerHTML = rijen.length ? `<div class="tw"><table><thead><tr>${kol.map(([k,t]) => `<th data-k="${k}" class="${SORT.k===k?"s"+(SORT.op?"":" op"):""}">${t}</th>`).join("")}<th>Bron</th></tr></thead><tbody>${rijen.map(r => `<tr><td>${esc(r.plaats)}</td><td>${esc(r.pc4)}</td><td>${esc(r.groepen)}</td><td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.label)}</td><td>${esc(r.x.titel)}</td><td>${esc(wanneer(r.x))}</td><td>${esc(r.x.bron)}${r.x.url?` · <a href="${esc(r.x.url)}" target="_blank" rel="noopener noreferrer">link</a>`:""}</td></tr>`).join("")}</tbody></table></div>`
+  $("#tabel").innerHTML = rijen.length ? `<div class="tw"><table><thead><tr>${kol.map(([k,t]) => `<th data-k="${k}" class="${SORT.k===k?"s"+(SORT.op?"":" op"):""}">${t}</th>`).join("")}<th>Bron</th><th title="Verwerkt">✓</th></tr></thead><tbody>${rijen.map(r => `<tr class="${vr(r.x)}"><td>${esc(r.plaats)}</td><td>${esc(r.pc4)}</td><td>${esc(r.groepen)}</td><td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.label)}</td><td>${esc(r.x.titel)}${nw(r.x)}</td><td>${esc(wanneer(r.x))}</td><td>${esc(r.x.bron)}${r.x.url?` · <a href="${esc(r.x.url)}" target="_blank" rel="noopener noreferrer">link</a>`:""}</td><td>${vk(r.x)}</td></tr>`).join("")}</tbody></table></div>`
     : `<div class="panel">Geen hinder binnen dit filter op ${esc(fmtD(datum))}.</div>`;
   // klantcodes (alleen bij de optimiser-export: daar staan adressen in)
   const metKlant = !!(G.stops && G.stops.length); $("#tabKlant").hidden = !metKlant; if (!metKlant && TAB === "klant") TAB = "hinder";
   KR = [];
   if (metKlant) {
-    KR = K.klantHinder(G.stops, D.items, {datum, hinder:FH, soort:x => FS.has(soortVan(x)), groepen:AAN.size === G.groepen.length ? null : AAN, gebied:GEBIED})
+    KR = K.klantHinder(G.stops, D.items, {datum, hinder:FH, soort:x => FS.has(soortVan(x)), extra, groepen:AAN.size === G.groepen.length ? null : AAN, gebied:GEBIED, plek:pc => H.plek(PC6, pc), afstand:H.afstand, dichtbij:HOEK})
       .filter(r => !FILTER || FILTER.pc.some(([a, b]) => +r.pc4 >= a && +r.pc4 <= b) || FILTER.tk.some(w => K.straatKern(`${r.klant} ${r.straat} ${r.plaats} ${r.rit} ${r.x.titel}`).includes(" " + w)));
     // postcodeknoppen: alle postcodegebieden met een getroffen klant, getal = aantal klantcodes
     const perPc = new Map(); KR.forEach(r => { if (!perPc.has(r.pc4)) perPc.set(r.pc4, new Set()); perPc.get(r.pc4).add(r.klant); });
@@ -282,23 +306,44 @@ function toon(){
     const kkop = kkol.map(([k, t]) => `<th data-ks="${k}" class="${KSORT && KSORT.k === k ? "s" + (KSORT.op ? "" : " op") : ""}">${t}</th>`).join("");
     const gefilterd = KPC || pref ? ` Postcodefilter: ${KR.length} van ${nKR} regels.` : "";
     $("#klantKol").innerHTML = G.kolommen.map((k, i) => `<option value="${i}" ${i === G.klantKolom ? "selected" : ""}>${String.fromCharCode(65 + (i % 26))}${i >= 26 ? "+" : ""}: ${esc(k || "(leeg)")}</option>`).join("");
-    $("#fGebied").classList.toggle("on", GEBIED);
-    const kl = new Set(KR.map(r => r.klant)), klS = new Set(KR.filter(r => r.niveau === "straat").map(r => r.klant));
-    $("#klantUit").innerHTML = KR.length ? `<p class="meta"><b>${klS.size}</b> klantcode(s) met een melding in hun straat${GEBIED ? `, <b>${kl.size}</b> in totaal incl. zelfde postcodegebied` : ""} op ${esc(fmtD(datum))}.${gefilterd}</p>
-      <div class="tw"><table><thead><tr>${kkop}</tr></thead><tbody>${KR.map(r => `<tr>
+    $("#fGebied").classList.toggle("on", GEBIED); $("#fHoek").classList.toggle("on", HOEK);
+    const kl = new Set(KR.map(r => r.klant)), klS = new Set(KR.filter(r => r.niveau !== "gebied").map(r => r.klant)), klH = new Set(KR.filter(r => r.niveau === "dichtbij").map(r => r.klant));
+    $("#klantUit").innerHTML = KR.length ? `<p class="meta"><b>${klS.size}</b> klantcode(s) met een melding in hun straat${HOEK ? ` of om de hoek (waarvan ${klH.size} alleen om de hoek)` : ""}${GEBIED ? `, <b>${kl.size}</b> in totaal incl. zelfde postcodegebied` : ""} op ${esc(fmtD(datum))}.${gefilterd}</p>
+      <div class="tw"><table><thead><tr>${kkop}<th title="Verwerkt">✓</th></tr></thead><tbody>${KR.map(r => `<tr class="${vr(r.x)}">
         <td><b>${esc(r.klant || "?")}</b></td><td>${esc(r.rit.replace(/^Rit /, ""))}</td><td>${esc(`${r.straat} ${r.nr}`.trim())}</td><td>${esc(r.plaats)}</td><td>${esc(r.postcode || r.pc4)}</td>
-        <td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.label)}</td><td>${esc(r.x.titel)}</td><td>${esc(wanneer(r.x))}</td>
-        <td>${r.niveau === "straat" ? "<b>straat</b>" : "postcodegebied"}${r.x.url ? ` · <a href="${esc(r.x.url)}" target="_blank" rel="noopener noreferrer">bron</a>` : ""}</td></tr>`).join("")}</tbody></table></div>`
+        <td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.label)}</td><td>${esc(r.x.titel)}${nw(r.x)}</td><td>${esc(wanneer(r.x))}</td>
+        <td>${r.niveau === "straat" ? "<b>straat</b>" : r.niveau === "dichtbij" ? `<b>om de hoek</b> · ${r.afstand} m` : "postcodegebied"}${r.x.url ? ` · <a href="${esc(r.x.url)}" target="_blank" rel="noopener noreferrer">bron</a>` : ""}</td><td>${vk(r.x)}</td></tr>`).join("")}</tbody></table></div>`
       : nKR ? `<div class="panel">Geen klantcodes in deze postcode. <button class="btn" id="kpWis">Postcodefilter wissen</button></div>`
       : `<div class="panel">Geen klantcodes met een melding in hun straat op ${esc(fmtD(datum))}${FILTER ? " binnen dit filter" : ""}.${GEBIED ? "" : " Zet <i>Ook zelfde postcodegebied</i> aan voor een ruimer beeld."}</div>`;
   }
-  $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#klant").hidden = TAB !== "klant"; $("#kaartvak").hidden = TAB !== "kaart"; $("#tabel").hidden = TAB !== "tabel";
+  $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#klant").hidden = TAB !== "klant"; $("#kaartvak").hidden = TAB !== "kaart"; $("#tabel").hidden = TAB !== "tabel"; $("#week").hidden = TAB !== "week"; if (TAB === "week") toonWeek(datum);
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.t === TAB));
   $("#nHinder").textContent = R.plaatsen.length; $("#nTabel").textContent = rijen.length; $("#nSync").textContent = S.length; $("#nKlant").textContent = nKl === null ? "" : new Set(KR.map(r => r.klant)).size;
   $("#stappen").hidden = true; $("#drop").classList.add("klein");
   $("#uit").hidden = false; R.sync = S; R.gs = gs; R.datum = datum;
   if (TAB === "kaart") tekenKaart();
 }
+// Week vooruit: 7 dagen vanaf de rijdag, per dienst/rit het aantal hoge (groot) en middel (klein) meldingen
+function toonWeek(start){
+  const dagen = [...Array(7)].map((_, i) => { const d = new Date(start + "T12:00"); d.setDate(d.getDate() + i); return iso(d); });
+  const gs = G.groepen.filter(g => AAN.has(g)), cel = {}, tot = {};
+  for (const d of dagen) {
+    const r = K.planDag(G.gebieden, D.items, {datum:d, groepen:AAN, hinder:FH, soort:x => FS.has(soortVan(x)), extra:x => H.tijdOk(x, d, d, TV, TT) && (!NIEUW || H.isNieuw(x, D.gegenereerd)) && (!VERB || !V.has(x.id)), woonplaatsen:WP, filter:FILTER});
+    const per = {}; gs.forEach(g => per[g] = {hoog:new Set(), middel:new Set(), gebieden:0});
+    r.plaatsen.forEach(p => p.rijen.forEach(x => x.groepen.forEach(g => { if (per[g] && per[g][x.x.hinder]) per[g][x.x.hinder].add(x.x.id); })));
+    G.gebieden.forEach(a => { if (per[a.groep] && a.dagen[K.weekdag(d)]) per[a.groep].gebieden += a.pc4.length; });
+    cel[d] = per; tot[d] = {hoog:r.hoog, meldingen:r.meldingen, rijdt:r.gebieden};
+  }
+  const mx = Math.max(1, ...dagen.flatMap(d => gs.map(g => cel[d][g].hoog.size)));
+  const kleur = n => { if (!n) return ["#fff", "var(--mut)"]; const t = n / mx; return t > .75 ? ["#c8102e", "#fff"] : t > .5 ? ["#e0485c", "#fff"] : t > .25 ? ["#ef8f9b", "#3a0a12"] : ["#fbd9de", "#3a0a12"]; };
+  const vandaag = iso(new Date()), kort = d => new Date(d + "T12:00").toLocaleDateString("nl-NL", {weekday:"short", day:"numeric", month:"short"});
+  $("#week").innerHTML = `<div class="panel"><p class="meta" style="margin-top:0">Hoge hinder per ${G.bron === "optimiser" ? "rit" : "dienst"} per dag (groot getal), middel eronder. Donkerder = meer hoge hinder. Klik op een vak om die dag en ${G.bron === "optimiser" ? "rit" : "dienst"} te openen. Leeg vak = rijdt die dag niet.${G.bron === "optimiser" ? " Een optimiser-export bevat alleen de dagen uit het bestand." : ""}</p>
+    <div style="overflow-x:auto"><table class="wk"><thead><tr><th style="text-align:left">${G.bron === "optimiser" ? "Rit" : "Dienst"}</th>${dagen.map(d => `<th class="${d === vandaag ? "vandaag" : ""}">${esc(kort(d))}</th>`).join("")}</tr></thead><tbody>
+    ${gs.map(g => `<tr><td class="nm">${esc(g)}</td>${dagen.map(d => { const c = cel[d][g]; if (!c.gebieden) return `<td style="background:#f6f8fb;color:#b0b9c4;cursor:default">–</td>`;
+      const [bg, fg] = kleur(c.hoog.size); return `<td data-wd="${d}" data-wg="${esc(g)}" style="background:${bg};color:${fg}" title="${esc(g)} ${esc(kort(d))}: ${c.hoog.size} hoog, ${c.middel.size} middel, ${c.gebieden} postcodegebieden"><b>${c.hoog.size}</b><small>${c.middel.size} middel</small></td>`; }).join("")}</tr>`).join("")}
+    <tr><td class="nm">Totaal (uniek)</td>${dagen.map(d => `<td data-wd="${d}" data-wg="*" title="Alle gekozen ${G.bron === "optimiser" ? "ritten" : "diensten"}"><b>${tot[d].hoog}</b><small>${tot[d].meldingen} meldingen</small></td>`).join("")}</tr></tbody></table></div></div>`;
+}
+$("#week").addEventListener("click", e => { const c = e.target.closest("[data-wd]"); if (!c) return; $("#datum").value = c.dataset.wd; if (c.dataset.wg !== "*") AAN = new Set([c.dataset.wg]); TAB = "hinder"; toon(); });
 const gemPunt = new Map();
 function tekenKaart(){
   if (!window.Kaart) return;
@@ -321,15 +366,16 @@ function kaartInfo(p, soort){
     `<div style="margin-top:6px">${gemeente ? "Gemeente-breed, geen exacte plek: controleren." : `<b>Postcode:</b> ${esc([...pc4].join(", "))}<br><b>Diensten:</b> ${esc([...groepen].join(", "))}`}</div>`;
 }
 function excel(){
-  const h = [["Rijdag","Plaats","Postcode (PC4)","Diensten die dag","Hinder","Soort","Melding","Wanneer","Bron","Link"]];
+  const h = [["Rijdag","Plaats","Postcode (PC4)","Diensten die dag","Hinder","Soort","Melding","Wanneer","Nieuw","Verwerkt","Bron","Link"]];
+  const nv = x => [H.isNieuw(x, D.gegenereerd) ? "ja" : "", V.has(x.id) ? "ja" : ""];
   const ho = {hoog:0, middel:1, laag:2, geen:2};  // Excel: 1. hinder, 2. postcode
   R.plaatsen.flatMap(p => p.rijen.map(r => ({p, r}))).sort((a, b) => ho[a.r.x.hinder] - ho[b.r.x.hinder] || String(a.r.pc4[0] || "").localeCompare(String(b.r.pc4[0] || "")))
-    .forEach(({p, r}) => h.push([R.datum, p.plaats, r.pc4.join(", "), r.groepen.join(", "), r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.x.bron, r.x.url || ""]));
-  R.zonder.forEach(z => z.rijen.forEach(x => h.push([R.datum, z.plaatsen.join(", "), "", "gemeente-breed", x.hinder, x.label, x.titel, wanneer(x), x.bron, x.url || ""])));
+    .forEach(({p, r}) => h.push([R.datum, p.plaats, r.pc4.join(", "), r.groepen.join(", "), r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), ...nv(r.x), r.x.bron, r.x.url || ""]));
+  R.zonder.forEach(z => z.rijen.forEach(x => h.push([R.datum, z.plaatsen.join(", "), "", "gemeente-breed", x.hinder, x.label, x.titel, wanneer(x), ...nv(x), x.bron, x.url || ""])));
   const s = [["Plaats","PC4", ...R.gs, "Samen"], ...R.sync.map(r => [r.plaats, r.pc4, ...R.gs.map(g => r.diensten[g] ?? ""), r.samen])];
   const bladen = [{naam:"Hinder " + R.datum, rijen:h}, {naam:"Samenvoegen", rijen:s}];
   if (KR.length) bladen.splice(1, 0, {naam:"Klantcodes", rijen:[["Klantcode","Rit","Adres","Postcode","Plaats","Hinder","Soort","Melding","Wanneer","Match","Link"],
-    ...KR.map(r => [r.klant, r.rit, `${r.straat} ${r.nr}`.trim(), r.postcode, r.plaats, r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.niveau, r.x.url || ""])]});
+    ...KR.map(r => [r.klant, r.rit, `${r.straat} ${r.nr}`.trim(), r.postcode, r.plaats, r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.niveau === "dichtbij" ? `om de hoek (${r.afstand} m)` : r.niveau === "gebied" ? "postcodegebied" : "straat", r.x.url || ""])]});
   const a = document.createElement("a"); a.href = URL.createObjectURL(X.schrijf(bladen));
   a.download = `planning-${R.datum}${FILTER ? "-filter" : ""}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
@@ -344,6 +390,12 @@ $("#groepen").addEventListener("click", e => { const c = e.target.closest("[data
   if (g === "*") AAN = new Set(G.groepen); else if (AAN.size === G.groepen.length) AAN = new Set([g]); else { AAN.has(g) ? AAN.delete(g) : AAN.add(g); if (!AAN.size) AAN = new Set(G.groepen); }
   toon(); });
 $("#fGebied").addEventListener("click", () => { GEBIED = !GEBIED; toon(); });
+$("#fHoek").addEventListener("click", () => { HOEK = !HOEK; toon(); });
+$("#fNieuw").addEventListener("click", () => { NIEUW = !NIEUW; toon(); });
+$("#fVerb").addEventListener("click", () => { VERB = !VERB; toon(); });
+document.querySelectorAll("[data-tv]").forEach(c => c.addEventListener("click", () => { [TV, TT] = c.dataset.tv ? c.dataset.tv.split("-") : ["", ""]; toon(); }));
+["tvVan","tvTot"].forEach(i => $("#" + i).addEventListener("change", () => { TV = $("#tvVan").value; TT = $("#tvTot").value; toon(); }));
+$("#uit").addEventListener("click", e => { const b = e.target.closest("[data-vk]"); if (!b) return; e.stopPropagation(); V.wissel(b.dataset.vk); toon(); }, true);
 $("#kpZoek").addEventListener("input", e => { clearTimeout(e.target._t); e.target._t = setTimeout(() => { KPREF = e.target.value; toon(); }, 150); });
 $("#klant").addEventListener("click", e => {
   const c = e.target.closest("[data-kp]"), h = e.target.closest("th[data-ks]");
@@ -352,8 +404,8 @@ $("#klant").addEventListener("click", e => {
   else if (e.target.id === "kpWis") { KPC = null; KPREF = ""; $("#kpZoek").value = ""; toon(); }
 });
 $("#kpis").addEventListener("click", e => { const k = e.target.closest("[data-act]"); if (!k) return; const a = k.dataset.act;
-  if (a === "hoog") { FH = FH.size === 1 && FH.has("hoog") ? nieuwH() : new Set(["hoog"]); } else TAB = a;
-  toon(); if (a !== "hoog") document.querySelector(".tabs").scrollIntoView({behavior:"smooth", block:"start"}); });
+  if (a === "hoog") { FH = FH.size === 1 && FH.has("hoog") ? nieuwH() : new Set(["hoog"]); } else if (a === "nieuw") NIEUW = !NIEUW; else TAB = a;
+  toon(); if (a !== "hoog" && a !== "nieuw") document.querySelector(".tabs").scrollIntoView({behavior:"smooth", block:"start"}); });
 $("#blik").addEventListener("click", e => {
   const so = e.target.closest("[data-solo]"), pc = e.target.closest("[data-pc]"), gr = e.target.closest("[data-gr]");
   if (so) { const h = so.dataset.solo; FH = FH.size === 1 && FH.has(h) ? nieuwH() : new Set([h]); toon(); }
@@ -366,7 +418,7 @@ $("#uit").addEventListener("click", e => { const c = e.target.closest("[data-h],
   if (c.dataset.h) { FH.has(c.dataset.h) ? FH.delete(c.dataset.h) : FH.add(c.dataset.h); if (!FH.size) FH = nieuwH(); }
   else { FS.has(c.dataset.s) ? FS.delete(c.dataset.s) : FS.add(c.dataset.s); if (!FS.size) FS = new Set(Object.keys(SOORT)); }
   toon(); });
-$("#reset").addEventListener("click", () => { KPC = null; KPREF = ""; KSORT = null; $("#kpZoek").value = ""; FH = nieuwH(); FS = new Set(Object.keys(SOORT)); FILTER = null; $("#filter").value = ""; if (G) AAN = new Set(G.groepen); toon(); });
+$("#reset").addEventListener("click", () => { TV = ""; TT = ""; NIEUW = false; VERB = false; HOEK = true; KPC = null; KPREF = ""; KSORT = null; $("#kpZoek").value = ""; FH = nieuwH(); FS = new Set(Object.keys(SOORT)); FILTER = null; $("#filter").value = ""; if (G) AAN = new Set(G.groepen); toon(); });
 $("#filter").addEventListener("input", e => { clearTimeout(FT); FT = setTimeout(() => {  // een dienstnaam in het filter kiest die dienst
   const t = e.target.value.split(/[,;]/).map(x => x.trim()).filter(Boolean), gk = new Map((G ? G.groepen : []).map(g => [g.toLowerCase(), g]));
   const d = t.filter(x => gk.has(x.toLowerCase())).map(x => gk.get(x.toLowerCase()));

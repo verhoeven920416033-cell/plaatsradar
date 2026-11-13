@@ -3,7 +3,7 @@ name: PlaatsRadar bijwerken
 on:
   schedule:
     - cron: "7,37 * * * *"   # elke 30 minuten (UTC); GitHub kan bij drukte enkele minuten later starten
-  workflow_dispatch:          # handmatig: tab Actions → "Run workflow"
+  workflow_dispatch:          # handmatig (tab Actions → "Run workflow") of elk half uur door een externe timer (zie README)
   push:
     branches: [main]
 
@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
 
@@ -41,6 +41,7 @@ jobs:
           python3 tests/test_kaart.py
           node tests/test_route.js
           node tests/test_plan.js
+          node tests/test_hulp.js
 
       - name: Data ophalen (NDW + Gemeenteblad + markten)
         run: |

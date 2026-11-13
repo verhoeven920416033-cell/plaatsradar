@@ -42,10 +42,12 @@ def main():
                f";window.PR_LIVE={json.dumps(live)};")
     kf = SITE / "kaart.json"
     k = json.loads(kf.read_text("utf-8")) if kf.exists() else {"gemeenten": [], "pc4": []}
+    p6 = SITE / "pc6.json"
+    pc6 = ";window.PR_PC6=" + (p6.read_text("utf-8") if p6.exists() else "{}") + ";"
     kaart = lambda d: ";window.PR_KAART=" + json.dumps(d, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";"
-    n1 = bouw("routecheck.html", "routecheck-offline.html", ["vendor/pdf.min.js", "route-kern.js", "kaart.js"],
-              data_js + kaart({"gemeenten": k["gemeenten"], "pc4": []}), csp, pdf_worker=True)  # routecheck: geen postcodevlakken nodig
-    n2 = bouw("planning.html", "planning-offline.html", ["xlsx.js", "plan-kern.js", "kaart.js"], data_js + kaart(k), csp)
+    n1 = bouw("routecheck.html", "routecheck-offline.html", ["vendor/pdf.min.js", "route-kern.js", "hulp.js", "kaart.js"],
+              data_js + pc6 + kaart({"gemeenten": k["gemeenten"], "pc4": []}), csp, pdf_worker=True)  # routecheck: geen postcodevlakken nodig
+    n2 = bouw("planning.html", "planning-offline.html", ["xlsx.js", "plan-kern.js", "hulp.js", "kaart.js"], data_js + pc6 + kaart(k), csp)
     print(f"offline: routecheck {n1 / 1e6:.1f} MB, planning {n2 / 1e6:.1f} MB, {len(json.loads(data)['items'])} meldingen")
 
 
