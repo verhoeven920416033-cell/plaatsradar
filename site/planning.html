@@ -97,7 +97,7 @@ td.sam{font-weight:700;color:#1f7a4d}
 <body>
 <header>
   <div><h1>Planning vooruit</h1>
-  <p id="sub">Hinder per postcodegebied, dienst en klantcode op de rijdag — vóór de planning vastligt</p>
+  <p id="sub">Hinder per postcodegebied, dienst en transportcode op de rijdag — vóór de planning vastligt</p>
 </div>
   <span class="pil" id="pil"><b></b><span>meldingen laden…</span></span>
 </header>
@@ -105,7 +105,7 @@ td.sam{font-weight:700;color:#1f7a4d}
   <div class="stappen geenprint" id="stappen">
     <div class="stap"><b class="n">1</b><div><h3>Kies de rijdag</h3><p>Standaard over 2 dagen. Eén klik voor vandaag, morgen of later.</p></div></div>
     <div class="stap"><b class="n">2</b><div><h3>Sleep je Excel erin</h3><p>Geogroepen of de optimiser-export. Het bestand blijft op deze pc.</p></div></div>
-    <div class="stap"><b class="n">3</b><div><h3>Zie waar het knelt</h3><p>Hinder per postcode, dienst en klantcode. Filter, kaart en Excel.</p></div></div>
+    <div class="stap"><b class="n">3</b><div><h3>Zie waar het knelt</h3><p>Hinder per transportcode, plaats, straat en huisnummer. Filter en Excel.</p></div></div>
   </div>
   <section class="panel veilig geenprint">
     <b>Je geogroepen blijven op deze computer.</b> Het Excel-bestand wordt alleen in deze browser gelezen, niet verstuurd en niet bewaard. Nadat de meldingen zijn opgehaald gaat het netwerk van deze pagina dicht, vóór je een bestand kiest.
@@ -113,7 +113,7 @@ td.sam{font-weight:700;color:#1f7a4d}
   <div id="fout" class="panel waarschuw" hidden></div>
   <section class="panel geenprint" id="kies" hidden>
     <h3 style="margin:0 0 4px;font-size:15px">Welke kolom is wat?</h3>
-    <p class="meta" style="margin:0 0 10px">Kies de kolommen uit je bestand. Rit en postcode zijn verplicht; de rest maakt het overzicht beter. Alleen de kolomnamen staan hier, er wordt niets verstuurd.</p>
+    <p class="meta" style="margin:0 0 10px">Kies de kolommen uit je bestand. Alleen de postcode is verplicht; de rest maakt het overzicht beter. Alleen de kolomnamen staan hier, er wordt niets verstuurd.</p>
     <div class="row" id="kiesVelden" style="gap:12px"></div>
     <div class="row" style="margin-top:10px"><button class="btn pri" id="kiesOk">Inlezen</button><button class="btn" id="kiesNee">Annuleren</button><span class="meta" id="kiesInfo"></span></div>
   </section>
@@ -132,7 +132,7 @@ td.sam{font-weight:700;color:#1f7a4d}
     <section class="panel geenprint">
       <div class="row" style="margin-bottom:8px"><span class="lbl">Diensten</span><span id="groepen" class="row"></span></div>
       <div class="row" id="ritRij" style="margin-bottom:8px" hidden><span class="lbl">Rit uit</span><select id="ritKol" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit" aria-label="Kolom met het ritnummer"></select><button class="btn" id="kolAanpassen" type="button">Kolommen aanpassen</button><span class="meta" id="ritInfo"></span></div>
-      <div class="row" style="margin-bottom:8px"><span class="lbl">Filter</span><input type="search" id="filter" style="flex:1 1 320px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit" placeholder="Postcode, straat, plaats, dienst of melding. Komma = of: 5611, 5612-5615, Vestdijk, Tilburg, CWC1" aria-label="Filter op postcode of straat"><span id="filterInfo" class="meta"></span></div>
+      <div class="row" style="margin-bottom:8px"><span class="lbl">Filter</span><input type="search" id="filter" style="flex:1 1 320px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit" placeholder="Postcode, straat, plaats, transportcode, dienst of melding. Komma = of: 5611, 5612-5615, Vestdijk, N31560" aria-label="Filter op postcode of straat"><span id="filterInfo" class="meta"></span></div>
       <div class="row" style="margin-bottom:8px"><span class="lbl">Hinder</span><span id="fHinder" class="row" style="gap:6px"></span><span class="lbl" style="margin-left:8px">Soort</span><span id="fSoort" class="row" style="gap:6px"></span></div>
       <div class="row" style="margin-bottom:8px"><span class="lbl">Tijdvak</span><span class="chip" data-tv="">Hele dag</span><span class="chip" data-tv="06:00-19:00">06–19 uur</span><span class="chip" data-tv="07:00-17:00">07–17 uur</span>
         <input type="time" id="tvVan" aria-label="Tijdvak van" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit">–<input type="time" id="tvTot" aria-label="Tijdvak tot" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit">
@@ -143,7 +143,7 @@ td.sam{font-weight:700;color:#1f7a4d}
     <p class="meta"><b>Vertrouwelijk: dit overzicht bevat planningsgegevens.</b> <span id="kop"></span></p>
     <div class="kpis" id="kpis"></div>
     <div class="blik" id="blik"></div>
-    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Per plaats<i id="nHinder"></i></button><button class="tab" data-t="tabel">Tabel<i id="nTabel"></i></button><button class="tab" data-t="klant" id="tabKlant" hidden>Klantcodes<i id="nKlant"></i></button><button class="tab" data-t="week">Week</button><button class="tab" data-t="kaart">Kaart</button><button class="tab" data-t="sync">Diensten samenvoegen<i id="nSync"></i></button></div>
+    <div class="tabs geenprint"><button class="tab on" data-t="hinder">Per plaats<i id="nHinder"></i></button><button class="tab" data-t="tabel">Tabel<i id="nTabel"></i></button><button class="tab" data-t="klant" id="tabKlant" hidden>Opdrachten<i id="nKlant"></i></button><button class="tab" data-t="week">Week</button><button class="tab" data-t="kaart">Kaart</button><button class="tab" data-t="sync">Diensten samenvoegen<i id="nSync"></i></button><span style="flex:1"></span><button class="tab" id="grafKnop" type="button" title="Grafieken boven de tabs tonen of verbergen">Grafieken</button></div>
     <div id="hinder"></div>
     <div id="tabel" hidden></div>
     <div id="week" hidden></div>
@@ -154,7 +154,7 @@ td.sam{font-weight:700;color:#1f7a4d}
     </div>
     <div id="klant" hidden>
       <div class="row geenprint" style="margin-bottom:8px"><span class="chip on" id="fHoek" title="Melding binnen 250 m van de stop, andere straat. Plek uit de 6-cijferige postcode.">Om de hoek (≤ 250 m)</span><span class="chip" id="fGebied">Ook zelfde postcodegebied (verder weg)</span>
-        <label class="meta">Klantcode uit kolom <select id="klantKol" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit"></select></label></div>
+        <label class="meta">Transportcode uit kolom <select id="klantKol" style="padding:5px 8px;border:1px solid var(--line);border-radius:8px;font:inherit"></select></label></div>
       <div class="row geenprint" style="margin-bottom:8px;align-items:flex-start"><span class="lbl" style="padding-top:5px">Postcode</span>
         <input type="search" id="kpZoek" inputmode="numeric" placeholder="Typ: 56, 5611 of 5611AB" style="width:190px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font:inherit" aria-label="Postcode begint met">
         <span id="kpChips" class="row" style="gap:6px;flex:1;max-height:96px;overflow:auto"></span></div>
@@ -185,6 +185,7 @@ let FH = nieuwH(), FS = new Set(Object.keys(SOORT)), SORT = {k:"hinder", op:true
 // voorkeuren (alleen filters en tab, nooit planningsgegevens) blijven bewaard in deze browser
 const PREF = window.PR_App ? PR_App.prefs("planning") : {lees: d => d, bewaar(){}}, pv = PREF.lees({});
 if (pv.tab) TAB = pv.tab; if (pv.fh && pv.fh.length) FH = new Set(pv.fh); if (pv.fs && pv.fs.length) FS = new Set(pv.fs);
+let GRAF = pv.graf === true;
 TV = pv.tv || ""; TT = pv.tt || ""; if (pv.hoek === false) HOEK = false; if (pv.skip != null) $("#skip").value = pv.skip;
 const fout = t => { const e = $("#fout"); e.hidden = !t; e.textContent = t || ""; };
 const plusDag = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
@@ -231,10 +232,10 @@ const skipLijst = () => $("#skip").value.split(/[,;\s]+/).filter(Boolean);
 function naInlezen(){
     if (!G.gebieden.length) throw new Error(G.bron === "optimiser" ? "Geen ritten met postcode gevonden (alle ritten overgeslagen?)." : "Geen postcodegebieden gevonden.");
     if (G.bron === "optimiser") { const vandaag = iso(new Date()), d = G.datums.filter(x => x >= vandaag); if (d.length) $("#datum").value = d[0]; else if (G.datums.length) $("#datum").value = G.datums[G.datums.length - 1]; }
-    AAN = new Set(G.groepen); KPC = null; fout(""); toon();
+    AAN = new Set(G.groepen); KPC = null; fout(""); if (G.bron === "optimiser" && G.stops.length) TAB = "klant"; toon();
 }
 // kolommen zelf kiezen (als de export andere kolomnamen heeft, bijv. 'geplande route' in plaats van 'stamroute')
-const VELDEN = [["rit","Rit / route *"],["pc","Postcode *"],["plaats","Plaats"],["straat","Straat"],["nr","Huisnummer"],["datum","Datum (rijdag)"],["klant","Klantcode"]];
+const VELDEN = [["pc","Postcode *"],["klant","Transportcode"],["plaats","Plaats"],["straat","Straat"],["nr","Huisnummer"],["rit","Rit / route (leeg = nog niet gepland)"],["datum","Datum (rijdag)"]];
 function toonKies(){
   if (!RUW) return;
   const k = G && G.kaart ? G.kaart.kop : K.waarschijnlijkeKop(RUW), kop = RUW[k].map(v => String(v ?? "").trim());
@@ -248,7 +249,7 @@ function toonKies(){
 }
 $("#kiesOk").addEventListener("click", () => {
   const kaart = {kop: +$("#kies").dataset.kop}; document.querySelectorAll("#kiesVelden select").forEach(s => kaart[s.dataset.veld] = +s.value);
-  if (kaart.rit < 0 || kaart.pc < 0) { $("#kiesInfo").textContent = "Kies minstens de rit en de postcode."; return; }
+  if (kaart.pc < 0) { $("#kiesInfo").textContent = "Kies minstens de postcode."; return; }
   try { G = K.leesOptimiserPlan(RUW, {kaart, skip:skipLijst()}); $("#kies").hidden = true; naInlezen(); }
   catch (e) { $("#kiesInfo").textContent = e.message; }
 });
@@ -284,7 +285,10 @@ function toon(){
     const ro = G.ritOpties || [], namen = {gepland:"geplande route", stam:"stamroute", rit:"rit"};
     const lijst = ro.some(o => o.i === G.kaart.rit) ? ro : [...ro, {i:G.kaart.rit, kop:G.ritKop, soort:"rit"}];
     $("#ritKol").innerHTML = lijst.map(o => `<option value="${o.i}" ${o.i === G.kaart.rit ? "selected" : ""}>${esc(o.kop)} (${namen[o.soort]})</option>`).join("");
-    $("#ritInfo").textContent = `${G.groepen.length} ritten, ${G.stops.length} stops${G.zonderRit ? `, ${G.zonderRit} regels zonder rit overgeslagen` : ""}${ro.length > 1 ? " · gepland gaat standaard voor stam" : ""}`;
+    const geenRit = G.groepen.length === 1 && G.groepen[0] === "Zonder rit";
+    $("#ritKol").hidden = geenRit;
+    if (geenRit) $("#ritInfo").textContent = `Nog geen ritten ingedeeld (ochtendexport): ${G.stops.length} opdrachten, overzicht per transportcode.`; else
+    $("#ritInfo").textContent = `${G.groepen.length} ritten, ${G.stops.length} stops${G.zonderRit ? `, ${G.zonderRit} opdrachten nog zonder rit` : ""}${ro.length > 1 ? " · gepland gaat standaard voor stam" : ""}`;
   }
   const wd = K.weekdag(datum), perG = g => new Set(G.gebieden.filter(x => x.groep === g && x.dagen[wd]).flatMap(x => x.pc4)).size;
   const allesAan = AAN.size === G.groepen.length;
@@ -297,7 +301,7 @@ function toon(){
   const nKl = G.stops && G.stops.length ? new Set(K.klantHinder(G.stops, D.items, {datum, hinder:FH, soort:x => FS.has(soortVan(x)), extra, groepen:AAN.size === G.groepen.length ? null : AAN, plek:pc => H.plek(PC6, pc), afstand:H.afstand, dichtbij:HOEK}).map(r => r.klant)).size : null;
   // [waarde, label, stijl, actie, hint]
   const kp = [[R.hoog, "hoge hinder", "alert", "hoog", "toon alleen hoog"], [R.meldingen, "meldingen op de rijdag", "info", "tabel", "open tabel"],
-    ...(nKl === null ? [] : [[nKl, "klantcodes met hinder bij de stop", "alert", "klant", "open klantcodes"]]),
+    ...(nKl === null ? [] : [[nKl, "transportcodes met hinder bij de stop", "alert", "klant", "open opdrachten"]]),
     [uniekeX().filter(x => H.isNieuw(x, D.gegenereerd)).length, "nieuw sinds gisteren", "info", "nieuw", NIEUW ? "toon alles" : "toon alleen nieuw"],
     [R.plaatsen.length, "plaatsen met hinder", "", "hinder", "per plaats"], [R.gebieden, "postcodegebieden gereden", "", "kaart", "open kaart"], [S.length, "gebieden samen te voegen", "", "sync", "bekijk"]];
   $("#kpis").innerHTML = kp.map(([n, t, st, act, hint]) => `<button type="button" class="kpi ${st}" data-act="${act}" title="${esc(hint)}"><em>${esc(hint)} ›</em><b>${n}</b><span>${esc(t)}</span></button>`).join("");
@@ -348,27 +352,28 @@ function toon(){
     $("#kpChips").innerHTML = perPc.size ? `<span class="chip ${KPC ? "" : "on"}" data-kp="">Alle</span>` + [...perPc].sort((a, b) => a[0].localeCompare(b[0])).map(([c, k]) => `<span class="chip ${KPC && KPC.has(c) ? "on" : ""}" data-kp="${c}">${c}<i>${k.size}</i></span>`).join("") : "";
     const pref = KPREF.replace(/\s/g, "").toUpperCase(), nKR = KR.length;
     KR = KR.filter(r => (!KPC || KPC.has(r.pc4)) && (!pref || r.postcode.replace(/\s/g, "").toUpperCase().startsWith(pref)));
-    if (KSORT) { const ho = {hoog:0, middel:1, laag:2, geen:2}, w = (r, k) => k === "hinder" ? ho[r.x.hinder] : k === "postcode" ? r.postcode.replace(/\s/g, "") : k === "soort" ? r.x.label : k === "titel" ? r.x.titel : k === "wanneer" ? (r.x.start || "9") : k === "adres" ? `${r.straat} ${r.nr}` : String(r[k] || "");
+    if (KSORT) { const ho = {hoog:0, middel:1, laag:2, geen:2}, w = (r, k) => k === "hinder" ? ho[r.x.hinder] : k === "postcode" ? r.postcode.replace(/\s/g, "") : k === "soort" ? r.x.label : k === "titel" ? r.x.titel : k === "wanneer" ? (r.x.start || "9") : k === "nr" ? (parseInt(r.nr, 10) || 0) : String(r[k] || "");
       KR.sort((a, b) => { const x = w(a, KSORT.k), y = w(b, KSORT.k), c = typeof x === "number" ? x - y : String(x).localeCompare(String(y), "nl", {numeric:true}); return KSORT.op ? c : -c; }); }
-    const kkol = [["klant","Klantcode"],["rit","Rit"],["adres","Adres"],["plaats","Plaats"],["postcode","Postcode"],["hinder","Hinder"],["soort","Soort"],["titel","Melding"],["wanneer","Wanneer"],["niveau","Match"]];
+    const kkol = [["klant","Transportcode"],["plaats","Plaats"],["straat","Straat"],["nr","Nr"],["postcode","Postcode"],["rit","Rit"],["hinder","Hinder"],["titel","Melding"],["wanneer","Wanneer"],["niveau","Match"]];
     const kkop = kkol.map(([k, t]) => `<th data-ks="${k}" class="${KSORT && KSORT.k === k ? "s" + (KSORT.op ? "" : " op") : ""}">${t}</th>`).join("");
     const gefilterd = KPC || pref ? ` Postcodefilter: ${KR.length} van ${nKR} regels.` : "";
     $("#klantKol").innerHTML = G.kolommen.map((k, i) => `<option value="${i}" ${i === G.klantKolom ? "selected" : ""}>${String.fromCharCode(65 + (i % 26))}${i >= 26 ? "+" : ""}: ${esc(k || "(leeg)")}</option>`).join("");
     $("#fGebied").classList.toggle("on", GEBIED); $("#fHoek").classList.toggle("on", HOEK);
     const kl = new Set(KR.map(r => r.klant)), klS = new Set(KR.filter(r => r.niveau !== "gebied").map(r => r.klant)), klH = new Set(KR.filter(r => r.niveau === "dichtbij").map(r => r.klant));
-    $("#klantUit").innerHTML = KR.length ? `<p class="meta"><b>${klS.size}</b> klantcode(s) met een melding in hun straat${HOEK ? ` of om de hoek (waarvan ${klH.size} alleen om de hoek)` : ""}${GEBIED ? `, <b>${kl.size}</b> in totaal incl. zelfde postcodegebied` : ""} op ${esc(fmtD(datum))}.${gefilterd}</p>
+    $("#klantUit").innerHTML = KR.length ? `<p class="meta"><b>${klS.size}</b> transportcode(s) met een melding in hun straat${HOEK ? ` of om de hoek (waarvan ${klH.size} alleen om de hoek)` : ""}${GEBIED ? `, <b>${kl.size}</b> in totaal incl. zelfde postcodegebied` : ""} op ${esc(fmtD(datum))}.${gefilterd}</p>
       <div class="tw"><table><thead><tr>${kkop}<th title="Verwerkt">✓</th></tr></thead><tbody>${KR.map(r => `<tr class="${vr(r.x)}">
-        <td><b>${esc(r.klant || "?")}</b></td><td>${esc(r.rit.replace(/^Rit /, ""))}</td><td>${esc(`${r.straat} ${r.nr}`.trim())}</td><td>${esc(r.plaats)}</td><td>${esc(r.postcode || r.pc4)}</td>
-        <td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.label)}</td><td>${esc(r.x.titel)}${nw(r.x)}</td><td>${esc(wanneer(r.x))}</td>
+        <td><b>${esc(r.klant || "?")}</b></td><td>${esc(r.plaats)}</td><td>${esc(r.straat)}</td><td>${esc(r.nr)}</td><td>${esc(r.postcode || r.pc4)}</td><td>${esc(r.rit === "Zonder rit" ? "–" : r.rit.replace(/^Rit /, ""))}</td>
+        <td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.titel)}${nw(r.x)}<div class="meta">${esc(r.x.label)}</div></td><td>${esc(wanneer(r.x))}</td>
         <td>${r.niveau === "straat" ? "<b>straat</b>" : r.niveau === "dichtbij" ? `<b>om de hoek</b> · ${r.afstand} m` : "postcodegebied"}${r.x.url ? ` · <a href="${esc(r.x.url)}" target="_blank" rel="noopener noreferrer">bron</a>` : ""}</td><td>${vk(r.x)}</td></tr>`).join("")}</tbody></table></div>`
-      : nKR ? `<div class="panel">Geen klantcodes in deze postcode. <button class="btn" id="kpWis">Postcodefilter wissen</button></div>`
-      : `<div class="panel">Geen klantcodes met een melding in hun straat op ${esc(fmtD(datum))}${FILTER ? " binnen dit filter" : ""}.${GEBIED ? "" : " Zet <i>Ook zelfde postcodegebied</i> aan voor een ruimer beeld."}</div>`;
+      : nKR ? `<div class="panel">Geen transportcodes in deze postcode. <button class="btn" id="kpWis">Postcodefilter wissen</button></div>`
+      : `<div class="panel">Geen transportcodes met een melding in hun straat op ${esc(fmtD(datum))}${FILTER ? " binnen dit filter" : ""}.${GEBIED ? "" : " Zet <i>Ook zelfde postcodegebied</i> aan voor een ruimer beeld."}</div>`;
   }
   $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#klant").hidden = TAB !== "klant"; $("#kaartvak").hidden = TAB !== "kaart"; $("#tabel").hidden = TAB !== "tabel"; $("#week").hidden = TAB !== "week"; if (TAB === "week") toonWeek(datum);
-  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.t === TAB));
+  document.querySelectorAll(".tab[data-t]").forEach(t => t.classList.toggle("on", t.dataset.t === TAB));
   $("#nHinder").textContent = R.plaatsen.length; $("#nTabel").textContent = rijen.length; $("#nSync").textContent = S.length; $("#nKlant").textContent = nKl === null ? "" : new Set(KR.map(r => r.klant)).size;
   $("#stappen").hidden = true; $("#drop").classList.add("klein");
-  PREF.bewaar({tab:TAB, fh:[...FH], fs:[...FS], tv:TV, tt:TT, hoek:HOEK, skip:$("#skip").value});
+  $("#blik").hidden = !GRAF; $("#grafKnop").classList.toggle("on", GRAF);
+  PREF.bewaar({graf:GRAF, tab:TAB, fh:[...FH], fs:[...FS], tv:TV, tt:TT, hoek:HOEK, skip:$("#skip").value});
   $("#uit").hidden = false; R.sync = S; R.gs = gs; R.datum = datum;
   if (TAB === "kaart") tekenKaart();
 }
@@ -423,8 +428,8 @@ function excel(){
   R.zonder.forEach(z => z.rijen.forEach(x => h.push([R.datum, z.plaatsen.join(", "), "", "gemeente-breed", x.hinder, x.label, x.titel, wanneer(x), ...nv(x), x.bron, x.url || ""])));
   const s = [["Plaats","PC4", ...R.gs, "Samen"], ...R.sync.map(r => [r.plaats, r.pc4, ...R.gs.map(g => r.diensten[g] ?? ""), r.samen])];
   const bladen = [{naam:"Hinder " + R.datum, rijen:h}, {naam:"Samenvoegen", rijen:s}];
-  if (KR.length) bladen.splice(1, 0, {naam:"Klantcodes", rijen:[["Klantcode","Rit","Adres","Postcode","Plaats","Hinder","Soort","Melding","Wanneer","Match","Link"],
-    ...KR.map(r => [r.klant, r.rit, `${r.straat} ${r.nr}`.trim(), r.postcode, r.plaats, r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.niveau === "dichtbij" ? `om de hoek (${r.afstand} m)` : r.niveau === "gebied" ? "postcodegebied" : "straat", r.x.url || ""])]});
+  if (KR.length) bladen.splice(1, 0, {naam:"Opdrachten", rijen:[["Transportcode","Plaats","Straat","Huisnummer","Postcode","Rit","Hinder","Soort","Melding","Wanneer","Match","Link"],
+    ...KR.map(r => [r.klant, r.plaats, r.straat, r.nr, r.postcode, r.rit === "Zonder rit" ? "" : r.rit.replace(/^Rit /, ""), r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.niveau === "dichtbij" ? `om de hoek (${r.afstand} m)` : r.niveau === "gebied" ? "postcodegebied" : "straat", r.x.url || ""])]});
   const a = document.createElement("a"); a.href = URL.createObjectURL(X.schrijf(bladen));
   a.download = `planning-${R.datum}${FILTER ? "-filter" : ""}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
@@ -439,6 +444,7 @@ $("#groepen").addEventListener("click", e => { const c = e.target.closest("[data
   if (g === "*") AAN = new Set(G.groepen); else if (AAN.size === G.groepen.length) AAN = new Set([g]); else { AAN.has(g) ? AAN.delete(g) : AAN.add(g); if (!AAN.size) AAN = new Set(G.groepen); }
   toon(); });
 $("#fGebied").addEventListener("click", () => { GEBIED = !GEBIED; toon(); });
+$("#grafKnop").addEventListener("click", () => { GRAF = !GRAF; toon(); });
 $("#fHoek").addEventListener("click", () => { HOEK = !HOEK; toon(); });
 $("#fNieuw").addEventListener("click", () => { NIEUW = !NIEUW; toon(); });
 $("#fVerb").addEventListener("click", () => { VERB = !VERB; toon(); });
@@ -473,7 +479,7 @@ $("#filter").addEventListener("input", e => { clearTimeout(FT); FT = setTimeout(
   const d = t.filter(x => gk.has(x.toLowerCase())).map(x => gk.get(x.toLowerCase()));
   if (G) AAN = d.length ? new Set(d) : (AAN._filter ? new Set(G.groepen) : AAN); if (d.length) AAN._filter = true;
   FILTER = K.maakFilter(t.filter(x => !gk.has(x.toLowerCase())).join(",")); toon(); }, 200); });
-document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => { TAB = t.dataset.t; toon(); }));
+document.querySelectorAll(".tab[data-t]").forEach(t => t.addEventListener("click", () => { TAB = t.dataset.t; toon(); }));
 $("#excel").addEventListener("click", excel);
 $("#print").addEventListener("click", () => window.print());
 $("#wis").addEventListener("click", () => { $("#kies").hidden = true; $("#stappen").hidden = false; $("#drop").classList.remove("klein"); G = null; R = null; RUW = null; KR = []; $("#uit").hidden = true; ["hinder","sync","kpis","tabel","klantUit"].forEach(i => $("#"+i).innerHTML = ""); fout(""); });
@@ -482,7 +488,8 @@ $("#meldingen").addEventListener("change", async e => { const f = e.target.files
   catch { fout("Dit is geen geldig meldingenbestand (data.json)."); } });
 if (window.PR_App) PR_App.init({pagina:"planning", titel:"Planning vooruit — zo werkt het", zoek:"#filter", download:["planning-offline.html", "Planning-werk.html"], hulp:[
   ["In 3 stappen", ["Kies de <b>rijdag</b> (standaard over 2 dagen).", "Sleep het <b>geogroepen-Excel</b> of de <b>optimiser-export</b> in het vak. Het bestand blijft op deze pc.", "Export met <b>geplande route</b> én <b>stamroute</b>: de geplande route wordt gebruikt; wisselen kan bij <b>Rit uit</b>. Andere kolomnamen? <b>Kolommen aanpassen</b>.", "Lees bovenaan de <b>kerncijfers</b> en klik erop om te filteren of de juiste tab te openen."]],
-  ["Tabs", ["<b>Per plaats</b>: meldingen per plaats met postcode en diensten.", "<b>Tabel</b>: alles in één lijst, klik op een kolomkop om te sorteren.", "<b>Klantcodes</b> (alleen optimiser): klanten met hinder in hun straat of om de hoek; filter op postcode.", "<b>Week</b>: 7 dagen vooruit per dienst of rit; klik op een vak.", "<b>Kaart</b>: gereden postcodegebieden en hinder van bovenaf.", "<b>Diensten samenvoegen</b>: gebieden waar diensten op verschillende dagen komen."]],
+  ["Werkwijze optimiser", ["<b>'s Ochtends</b>: export opdrachten (nog zonder rit) inlezen → tab <b>Opdrachten</b>: hinder per transportcode, plaats, straat en nummer.", "<b>'s Avonds</b>: export met de <b>werkelijke geplande route</b> inlezen → zelfde overzicht, nu per rit. Geplande route gaat voor stamroute.", "Grafieken staan standaard uit; knop <b>Grafieken</b> rechts van de tabs zet ze aan."]],
+  ["Tabs", ["<b>Per plaats</b>: meldingen per plaats met postcode en diensten.", "<b>Tabel</b>: alles in één lijst, klik op een kolomkop om te sorteren.", "<b>Opdrachten</b> (optimiser-export): per transportcode plaats, straat, huisnummer en de hinder; filter op postcode of typ een transportcode.", "<b>Week</b>: 7 dagen vooruit per dienst of rit; klik op een vak.", "<b>Kaart</b>: gereden postcodegebieden en hinder van bovenaf.", "<b>Diensten samenvoegen</b>: gebieden waar diensten op verschillende dagen komen."]],
   ["Kleuren en labels", ["<b style=\"color:#c8102e\">Hoog</b>: weg dicht op een hoofdroute, op-/afrit dicht of verkeersbesluit met afsluitingen.", "<b style=\"color:#a06a00\">Middel</b>: weg dicht in een woonstraat of rijstrookbeperking. <b>Laag</b>: snelheidsbeperking e.d.", "<b>Om de hoek</b>: melding binnen 250 m van de stop, andere straat (plek uit de 6-cijferige postcode).", "<b>NIEUW</b>: in de laatste 24 uur voor het eerst gezien. <b>✓</b>: door jou als verwerkt gemarkeerd (alleen op deze pc)."]],
   ["Goed om te weten", ["Filters en tab worden onthouden in deze browser; <b>Filters wissen</b> zet alles terug.", "Bovenaan staat hoe vers de meldingen zijn. Ouder dan een dag = oranje.", "Controleer bij twijfel altijd de bron (link bij elke melding)."]]]});
 })();

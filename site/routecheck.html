@@ -137,7 +137,7 @@ body.huddle>header,body.huddle>main,body.huddle>footer,body.huddle>.toast{displa
     </section>
     <div class="kpis" id="kpis"></div>
     <div class="blik" id="blik"></div>
-    <div class="tabs geenprint"><button class="tab on" data-t="route">Per route</button><button class="tab" data-t="tabel">Tabel</button><button class="tab" data-t="kaart">Kaart</button></div>
+    <div class="tabs geenprint"><button class="tab on" data-t="route">Per route</button><button class="tab" data-t="tabel">Tabel</button><button class="tab" data-t="kaart">Kaart</button><span style="flex:1"></span><button class="tab" id="grafKnop" type="button" title="Grafieken tonen of verbergen">Grafieken</button></div>
     <div id="routes"></div>
     <div id="tabel" hidden></div>
     <div id="kaartvak" hidden>
@@ -298,7 +298,7 @@ const nieuwF = () => ({zoek:[], tekst:"", routes:null, hinder:new Set(HINDER), s
 let F = nieuwF(), TAB = "route", SORT = {k:"hinder", op:true}, KAART = null, KAART_DATA = window.PR_KAART || null;
 const PREF = window.PR_App ? PR_App.prefs("routecheck") : {lees: d => d, bewaar(){}}, pv = PREF.lees({});
 if (pv.tab) TAB = pv.tab; if (pv.hinder && pv.hinder.length) F.hinder = new Set(pv.hinder); if (pv.soort && pv.soort.length) F.soort = new Set(pv.soort);
-["hoek", "zeker", "met", "tv", "tt"].forEach(k => { if (pv[k] != null) F[k] = pv[k]; }); if (pv.skip != null) $("#skip").value = pv.skip;
+["hoek", "zeker", "met", "tv", "tt"].forEach(k => { if (pv[k] != null) F[k] = pv[k]; }); let GRAF = pv.graf === true; if (pv.skip != null) $("#skip").value = pv.skip;
 const maakZoek = t => t.split(/[,;]/).map(a => K.kern(a).split(" ").filter(Boolean)).filter(a => a.length);
 const past = hay => !F.zoek.length || F.zoek.some(alt => alt.every(w => hay.includes(" " + w)));
 const hitHay = (r, p, h) => K.norm(`${r.naam} ${p.plaats} ${p.gemeente || ""} ${h.straat} ${h.x.titel} ${h.x.label} ${h.x.locatie || ""} ${(h.x.pc4 || []).join(" ")} ${h.x.bron}`);
@@ -388,9 +388,10 @@ function render(){
     <td>${esc(h.x.titel)}${tag(h)}${nw(h.x)}</td><td>${esc(wanneer(h.x,van,tot))}</td><td>${esc(h.x.bron)}${h.x.url?` · <a href="${esc(h.x.url)}" target="_blank" rel="noopener noreferrer">link</a>`:""}</td></tr>`).join("")}</tbody></table></div>`
     : '<div class="panel">Geen problemen bij de stops binnen dit filter.</div>';
   LAATST.hits = hits; LAATST.rs = rs;
-  PREF.bewaar({tab:TAB, hinder:[...F.hinder], soort:[...F.soort], hoek:F.hoek, zeker:F.zeker, met:F.met, tv:F.tv, tt:F.tt, skip:$("#skip").value});
+  $("#blik").hidden = !GRAF; $("#grafKnop").classList.toggle("on", GRAF);
+  PREF.bewaar({graf:GRAF, tab:TAB, hinder:[...F.hinder], soort:[...F.soort], hoek:F.hoek, zeker:F.zeker, met:F.met, tv:F.tv, tt:F.tt, skip:$("#skip").value});
   ["route","tabel","kaart"].forEach(t => { $("#" + (t === "route" ? "routes" : t === "tabel" ? "tabel" : "kaartvak")).hidden = TAB !== t; });
-  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.t === TAB));
+  document.querySelectorAll(".tab[data-t]").forEach(t => t.classList.toggle("on", t.dataset.t === TAB));
   if (TAB === "kaart") tekenKaart();
 }
 const gemPunt = new Map();
@@ -448,6 +449,7 @@ $("#uit").addEventListener("click", e => {
   else if (rt) { const n = rt.dataset.rt; F.routes = F.routes && F.routes.size === 1 && F.routes.has(n) ? null : new Set([n]); render(); }
   else if (pl) { const z = $("#zoek"), t = pl.dataset.pl; z.value = z.value.trim().toLowerCase() === t.toLowerCase() ? "" : t; F.zoek = maakZoek(z.value); render(); }
 }, true);
+$("#grafKnop").addEventListener("click", e => { e.stopPropagation(); GRAF = !GRAF; if (LAATST) render(); }, true);
 ["tvVan","tvTot"].forEach(i => $("#" + i).addEventListener("change", () => { F.tv = $("#tvVan").value; F.tt = $("#tvTot").value; if (LAATST) toon(); }));
 $("#reset").addEventListener("click", () => { F = nieuwF(); $("#zoek").value = ""; if (LAATST) render(); });
 $("#bestand").addEventListener("change", e => { const f = [...e.target.files]; if (f.length) start(() => leesAlle(f)); e.target.value = ""; });

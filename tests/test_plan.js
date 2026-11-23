@@ -112,3 +112,13 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
   if (P.waarschijnlijkeKop([["", ""], ["Rit","Postcode","Plaats"], ["1","5611AB","X"]]) !== 1) fout("koprij");
   console.log("geplande route OK");
 }
+// ochtendexport: routekolommen leeg → 'Zonder rit', niets overgeslagen; per regel valt gepland terug op stam
+{
+  const P = require("../site/plan-kern.js"), fout = m => { console.error("ochtend FOUT", m); process.exit(1); };
+  const kop = ["SRit","Geplande route","Laad-losplaats kenmerk","Laad-losplaats straat","Laad-losplaats postcode","Laad-losplaats plaats"];
+  const g = P.leesGeogroepen([kop, ["","","N1","Kerkstraat","5611 AB","Eindhoven"], ["100","","N2","Markt","5612 AB","Eindhoven"], ["100","6634","N3","Dorp","5701 AA","Helmond"]], {});
+  if (g.stops.length !== 3 || g.groepen.join() !== "Rit 100,Rit 6634,Zonder rit" || g.zonderRit !== 1) fout(JSON.stringify(g.groepen) + g.zonderRit);
+  const z = P.leesGeogroepen([["Laad-losplaats kenmerk","Laad-losplaats straat","Laad-losplaats postcode"], ["N1","Kerkstraat","5611 AB"]], {});
+  if (z.groepen.join() !== "Zonder rit" || z.stops[0].klant !== "N1") fout("zonder routekolom");
+  console.log("ochtend OK");
+}
