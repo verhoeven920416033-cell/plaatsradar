@@ -17,14 +17,19 @@ function datumVan(v) {
 const RIT_GEPLAND = /^(g\.?\s?rit|geplande?\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?gepland\)?|route\s*\(?gepland\)?|planned\s*(trip|route)|plan\s*(rit|route))$/i;
 const RIT_STAM = /^(s\.?\s?rit|stam\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?stam\)?|route\s*\(?stam\)?|master\s*route)$/i;
 const RIT_ALG = /^(rit|route|ritnummer|routenummer|rit\s*nr|route\s*nr|tour|trip)$/i;
-const KOL = {pc: /laad-?losplaats\s*postcode|^post\s?code$|postcode|^pc[46]?$/i, plaats: /laad-?losplaats\s*plaats|^(woon)?plaats$|^stad$|^city$/i,
+const KOL = {pc: /laad-?losplaats\s*postcode|^post\s?code$|postcode|^pc[46]?$/i, plaats: /laad-?losplaats\s*(woon)?plaats|(^|\s)(woon|vestigings)?plaats(naam)?$|^stad$|^city$|^gemeente$/i,
   straat: /laad-?losplaats\s*straat|^straat(naam)?$|^adres$|^street$/i, nr: /laad-?losplaats\s*huisn|^huis\s?n|^nr\.?$/i,
   datum: /vroegste\s*laden|^(lever|rij|plan|uitvoer)?\s?(datum|dag)$|^date$/i, klant: /^klant\s?(code|nr|nummer)$|laad-?losplaats\s*kenmerk|^debiteur/i};
 const kopTekst = h => String(h ?? "").trim();
 /** Alle kolommen die een rit kunnen zijn, met soort, gesorteerd: gepland, stam, algemeen. */
+// ruimer: elke kop met rit/route/tour/trip, behalve tijden, afstanden en volgorde ('Werkelijk routenummer', 'Ritnr (actueel)', …)
+const RIT_RUIM = /(^|[\s_.(-])(s|g)?(rit|route|tour|trip)(nummer|nr|code|naam)?($|[\s_.):-])|routenummer|ritnummer/i;
+const RIT_NIET = /tijd|afstand|\bkm\b|duur|volgorde|positie|seq|lijst|laad-?losplaats|kosten|status|datum|type/i;
 function ritKolommen(kop) {
   const o = [];
-  kop.forEach((h, i) => { const t = kopTekst(h); if (RIT_GEPLAND.test(t)) o.push({i, kop: t, soort: "gepland"}); else if (RIT_STAM.test(t)) o.push({i, kop: t, soort: "stam"}); else if (RIT_ALG.test(t)) o.push({i, kop: t, soort: "rit"}); });
+  kop.forEach((h, i) => { const t = kopTekst(h);
+    if (RIT_GEPLAND.test(t)) o.push({i, kop: t, soort: "gepland"}); else if (RIT_STAM.test(t)) o.push({i, kop: t, soort: "stam"}); else if (RIT_ALG.test(t)) o.push({i, kop: t, soort: "rit"});
+    else if (RIT_RUIM.test(t) && !RIT_NIET.test(t)) o.push({i, kop: t, soort: /werkelijk|gepland|actueel|planned|actual|plan/i.test(t) ? "gepland" : /stam|master|vast/i.test(t) ? "stam" : "rit"}); });
   const orde = {gepland: 0, rit: 1, stam: 2};
   return o.sort((a, b) => orde[a.soort] - orde[b.soort] || a.i - b.i);
 }
@@ -48,6 +53,7 @@ function leesOptimiserPlan(rijen, opt) {
   if (k < 0) return null;
   const kolommen = rijen[k].map(kopTekst), ci = re => kolommen.findIndex(c => re.test(c));
   const ritOpties = ritKolommen(kolommen);
+  if (!ritOpties.length) { const g = raadRit(rijen, k, kolommen); if (g >= 0) ritOpties.push({i: g, kop: kolommen[g] || "kolom " + (g + 1), soort: "rit", geraden: true}); }
   const kies = (n, standaard) => Number.isInteger(m0[n]) ? m0[n] : Number.isInteger(opt[n + "Kolom"]) ? opt[n + "Kolom"] : standaard;
   const zelfRit = Number.isInteger(m0.rit) || Number.isInteger(opt.ritKolom);
   const c = {rit: kies("rit", ritOpties.length ? ritOpties[0].i : -1), pc: kies("pc", ci(KOL.pc)), plaats: kies("plaats", ci(KOL.plaats)),
@@ -81,6 +87,22 @@ function leesOptimiserPlan(rijen, opt) {
   const gebieden = [...per.values()], groepen = [...new Set(gebieden.map(g => g.groep))].sort((a, b) => a.localeCompare(b, "nl", {numeric: true}));
   return {gebieden, fout, groepen, datums: [...datums].sort(), bron: "optimiser", overgeslagen: [...overgeslagen], stops, kolommen, klantKolom: c.klant,
     kaart: {kop: k, ...c}, ritOpties, zonderRit: leeg, ritKop: c.rit >= 0 ? kolommen[c.rit] || "" : ""};
+}
+/** Geen herkenbare kop: zoek een kolom die eruitziet als een routenummer (2–6 cijfers of korte code, weinig verschillende waarden). */
+function raadRit(rijen, k, kolommen) {
+  const data = rijen.slice(k + 1, k + 400).filter(r => r.some(v => kopTekst(v)));
+  if (data.length < 3) return -1;
+  let best = -1, score = 0;
+  kolommen.forEach((h, i) => {
+    if (KOL.pc.test(h) || KOL.nr.test(h) || KOL.datum.test(h) || KOL.klant.test(h) || RIT_NIET.test(h) && !/rit|route/i.test(h)) return;
+    const w = data.map(r => kopTekst(r[i])).filter(Boolean);
+    if (w.length < data.length * 0.6) return;
+    const ok = w.filter(v => /^[A-Z]{0,3}\d{2,6}(\.0)?$/i.test(v)).length / w.length, uniek = new Set(w).size;
+    if (ok < 0.9 || uniek < 2 || uniek > data.length / 3) return;
+    const sc = ok + (/rit|route|tour|trip|wagen|voertuig/i.test(h) ? 1 : 0) - uniek / data.length;
+    if (sc > score) { score = sc; best = i; }
+  });
+  return best;
 }
 /** Voor de keuze-schermpje als niets herkend is: de rij met de meeste gevulde tekstcellen in de eerste 15 rijen. */
 function waarschijnlijkeKop(rijen) {

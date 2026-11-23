@@ -3,6 +3,7 @@
 "use strict";
 const VERSIE = "2026-11-23";
 const NIEUW = [
+  ["2026-11-23", "Routenummer onder een andere kolomnaam (bijv. 'Werkelijk routenummer') wordt herkend of op inhoud geraden; bij 'Rit uit' kun je elke kolom kiezen. Plaats ook bij 'woonplaats'."],
   ["2026-11-23", "Ochtendexport zonder rit werkt: tab Opdrachten met per transportcode plaats, straat, huisnummer en hinder. Grafieken standaard uit (knop Grafieken)."],
   ["2026-11-23", "Optimiser-export met geplande route werkt: geplande route gaat voor stamroute, met keuzelijst 'Rit uit'. Andere kolomnamen? Kies ze zelf via 'Kolommen aanpassen'."],
   ["2026-11-17", "Eén navigatiebalk op alle pagina's, hulp per pagina (toets ?), zoeken met /, filters worden onthouden, overzicht van de bronnen op de startpagina."],

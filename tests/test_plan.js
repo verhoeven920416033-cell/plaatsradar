@@ -122,3 +122,16 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
   if (z.groepen.join() !== "Zonder rit" || z.stops[0].klant !== "N1") fout("zonder routekolom");
   console.log("ochtend OK");
 }
+// export 'met werkelijk routenummer': andere kopnaam, of geen kop → op inhoud raden; plaats ook herkend
+{
+  const P = require("../site/plan-kern.js"), fout = m => { console.error("werkelijk routenummer FOUT", m); process.exit(1); };
+  const rij = (r, kc, pc) => ["X", r, kc, "Kerkstraat", "1", pc, "Tilburg"];
+  const a = P.leesGeogroepen([["Kenmerk 1","Werkelijk routenummer","Laad-losplaats kenmerk","Laad-losplaats straat","Laad-losplaats huisnr.","Laad-losplaats postcode","Laad-losplaats woonplaats"], rij("6634","N1","5014 HG"), rij("6634","N2","5014 HK"), rij("5250","N3","5061 EJ")], {});
+  if (a.groepen.join() !== "Rit 5250,Rit 6634" || a.ritKop !== "Werkelijk routenummer" || a.stops[0].plaats !== "Tilburg") fout(JSON.stringify(a.groepen) + a.ritKop + a.stops[0].plaats);
+  const data = []; for (let i = 0; i < 12; i++) data.push(["K" + i, i < 6 ? "6634" : "6635", "N" + i, "Kerkstraat", String(i), "5014 HG", "Tilburg"]);
+  const b = P.leesGeogroepen([["Kenmerk 1","Kolom X","Laad-losplaats kenmerk","Laad-losplaats straat","Laad-losplaats huisnr.","Laad-losplaats postcode","Laad-losplaats plaats"], ...data], {});
+  if (b.groepen.join() !== "Rit 6634,Rit 6635" || !b.ritOpties[0].geraden) fout("raden " + JSON.stringify(b.groepen));
+  const c = P.leesOptimiserPlan([["Kenmerk 1","Kolom X","Laad-losplaats kenmerk","Laad-losplaats straat","Laad-losplaats huisnr.","Laad-losplaats postcode","Laad-losplaats plaats"], ...data], {kaart:{...b.kaart, rit:-1}});
+  if (c.groepen.join() !== "Zonder rit") fout("geen rit kiezen");
+  console.log("werkelijk routenummer OK");
+}

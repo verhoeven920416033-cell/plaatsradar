@@ -110,7 +110,13 @@ const OPT = {straat:/straat$|^adres$/i, nr:/huisn/i, postcode:/postcode$/i, plaa
 const RIT_G = /^(g\.?\s?rit|geplande?\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?gepland\)?|route\s*\(?gepland\)?|planned\s*(trip|route)|plan\s*(rit|route))$/i;
 const RIT_S = /^(s\.?\s?rit|stam\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?stam\)?|route\s*\(?stam\)?|master\s*route)$/i;
 const RIT_A = /^(rit|route|ritnummer|routenummer|rit\s*nr|route\s*nr)$/i;
-function ritKolom(kop) { const t = kop.map(c => String(c ?? "").trim()); for (const re of [RIT_G, RIT_A, RIT_S]) { const i = t.findIndex(c => re.test(c)); if (i >= 0) return i; } return -1; }
+const RIT_R = /(^|[\s_.(-])(s|g)?(rit|route|tour|trip)(nummer|nr|code)?($|[\s_.):-])|routenummer|ritnummer/i, RIT_NIET = /tijd|afstand|\bkm\b|duur|volgorde|positie|seq|lijst|laad-?losplaats|kosten|status|datum|type/i;
+function ritKolom(kop) {
+  const t = kop.map(c => String(c ?? "").trim());
+  for (const re of [RIT_G, RIT_A, RIT_S]) { const i = t.findIndex(c => re.test(c)); if (i >= 0) return i; }
+  const g = t.findIndex(c => RIT_R.test(c) && !RIT_NIET.test(c) && /werkelijk|gepland|actueel/i.test(c)); if (g >= 0) return g;
+  return t.findIndex(c => RIT_R.test(c) && !RIT_NIET.test(c));
+}
 function excelDatum(v) {
   const t = String(v ?? "").trim();
   if (/^\d+(\.\d+)?$/.test(t) && +t > 30000) { const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(+t) * 864e5); return d.toISOString().slice(0, 10); }

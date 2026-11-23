@@ -255,7 +255,7 @@ $("#kiesOk").addEventListener("click", () => {
 });
 $("#kiesNee").addEventListener("click", () => { $("#kies").hidden = true; });
 $("#kolAanpassen").addEventListener("click", toonKies);
-$("#ritKol").addEventListener("change", e => { if (!RUW || !G || !G.kaart) return; G = K.leesOptimiserPlan(RUW, {kaart:{...G.kaart, rit:+e.target.value}, skip:skipLijst()}); naInlezen(); });
+$("#ritKol").addEventListener("change", e => { if (!RUW || !G || !G.kaart) return; G = K.leesOptimiserPlan(RUW, {kaart:{...G.kaart, rit:+e.target.value}, skip:skipLijst()}); TAB = "klant"; naInlezen(); });
 const nw = x => H.isNieuw(x, D.gegenereerd) ? '<span class="nw" title="Voor het eerst gezien in de laatste 24 uur">nieuw</span>' : "";
 const vk = x => `<button type="button" class="vk ${V.has(x.id) ? "aan" : ""}" data-vk="${esc(x.id)}" title="${V.has(x.id) ? "Verwerkt (klik om terug te zetten)" : "Markeer als verwerkt (alleen op deze pc)"}" aria-pressed="${V.has(x.id)}">✓</button>`;
 const vr = x => V.has(x.id) ? " verw" : "";
@@ -282,13 +282,16 @@ function toon(){
   $("#filterInfo").textContent = FILTER ? `${FILTER.pc.length ? FILTER.pc.length + " postcode(s)" : ""}${FILTER.pc.length && FILTER.tk.length ? " + " : ""}${FILTER.tk.length ? FILTER.tk.length + " straat/plaats" : ""}` : "";
   const opti = G.bron === "optimiser"; $("#ritRij").hidden = !opti;
   if (opti) {
-    const ro = G.ritOpties || [], namen = {gepland:"geplande route", stam:"stamroute", rit:"rit"};
-    const lijst = ro.some(o => o.i === G.kaart.rit) ? ro : [...ro, {i:G.kaart.rit, kop:G.ritKop, soort:"rit"}];
-    $("#ritKol").innerHTML = lijst.map(o => `<option value="${o.i}" ${o.i === G.kaart.rit ? "selected" : ""}>${esc(o.kop)} (${namen[o.soort]})</option>`).join("");
+    const ro = G.ritOpties || [], namen = {gepland:"geplande route", stam:"stamroute", rit:"rit"}, gebruikt = new Set(ro.map(o => o.i));
+    // alle kolommen kiesbaar: herkende routekolommen bovenaan, daarna de rest
+    $("#ritKol").innerHTML = `<option value="-1" ${G.kaart.rit < 0 ? "selected" : ""}>— geen routenummer —</option>` +
+      (ro.length ? `<optgroup label="Herkend als route">${ro.map(o => `<option value="${o.i}" ${o.i === G.kaart.rit ? "selected" : ""}>${esc(o.kop)} (${o.geraden ? "geraden op inhoud" : namen[o.soort]})</option>`).join("")}</optgroup>` : "") +
+      `<optgroup label="Andere kolommen">${G.kolommen.map((k, i) => gebruikt.has(i) ? "" : `<option value="${i}" ${i === G.kaart.rit ? "selected" : ""}>${String.fromCharCode(65 + (i % 26))}${i >= 26 ? Math.floor(i / 26) : ""}: ${esc(k || "(leeg)")}</option>`).join("")}</optgroup>`;
     const geenRit = G.groepen.length === 1 && G.groepen[0] === "Zonder rit";
-    $("#ritKol").hidden = geenRit;
-    if (geenRit) $("#ritInfo").textContent = `Nog geen ritten ingedeeld (ochtendexport): ${G.stops.length} opdrachten, overzicht per transportcode.`; else
-    $("#ritInfo").textContent = `${G.groepen.length} ritten, ${G.stops.length} stops${G.zonderRit ? `, ${G.zonderRit} opdrachten nog zonder rit` : ""}${ro.length > 1 ? " · gepland gaat standaard voor stam" : ""}`;
+    $("#ritInfo").innerHTML = geenRit
+      ? (ro.length ? `Nog geen ritten ingedeeld (ochtendexport): ${G.stops.length} opdrachten, overzicht per transportcode.`
+        : `<b style="color:var(--red)">Geen routenummers gevonden.</b> Staat het routenummer in een kolom? Kies die bij <b>Rit uit</b>.`)
+      : esc(`${G.groepen.length} ritten, ${G.stops.length} stops${G.zonderRit ? `, ${G.zonderRit} opdrachten nog zonder rit` : ""}${ro.length > 1 ? " · gepland gaat standaard voor stam" : ""}`);
   }
   const wd = K.weekdag(datum), perG = g => new Set(G.gebieden.filter(x => x.groep === g && x.dagen[wd]).flatMap(x => x.pc4)).size;
   const allesAan = AAN.size === G.groepen.length;
