@@ -105,7 +105,7 @@ const KOP = {straat:/^(straat|straatnaam|adres|address|bezoekadres|afleveradres|
 /** Tabellen (CSV/Excel): kolommen op kopnaam, anders regel voor regel. Klantnamen e.d. worden niet gebruikt. */
 /** Export uit de route-optimiser: kolommen SRit + Laad-losplaats straat/huisnr./postcode/plaats (+ Vroegste laden).
     Alleen rit, adres en datum worden gelezen; naam, waarde, kwalificaties en tijden niet. */
-const OPT = {straat:/straat$|^adres$/i, nr:/huisn/i, postcode:/postcode$/i, plaats:/(?:^|\s)plaats$|^stad$/i, datum:/vroegste laden|^(lever|rij|plan)?\s?datum$/i};
+const OPT = {straat:/straat$|^adres$/i, nr:/huisn/i, postcode:/postcode$/i, plaats:/(?:^|\s)(woon)?plaats(naam)?$|^stad$/i, datum:/vroegste laden|aankomst|^(lever|rij|plan)?\s?datum$/i};
 // routekolom: geplande route gaat voor stamroute (dat is wat er die dag echt rijdt)
 const RIT_G = /^(g\.?\s?rit|geplande?\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?gepland\)?|route\s*\(?gepland\)?|planned\s*(trip|route)|plan\s*(rit|route))$/i;
 const RIT_S = /^(s\.?\s?rit|stam\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?stam\)?|route\s*\(?stam\)?|master\s*route)$/i;

@@ -135,3 +135,15 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
   if (c.groepen.join() !== "Zonder rit") fout("geen rit kiezen");
   console.log("werkelijk routenummer OK");
 }
+// echte koppen van de export 'met werkelijk routenummer' (Plan-SRit, Postcode, Plaatsnaam, Aankomst ritstop lossen); gegevens verzonnen
+{
+  const P = require("../site/plan-kern.js"), R = require("../site/route-kern.js"), fout = m => { console.error("Plan-SRit FOUT", m); process.exit(1); };
+  const kop = ["Ritkenmerk 2","Volgordenr","Plan-SRit","Laad-losplaats kenmerk","Losplaats servicetijdtoeslag","Klantnaam","Laad-losplaats straat","Laad-losplaats huisnr.","Postcode","Plaatsnaam","Aankomst ritstop lossen","Van Tijd","Tot Tijd","Status"];
+  const rij = (rid, nr, rit, kc, pc) => [rid, nr, rit, kc, "", "Test", "Kerkstraat", "1", pc, "TILBURG", "10-11-2026 09:30", "08:00", "17:00", "Gepland"];
+  const rows = [kop, rij("100001","1","6634","N1","5014 HG"), rij("100001","2","6634","N2","5014 HK"), rij("100002","1","5250","N3","5061 EJ")];
+  const g = P.leesGeogroepen(rows, {});
+  if (g.ritKop !== "Plan-SRit" || g.groepen.join() !== "Rit 5250,Rit 6634" || g.stops[0].plaats !== "TILBURG" || g.datums.join() !== "2026-11-10") fout(g.ritKop + JSON.stringify(g.groepen) + g.datums);
+  const o = R.leesOptimiser(rows);
+  if (!o || o.ritKop !== "Plan-SRit" || o.stops.length !== 3 || o.stops[0].plaats !== "TILBURG") fout("routecheck " + JSON.stringify(o && o.stops[0]));
+  console.log("Plan-SRit OK");
+}

@@ -19,7 +19,7 @@ const RIT_STAM = /^(s\.?\s?rit|stam\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?stam\)
 const RIT_ALG = /^(rit|route|ritnummer|routenummer|rit\s*nr|route\s*nr|tour|trip)$/i;
 const KOL = {pc: /laad-?losplaats\s*postcode|^post\s?code$|postcode|^pc[46]?$/i, plaats: /laad-?losplaats\s*(woon)?plaats|(^|\s)(woon|vestigings)?plaats(naam)?$|^stad$|^city$|^gemeente$/i,
   straat: /laad-?losplaats\s*straat|^straat(naam)?$|^adres$|^street$/i, nr: /laad-?losplaats\s*huisn|^huis\s?n|^nr\.?$/i,
-  datum: /vroegste\s*laden|^(lever|rij|plan|uitvoer)?\s?(datum|dag)$|^date$/i, klant: /^klant\s?(code|nr|nummer)$|laad-?losplaats\s*kenmerk|^debiteur/i};
+  datum: /vroegste\s*laden|aankomst|^(lever|rij|plan|uitvoer)?\s?(datum|dag)$|^date$/i, klant: /^klant\s?(code|nr|nummer)$|laad-?losplaats\s*kenmerk|^debiteur/i};
 const kopTekst = h => String(h ?? "").trim();
 /** Alle kolommen die een rit kunnen zijn, met soort, gesorteerd: gepland, stam, algemeen. */
 // ruimer: elke kop met rit/route/tour/trip, behalve tijden, afstanden en volgorde ('Werkelijk routenummer', 'Ritnr (actueel)', …)
