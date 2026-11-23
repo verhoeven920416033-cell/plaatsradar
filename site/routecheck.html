@@ -46,6 +46,15 @@ footer{max-width:1050px;margin:0 auto;padding:4px 16px 28px;font-size:12px;color
 .tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}.tw table{font-size:13px}.tw th{position:sticky;top:0;background:#eef2f7;cursor:pointer;white-space:nowrap}.tw th.s::after{content:" ▾"}.tw th.s.op::after{content:" ▴"}.tw td{vertical-align:top}
 .leg{display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:12.5px;color:var(--mut)}.leg b{display:inline-block;width:11px;height:11px;border-radius:50%}.leg b.vk{border-radius:2px;background:#003366}
 [hidden]{display:none!important}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap}.appnav{flex:1 0 100%}
+.pil{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:5px 12px;font-size:12.5px;white-space:nowrap}
+.pil b{width:9px;height:9px;border-radius:50%;background:#9aa5b1}.pil.ok b{background:#3ddc84}.pil.oud b{background:#ffb020}
+.stappen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+.stap{background:#fff;border:1px solid #e3e8ef;border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+.stap b.n{flex:0 0 30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:14px}
+.stap h3{margin:0 0 2px;font-size:15px}.stap p{margin:0;font-size:13px;color:var(--mut)}
+.drop.klein{padding:9px 14px;font-size:13.5px}.drop.klein .meta{display:none}
+@media(max-width:980px){.stappen{grid-template-columns:1fr}}
 .item{grid-template-columns:190px 1fr auto auto}.item.i-hoog{border-left-color:#c8102e}.item.i-middel{border-left-color:#f3b23c}.item.i-laag{border-left-color:#c9d3df}
 .ctl.hk{border-color:#5a86b8;color:#0a4a86}
 .nw{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:#e6f0ff;color:#0a4a86;border:1px solid #b9d3f5;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px}
@@ -87,10 +96,17 @@ body.huddle>header,body.huddle>main,body.huddle>footer,body.huddle>.toast{displa
 </head>
 <body>
 <header>
-  <h1>Routecheck</h1>
-  <p id="sub">Knelpunten op je routes, uit de PlaatsRadar-meldingen — <a href="index.html" class="geenprint">terug naar PlaatsRadar</a> · <a href="planning.html" class="geenprint">Planning</a> · <a href="routecheck-offline.html" download="Routecheck-werk.html" class="geenprint">versie voor werk-pc downloaden</a></p>
+  <div><h1>Routecheck</h1>
+  <p id="sub">Knelpunten bij de stops van je routes — straat, om de hoek en tijdvak</p>
+</div>
+  <span class="pil" id="pil"><b></b><span>meldingen laden…</span></span>
 </header>
 <main>
+  <div class="stappen geenprint" id="stappen">
+    <div class="stap"><b class="n">1</b><div><h3>Sleep je routelijst erin</h3><p>Dynamics-PDF of optimiser-export. Blijft op deze pc.</p></div></div>
+    <div class="stap"><b class="n">2</b><div><h3>Kies de periode</h3><p>Springt vanzelf naar de datum uit het bestand.</p></div></div>
+    <div class="stap"><b class="n">3</b><div><h3>Print de huddle</h3><p>Per route de knelpunten, met een kolom Actie.</p></div></div>
+  </div>
   <section class="panel veilig geenprint">
     <b>Je routelijst blijft op deze computer.</b> Het bestand wordt alleen in deze browser gelezen, niet verstuurd en niet bewaard. Sluit je de pagina, dan is het weg. Nadat de meldingen zijn opgehaald gaat het netwerk van deze pagina dicht, dus vóór je een bestand kiest. Uit een routelijst worden alleen routenummer, datum en adres gelezen; codes, tijden en opmerkingen niet.
   </section>
@@ -142,11 +158,12 @@ body.huddle>header,body.huddle>main,body.huddle>footer,body.huddle>.toast{displa
 <script src="route-kern.js"></script>
 <script src="hulp.js"></script>
 <script src="kaart.js"></script>
+<script src="app.js"></script>
 <script>
 (() => {
 "use strict";
 const K = window.RouteKern, H = window.PR_Hulp, V = H.verwerkt(), $ = s => document.querySelector(s);
-let PC6 = new Map();
+let PC6 = new Map(), RITKOP = "";
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const pad = n => String(n).padStart(2,"0"), iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const fmtD = s => { const d = new Date(s.length > 10 ? s : s+"T00:00"); return isNaN(d) ? s : d.toLocaleDateString("nl-NL",{weekday:"short",day:"numeric",month:"short"}); };
@@ -166,6 +183,8 @@ function zetStand(bron){
   $("#stand").innerHTML = `Meldingen van ${esc(new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))} · ${D.items.length} meldingen · ${esc(bron)}` +
     (oud ? ` · <b style="color:var(--red)">${Math.round(uur/24)} dag(en) oud</b>` : "") + ` · netwerk ${NET_DICHT ? "dicht" : "open"}`;
   $("#nieuw").hidden = !window.PR_DATA;
+  const pil = $("#pil"); pil.className = "pil " + (oud ? "oud" : "ok");
+  pil.lastElementChild.textContent = `Meldingen ${new Date(D.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${bron}` + (oud ? ` · ${Math.round(uur/24)} dag(en) oud` : "");
 }
 async function laad(){
   let bron = "live";
@@ -224,7 +243,7 @@ async function leesXlsx(buf){
       const ref = (c.getAttribute("r")||"A").replace(/\d/g,""); let i = 0; for (const ch of ref) i = i*26 + ch.charCodeAt(0)-64;
       const t = c.getAttribute("t"), w = tag(c,"v")[0]?.textContent ?? "";
       u[i-1] = t === "s" ? ss[+w] : t === "inlineStr" ? tag(c,"t").map(x => x.textContent).join("") : w; }); return Array.from(u, x => x ?? ""); });
-    const r = K.leesTabel(rijen, P); stops.push(...r.stops); over.push(...r.overgeslagen); (r.datums || []).forEach(d => dat.add(d));
+    const r = K.leesTabel(rijen, P); if (r.ritKop) RITKOP = r.ritKop; stops.push(...r.stops); over.push(...r.overgeslagen); (r.datums || []).forEach(d => dat.add(d));
   }
   return {stops, overgeslagen:over, datums:[...dat]};
 }
@@ -241,7 +260,7 @@ async function leesBestand(f){
   return /[;\t]/.test(t.split(/\r?\n/,1)[0]) || n.endsWith(".csv") ? K.leesTabel(K.csvRijen(t), P) : K.leesRegels(t.split(/\r?\n/), P);
 }
 async function start(fn){
-  fout(""); await klaar; if (!D) return;
+  fout(""); RITKOP = ""; await klaar; if (!D) return;
   try {
     const r = await fn();
     if (!r.stops.length) { GEL = null; $("#uit").hidden = true; fout("Geen adressen herkend. Stuur me (zonder echte gegevens) een nagemaakt voorbeeld van de opmaak."); return; }
@@ -277,6 +296,9 @@ const SOORT = {weg:"Weg / werk", evenement:"Evenement", markt:"Markt / kermis"},
 const soortVan = x => x.cat === "kermis" || x.cat === "markt" ? "markt" : x.cat === "evenement" ? "evenement" : "weg";
 const nieuwF = () => ({zoek:[], tekst:"", routes:null, hinder:new Set(HINDER), soort:new Set(Object.keys(SOORT)), met:false, zeker:false, overig:false, hoek:true, nieuw:false, verb:false, tv:"", tt:""});
 let F = nieuwF(), TAB = "route", SORT = {k:"hinder", op:true}, KAART = null, KAART_DATA = window.PR_KAART || null;
+const PREF = window.PR_App ? PR_App.prefs("routecheck") : {lees: d => d, bewaar(){}}, pv = PREF.lees({});
+if (pv.tab) TAB = pv.tab; if (pv.hinder && pv.hinder.length) F.hinder = new Set(pv.hinder); if (pv.soort && pv.soort.length) F.soort = new Set(pv.soort);
+["hoek", "zeker", "met", "tv", "tt"].forEach(k => { if (pv[k] != null) F[k] = pv[k]; }); if (pv.skip != null) $("#skip").value = pv.skip;
 const maakZoek = t => t.split(/[,;]/).map(a => K.kern(a).split(" ").filter(Boolean)).filter(a => a.length);
 const past = hay => !F.zoek.length || F.zoek.some(alt => alt.every(w => hay.includes(" " + w)));
 const hitHay = (r, p, h) => K.norm(`${r.naam} ${p.plaats} ${p.gemeente || ""} ${h.straat} ${h.x.titel} ${h.x.label} ${h.x.locatie || ""} ${(h.x.pc4 || []).join(" ")} ${h.x.bron}`);
@@ -299,10 +321,11 @@ function toon(){
   const pcPerRoute = new Map(); GEL.forEach(s => { const pc = (s.postcode || "").replace(/\s/g, ""); if (pc) { if (!pcPerRoute.has(s.route)) pcPerRoute.set(s.route, new Set()); pcPerRoute.get(s.route).add(pc); pcPerRoute.get(s.route).add(pc.slice(0,4)); } });
   v.routes.forEach(r => r.pcs = [...(pcPerRoute.get(r.naam) || [])]);
   const eerst = $("#uit").hidden; LAATST = {v, van, tot}; render();
-  $("#ctl").innerHTML = `<p class="meta">${rand(["adres","adressen"],GEL.length)} gelezen, ${OVER.length} regels overgeslagen.${OVERGESLAGEN.length?` Ritten niet meegenomen: ${esc(OVERGESLAGEN.join(", "))}.`:""}${v.onbekend.length?` Niet herkende plaatsen (buiten de drie provincies of verkeerd gelezen): ${esc(v.onbekend.map(([p,n]) => `${p} (${n})`).join(", "))}.`:""}</p>
+  $("#ctl").innerHTML = `<p class="meta">${RITKOP ? `Route uit kolom '${esc(RITKOP)}'. ` : ""}${rand(["adres","adressen"],GEL.length)} gelezen, ${OVER.length} regels overgeslagen.${OVERGESLAGEN.length?` Ritten niet meegenomen: ${esc(OVERGESLAGEN.join(", "))}.`:""}${v.onbekend.length?` Niet herkende plaatsen (buiten de drie provincies of verkeerd gelezen): ${esc(v.onbekend.map(([p,n]) => `${p} (${n})`).join(", "))}.`:""}</p>
     <table><tr><th>Route</th><th>Straat</th><th>Nr</th><th>Postcode</th><th>Plaats</th></tr>${GEL.slice(0,400).map(s => `<tr><td>${esc(s.route)}</td><td>${esc(s.straat)}</td><td>${esc(s.nr)}</td><td>${esc(s.postcode)}</td><td>${esc(s.plaats)}</td></tr>`).join("")}</table>
     ${GEL.length>400?`<p class="meta">+ ${GEL.length-400} meer</p>`:""}
     ${OVER.length?`<p class="meta"><b>Overgeslagen:</b><br>${OVER.slice(0,40).map(esc).join("<br>")}</p>`:""}`;
+  $("#stappen").hidden = true; $("#drop").classList.add("klein");
   $("#uit").hidden = false; if (eerst) $("#uit").scrollIntoView({behavior:"smooth", block:"start"});
 }
 function render(){
@@ -365,6 +388,7 @@ function render(){
     <td>${esc(h.x.titel)}${tag(h)}${nw(h.x)}</td><td>${esc(wanneer(h.x,van,tot))}</td><td>${esc(h.x.bron)}${h.x.url?` · <a href="${esc(h.x.url)}" target="_blank" rel="noopener noreferrer">link</a>`:""}</td></tr>`).join("")}</tbody></table></div>`
     : '<div class="panel">Geen problemen bij de stops binnen dit filter.</div>';
   LAATST.hits = hits; LAATST.rs = rs;
+  PREF.bewaar({tab:TAB, hinder:[...F.hinder], soort:[...F.soort], hoek:F.hoek, zeker:F.zeker, met:F.met, tv:F.tv, tt:F.tt, skip:$("#skip").value});
   ["route","tabel","kaart"].forEach(t => { $("#" + (t === "route" ? "routes" : t === "tabel" ? "tabel" : "kaartvak")).hidden = TAB !== t; });
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.t === TAB));
   if (TAB === "kaart") tekenKaart();
@@ -469,7 +493,7 @@ function huddle(){
 }
 $("#huddleKnop").addEventListener("click", () => { if (LAATST) huddle(); });
 $("#print").addEventListener("click", () => window.print());
-$("#wis").addEventListener("click", () => { $("#huddle").innerHTML = ""; GEL = null; F = nieuwF(); $("#zoek").value = ""; OVER = []; LAATST = null; $("#plak").value = ""; ["routes","plaatsen","ctl","kpis","tabel"].forEach(i => $("#"+i).innerHTML = ""); $("#uit").hidden = true; fout(""); window.scrollTo(0,0); });
+$("#wis").addEventListener("click", () => { $("#stappen").hidden = false; $("#drop").classList.remove("klein"); $("#huddle").innerHTML = ""; GEL = null; F = nieuwF(); $("#zoek").value = ""; OVER = []; LAATST = null; $("#plak").value = ""; ["routes","plaatsen","ctl","kpis","tabel"].forEach(i => $("#"+i).innerHTML = ""); $("#uit").hidden = true; fout(""); window.scrollTo(0,0); });
 function toast(t){ const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), 1800); }
 $("#kopie").addEventListener("click", async () => { const {z, van, tot} = LAATST, v = {routes:z}, L = [`ROUTECHECK ${fmtD(van)} t/m ${fmtD(tot)} — VERTROUWELIJK`, ""], ic = h => h==="hoog"?"🔴":h==="middel"?"🟠":"⚪";
   v.routes.forEach(r => { L.push(`▶ ${r.naam.toUpperCase()} — komt in ${r.plaatsen.map(p => mooi(p.plaats)).join(", ")}`);
@@ -477,6 +501,11 @@ $("#kopie").addEventListener("click", async () => { const {z, van, tot} = LAATST
       p.hits.forEach(h => L.push(`  ${ic(h.x.hinder)} ${h.straat}: ${h.x.titel} (${wanneer(h.x,van,tot)})${tagT(h)}`)); });
     if (!r.knelpunten) L.push("  Geen problemen bij de stops."); L.push(""); });
   try { await navigator.clipboard.writeText(L.join("\n")); toast("Verslag gekopieerd"); } catch { toast("Kopiëren geblokkeerd door browser"); } });
+if (window.PR_App) PR_App.init({pagina:"routecheck", titel:"Routecheck — zo werkt het", zoek:"#zoek", download:["routecheck-offline.html", "Routecheck-werk.html"], hulp:[
+  ["In 3 stappen", ["Sleep een of meer <b>routelijsten</b> (Dynamics-PDF) of de <b>optimiser-export</b> in het vak. Ze blijven op deze pc.", "De <b>periode</b> springt naar de datum uit het bestand; met Vandaag/Morgen/7 dagen kies je zelf.", "Lees de <b>kerncijfers</b> en klik erop; daarna per route, als tabel of op de kaart."]],
+  ["Wat telt als knelpunt", ["<b>Straat</b>: de melding noemt de straat van een stop, in die plaats of gemeente.", "<b>Om de hoek</b>: melding binnen 250 m van de stop, andere straat (plek uit de 6-cijferige postcode).", "<b>Controleren</b>: zelfde straatnaam in de gemeente, maar de plaats staat niet in de melding.", "Omleidingen en fiets-/voetpaden tellen niet mee."]],
+  ["Voor de huddle", ["<b>Huddle-print</b>: één A4 per dag met hoge en middel hinder per route en een kolom Actie. Volgt je filter.", "<b>Kopieer verslag</b>: tekst om te plakken in mail of Teams.", "<b>✓</b> markeert een melding als verwerkt (alleen op deze pc); <b>Verberg verwerkt</b> haalt ze uit beeld."]],
+  ["Goed om te weten", ["Ritten 442 en 443 worden standaard overgeslagen (aan te passen).", "Filters en tab worden onthouden in deze browser; <b>Filters wissen</b> zet alles terug.", "Een gescande PDF (afbeelding) kan niet gelezen worden: exporteer als PDF met tekst of Excel."]]]});
 })();
 </script>
 </body>

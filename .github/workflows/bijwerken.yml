@@ -42,11 +42,13 @@ jobs:
           node tests/test_route.js
           node tests/test_plan.js
           node tests/test_hulp.js
+          node tests/test_paginas.js
 
       - name: Data ophalen (NDW + Gemeenteblad + markten)
         run: |
           python3 scripts/ophalen.py
           python3 scripts/offline.py
+          node tests/test_paginas.js   # ook de werk-pc-bestanden controleren
 
       - uses: actions/configure-pages@v6
 

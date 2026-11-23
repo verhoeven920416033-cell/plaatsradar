@@ -18,7 +18,6 @@ def bouw(pagina, uit, scripts, data_js, csp, pdf_worker=False):
     """data_js: ingebouwde openbare gegevens (meldingen, plaatsen, kaart). Nooit routegegevens."""
     h = (SITE / pagina).read_text("utf-8")
     h = re.sub(r"<!--CSP-->.*?<!--/CSP-->", lambda m: f'<meta http-equiv="Content-Security-Policy" content="{csp}">', h, flags=re.S)
-    h = re.sub(r' — <a href="index\.html".*?</a></p>', " (versie voor werk-pc)</p>", h, count=1, flags=re.S)
     blok = (f'<script type="text/plain" id="pdfw">{js("vendor/pdf.worker.min.js")}</script>\n' if pdf_worker else "")
     blok += "".join(f"<script>{js(s)}</script>\n" for s in scripts) + f"<script>{data_js}</script>"
     a = "\n".join(f'<script src="{s}"></script>' for s in scripts)
@@ -45,9 +44,9 @@ def main():
     p6 = SITE / "pc6.json"
     pc6 = ";window.PR_PC6=" + (p6.read_text("utf-8") if p6.exists() else "{}") + ";"
     kaart = lambda d: ";window.PR_KAART=" + json.dumps(d, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";"
-    n1 = bouw("routecheck.html", "routecheck-offline.html", ["vendor/pdf.min.js", "route-kern.js", "hulp.js", "kaart.js"],
+    n1 = bouw("routecheck.html", "routecheck-offline.html", ["vendor/pdf.min.js", "route-kern.js", "hulp.js", "kaart.js", "app.js"],
               data_js + pc6 + kaart({"gemeenten": k["gemeenten"], "pc4": []}), csp, pdf_worker=True)  # routecheck: geen postcodevlakken nodig
-    n2 = bouw("planning.html", "planning-offline.html", ["xlsx.js", "plan-kern.js", "hulp.js", "kaart.js"], data_js + pc6 + kaart(k), csp)
+    n2 = bouw("planning.html", "planning-offline.html", ["xlsx.js", "plan-kern.js", "hulp.js", "kaart.js", "app.js"], data_js + pc6 + kaart(k), csp)
     print(f"offline: routecheck {n1 / 1e6:.1f} MB, planning {n2 / 1e6:.1f} MB, {len(json.loads(data)['items'])} meldingen")
 
 

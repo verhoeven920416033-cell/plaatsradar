@@ -10,8 +10,13 @@
 --weg:#c8102e;--markt:#1f7a4d;--kermis:#a0398f;--evenement:#1f5fa8}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
-header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:16px 20px 14px;border-bottom:4px solid var(--red)}
-header h1{margin:0;font-size:22px}
+header{background:linear-gradient(120deg,#001a35 0%,#003366 70%,#0a4a86 100%);color:#fff;padding:18px 24px 15px;border-bottom:4px solid var(--red)}
+body{background:#eef1f5}main,footer{max-width:1240px}
+.panel,.place,.kpi{box-shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);border-color:#e3e8ef}
+.nw{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:#e6f0ff;color:#0a4a86;border:1px solid #b9d3f5;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px}
+.st{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px}.st div{border:1px solid #e3e8ef;border-radius:10px;padding:10px 12px;background:#fbfcfe}
+.st b{display:block;font-size:20px;font-variant-numeric:tabular-nums}.st span{font-size:12.5px;color:var(--mut)}.st .ok b{color:#1f7a4d}.st .nee b{color:var(--red)}
+header h1{margin:0;font-size:24px;letter-spacing:-.2px}
 header p{margin:3px 0 0;opacity:.85;font-size:13px}
 .src{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .src span{font-size:12px;background:rgba(255,255,255,.12);border-radius:999px;padding:2px 9px}
@@ -26,9 +31,10 @@ select,input[type=search]{padding:7px 10px;border:1px solid var(--line);border-r
 input[type=search]{flex:1 1 200px}
 .btn{border:0;border-radius:8px;padding:8px 14px;font:600 13px system-ui,sans-serif;cursor:pointer;background:#e8eef6;color:var(--navy)}
 .btn.pri{background:var(--red);color:#fff}
-.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;min-width:100px}
-.kpi b{display:block;font-size:22px;color:var(--navy)}.kpi span{font-size:12px;color:var(--mut)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:12px}
+.kpi{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px 12px 18px;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:#c9d3df}.kpi.alert::before{background:var(--red)}
+.kpi b{display:block;font-size:30px;line-height:1.1;color:var(--navy);font-variant-numeric:tabular-nums;letter-spacing:-.5px}.kpi span{font-size:12.5px;color:var(--mut)}
 .kpi.alert b{color:var(--red)}
 #map{height:380px;border-radius:10px;border:1px solid var(--line);margin-bottom:12px}
 .place{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden;break-inside:avoid}
@@ -98,12 +104,11 @@ footer a{color:var(--mut)}
     <div class="row">
       <span class="chip" id="fHoog">Alleen hoge hinder</span>
       <span class="chip" id="fNu">Nu actief</span>
+      <span class="chip" id="fNieuw" title="Voor het eerst gezien in de laatste 24 uur">Alleen nieuw</span>
       <span class="chip on" id="fSnel">Incl. snelwegen</span>
       <span class="chip" id="fFiets">Incl. fiets-/voetpaden</span>
       <span class="chip" id="fKaart">Kaart</span>
       <span style="flex:1"></span>
-      <a class="btn" href="routecheck.html" style="text-decoration:none">Routecheck</a>
-      <a class="btn" href="planning.html" style="text-decoration:none">Planning</a>
       <button class="btn" id="cpBrief">Kopieer briefing</button>
       <button class="btn" id="cpCsv">Kopieer CSV</button>
       <button class="btn pri" id="print">Print</button>
@@ -115,9 +120,11 @@ footer a{color:var(--mut)}
     <div class="kpi"><b id="kWeg">–</b><span>wegwerk</span></div>
     <div class="kpi"><b id="kEv">–</b><span>evenement/kermis</span></div>
     <div class="kpi"><b id="kMarkt">–</b><span>marktdagen</span></div>
+    <div class="kpi"><b id="kNieuw">–</b><span>nieuw sinds gisteren</span></div>
   </div>
   <div id="map" hidden></div>
   <div id="list"></div>
+  <details class="panel" id="status"><summary><b>Status van de bronnen</b> <span class="meta" id="statusKort"></span></summary><div class="st" id="statusIn"></div></details>
 </main>
 <footer>
   Bronnen: NDW open data (CC0) · Officiële bekendmakingen / Gemeenteblad via KOOP (CC0) · plaatsnamen PDOK Locatieserver (CC0) · marktreglementen gemeenten · straatnamen © OpenStreetMap-bijdragers (ODbL).
@@ -125,6 +132,7 @@ footer a{color:var(--mut)}
 </footer>
 <div class="toast" id="toast"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="app.js"></script>
 <script>
 (() => {
 const CATS = {weg:["Wegwerk","var(--weg)"],evenement:["Evenement","var(--evenement)"],kermis:["Kermis","var(--kermis)"],markt:["Markt","var(--markt)"]};
@@ -133,7 +141,8 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const LS = "plaatsradar.site.v2";
 let D = null, map = null, layer = null;
-let S = {per:"6", prov:[], gem:null, los:[], km:5, cats:Object.keys(CATS), hoog:false, snel:true, fiets:false, nu:false, kaart:false, q:""};
+let S = {per:"6", prov:[], gem:null, los:[], km:5, cats:Object.keys(CATS), hoog:false, snel:true, fiets:false, nu:false, nieuw:false, kaart:false, q:""};
+const isNieuw = x => !!x.sinds && D && (new Date(D.gegenereerd) - new Date(x.sinds)) <= 864e5;
 try { Object.assign(S, JSON.parse(localStorage.getItem(LS) || "{}")); } catch {}
 const save = () => { try { localStorage.setItem(LS, JSON.stringify({...S, q:""})); } catch {} };
 
@@ -170,6 +179,7 @@ function visible(){
     if (!S.snel && x.snelweg) return false;
     if (!S.fiets && x.fiets) return false;
     if (S.nu && !isNow(x)) return false;
+    if (S.nieuw && !isNieuw(x)) return false;
     if (x.perioden) {
       if (!x.perioden.some(([s,e]) => s.slice(0,10) <= we && e.slice(0,10) >= ws)) return false;
     } else if (x.start) {
@@ -217,7 +227,7 @@ function whenHtml(x){
 
 function itemHtml(x){
   return `<div class="item"><div class="when">${whenHtml(x)}</div>
-    <div><div class="ttl"><span class="badge" style="background:${CATS[x.cat][1]}">${CATS[x.cat][0]}</span><span class="sub">${esc(x.label)}</span>${x.snelweg?'<span class="sub">snelweg</span>':""}${esc(x.titel)}</div>
+    <div><div class="ttl"><span class="badge" style="background:${CATS[x.cat][1]}">${CATS[x.cat][0]}</span><span class="sub">${esc(x.label)}</span>${x.snelweg?'<span class="sub">snelweg</span>':""}${esc(x.titel)}${isNieuw(x)?'<span class="nw">nieuw</span>':""}</div>
     <div class="meta">${[x.titel.includes(x.locatie)?"":x.locatie, x.toelichting].filter(Boolean).map(esc).join(" · ")}${(x.locatie&&!x.titel.includes(x.locatie))||x.toelichting?" · ":""}${esc(x.bron)}${x.url ? ` · <a href="${esc(x.url)}" target="_blank" rel="noopener">${x.bron_type==="NDW"?"kaart":"bron"}</a>` : ""}${x.info ? ` · <a href="${esc(x.info)}" target="_blank" rel="noopener">meer info</a>` : ""}</div></div>
     <span class="h h-${x.hinder}">${x.hinder}</span></div>`;
 }
@@ -230,6 +240,7 @@ function render(){
   $("#kWeg").textContent = v.filter(x => x.cat === "weg").length;
   $("#kEv").textContent = v.filter(x => x.cat === "evenement" || x.cat === "kermis").length;
   $("#kMarkt").textContent = v.filter(x => x.cat === "markt").length;
+  $("#kNieuw").textContent = v.filter(isNieuw).length;
   const alle = secties(v);
   if (!alle.length) { $("#list").innerHTML = '<div class="empty panel">Kies een provincie of typ een plaats.</div>'; if (S.kaart) drawMap(v); return; }
   const inklap = alle.length > 12, zonder = alle.filter(s => !s.items.length).length;
@@ -278,7 +289,7 @@ function controls(){
     + S.los.map(l => `<span class="chip on" data-l="${esc(l.naam)}">${esc(l.naam)} · ${S.km} km<span class="x">×</span></span>`).join("");
   if ($("#lijst").open) lijstVullen(gs);
   $("#cats").innerHTML = Object.entries(CATS).map(([k,[l]]) => `<span class="chip ${S.cats.includes(k)?"on":""}" data-c="${k}">${l}</span>`).join("");
-  $("#fHoog").classList.toggle("on", S.hoog); $("#fNu").classList.toggle("on", S.nu); $("#fFiets").classList.toggle("on", S.fiets); $("#fSnel").classList.toggle("on", S.snel); $("#fKaart").classList.toggle("on", S.kaart);
+  $("#fHoog").classList.toggle("on", S.hoog); $("#fNu").classList.toggle("on", S.nu); $("#fNieuw").classList.toggle("on", S.nieuw); $("#fFiets").classList.toggle("on", S.fiets); $("#fSnel").classList.toggle("on", S.snel); $("#fKaart").classList.toggle("on", S.kaart);
   $("#map").hidden = !S.kaart;
 }
 function lijstVullen(gs){
@@ -349,6 +360,7 @@ $("#cats").addEventListener("click", e => { const c = e.target.dataset.c; if (!c
 $("#fHoog").addEventListener("click", () => { S.hoog = !S.hoog; upd(); });
 $("#fSnel").addEventListener("click", () => { S.snel = !S.snel; upd(); });
 $("#fNu").addEventListener("click", () => { S.nu = !S.nu; upd(); });
+$("#fNieuw").addEventListener("click", () => { S.nieuw = !S.nieuw; upd(); });
 $("#fFiets").addEventListener("click", () => { S.fiets = !S.fiets; upd(); });
 $("#fKaart").addEventListener("click", () => { S.kaart = !S.kaart; upd(); });
 $("#print").addEventListener("click", () => window.print());
@@ -385,11 +397,26 @@ fetch("data.json?t=" + Date.now()).then(r => { if (!r.ok) throw new Error("HTTP 
   if (gb.length) chips.push(`<span class="${fout.length?"bad":""}" title="${esc(fout.map(([g]) => g).join(", "))}">Gemeenteblad ${fout.length?"✗":"✓"} ${gb.length-fout.length}/${gb.length}</span>`);
   if (age > 180) chips.push(`<span class="bad">Data ${Math.round(age/60)} uur oud</span>`);
   $("#src").innerHTML = chips.join("");
+  const p6 = st.pc6 || {}, pc = st.postcodes || {}, nw = d.items.filter(isNieuw).length, uur = age / 60;
+  const kaartje = (ok, n, t) => `<div class="${ok === null ? "" : ok ? "ok" : "nee"}"><b>${n}</b><span>${t}</span></div>`;
+  $("#statusIn").innerHTML = [
+    kaartje(uur < 12, uur < 1 ? "< 1 uur" : Math.round(uur) + " uur", "geleden bijgewerkt (" + new Date(d.gegenereerd).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) + ")"),
+    kaartje(!!st.ndw.ok, st.ndw.ok ? st.ndw.items : "✗", "meldingen NDW (wegwerk, afsluitingen)" + (st.ndw.ok ? "" : ": " + esc(st.ndw.fout || ""))),
+    kaartje(!fout.length, `${gb.length - fout.length}/${gb.length}`, "gemeenten Gemeenteblad gelezen" + (fout.length ? ": mislukt " + esc(fout.slice(0, 5).map(([g]) => g).join(", ")) : "")),
+    kaartje(null, d.items.length, "meldingen totaal, waarvan " + nw + " nieuw sinds gisteren"),
+    kaartje(!!pc.ok, pc.met_pc4 ?? "–", "meldingen met postcodegebied (voor Planning)"),
+    kaartje(p6.totaal ? p6.compleet >= p6.totaal : null, p6.totaal ? Math.round(p6.compleet / p6.totaal * 100) + "%" : "–", "postcodeplekken geladen (voor om de hoek)" + (p6.totaal ? ` — ${p6.compleet} van ${p6.totaal} gebieden` : ""))].join("");
+  $("#statusKort").textContent = `· bijgewerkt ${uur < 1 ? "binnen het uur" : Math.round(uur) + " uur geleden"} · NDW ${st.ndw.ok ? "✓" : "✗"} · Gemeenteblad ${gb.length - fout.length}/${gb.length}${p6.totaal && p6.compleet < p6.totaal ? ` · postcodeplekken ${Math.round(p6.compleet / p6.totaal * 100)}%` : ""}`;
   const bekend = new Set(d.plaatsen.map(p => p.naam));
   if (S.gem === null) S.gem = (d.favorieten || []).slice();
   S.gem = S.gem.filter(n => bekend.has(n)); S.prov = S.prov.filter(p => d.plaatsen.some(x => x.provincie === p));
   controls(); render();
 }).catch(e => { const el = $("#err"); el.hidden = false; el.textContent = "Data laden mislukt (" + e.message + "). Probeer later opnieuw."; });
+if (window.PR_App) PR_App.init({pagina:"index", titel:"PlaatsRadar — zo werkt het", zoek:"#q", hulp:[
+  ["Wat zie je", ["Wegwerk en afsluitingen (NDW), evenementen en kermissen (Gemeenteblad) en weekmarkten in Noord-Brabant, Gelderland en Limburg.", "Kies een <b>provincie</b>, gemeenten of typ een <b>plaats</b> (met straal). Je keuze wordt onthouden.", "<b>Periode</b> bepaalt hoe ver je vooruit kijkt; <b>Nu actief</b> toont alleen wat op dit moment speelt."]],
+  ["Filters", ["<b>Alleen hoge hinder</b>, <b>Alleen nieuw</b> (laatste 24 uur), soort (wegwerk, evenement, kermis, markt).", "Zoekveld: straat, postcode (4 cijfers) of evenement. <kbd>/</kbd> springt erheen.", "<b>Kaart</b> toont de meldingen op OpenStreetMap."]],
+  ["Delen", ["<b>Kopieer briefing</b>: tekst voor mail of Teams. <b>Kopieer CSV</b>: plakken in Excel. <b>Print</b>: overzicht op papier."]],
+  ["Andere onderdelen", ["<b>Planning</b>: hinder per postcodegebied en dienst, 2 dagen vooruit, uit het geogroepen-Excel of de optimiser-export.", "<b>Routecheck</b>: knelpunten bij de stops van je routelijsten, met Huddle-print.", "Onderaan: <b>Status van de bronnen</b> — hoe vers en volledig de gegevens zijn."]]]});
 })();
 </script>
 </body>

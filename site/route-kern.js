@@ -105,7 +105,12 @@ const KOP = {straat:/^(straat|straatnaam|adres|address|bezoekadres|afleveradres|
 /** Tabellen (CSV/Excel): kolommen op kopnaam, anders regel voor regel. Klantnamen e.d. worden niet gebruikt. */
 /** Export uit de route-optimiser: kolommen SRit + Laad-losplaats straat/huisnr./postcode/plaats (+ Vroegste laden).
     Alleen rit, adres en datum worden gelezen; naam, waarde, kwalificaties en tijden niet. */
-const OPT = {route:/^s?rit$/i, straat:/straat$/i, nr:/huisn/i, postcode:/postcode$/i, plaats:/(?:^|\s)plaats$/i, datum:/vroegste laden|^datum$/i};
+const OPT = {straat:/straat$|^adres$/i, nr:/huisn/i, postcode:/postcode$/i, plaats:/(?:^|\s)plaats$|^stad$/i, datum:/vroegste laden|^(lever|rij|plan)?\s?datum$/i};
+// routekolom: geplande route gaat voor stamroute (dat is wat er die dag echt rijdt)
+const RIT_G = /^(g\.?\s?rit|geplande?\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?gepland\)?|route\s*\(?gepland\)?|planned\s*(trip|route)|plan\s*(rit|route))$/i;
+const RIT_S = /^(s\.?\s?rit|stam\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?stam\)?|route\s*\(?stam\)?|master\s*route)$/i;
+const RIT_A = /^(rit|route|ritnummer|routenummer|rit\s*nr|route\s*nr)$/i;
+function ritKolom(kop) { const t = kop.map(c => String(c ?? "").trim()); for (const re of [RIT_G, RIT_A, RIT_S]) { const i = t.findIndex(c => re.test(c)); if (i >= 0) return i; } return -1; }
 function excelDatum(v) {
   const t = String(v ?? "").trim();
   if (/^\d+(\.\d+)?$/.test(t) && +t > 30000) { const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(+t) * 864e5); return d.toISOString().slice(0, 10); }
@@ -114,20 +119,20 @@ function excelDatum(v) {
   return m[1].length === 4 ? `${m[1]}-${m[2]}-${m[3]}` : `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
 }
 function leesOptimiser(rijen) {
-  const k = rijen.slice(0, 10).findIndex(r => r.some(c => OPT.route.test(String(c).trim())) && r.some(c => /laad-?losplaats straat/i.test(String(c))));
+  const k = rijen.slice(0, 10).findIndex(r => ritKolom(r) >= 0 && r.some(c => /laad-?losplaats (straat|postcode)/i.test(String(c))));
   if (k < 0) return null;
-  const col = {}; rijen[k].forEach((c, i) => { const h = String(c).trim(); for (const n in OPT) if (col[n] === undefined && OPT[n].test(h)) col[n] = i; });
+  const col = {route: ritKolom(rijen[k])}; rijen[k].forEach((c, i) => { const h = String(c).trim(); for (const n in OPT) if (col[n] === undefined && OPT[n].test(h)) col[n] = i; });
   const stops = [], datums = new Set(), gezien = new Set();
   for (const r of rijen.slice(k + 1)) {
     const v = n => col[n] === undefined ? "" : String(r[col[n]] ?? "").trim();
-    const rit = v("route"), straat = v("straat");
+    const rit = v("route").replace(/\.0$/, ""), straat = v("straat");
     if (!rit || !straat) continue;
     const d = excelDatum(v("datum")); if (d) datums.add(d);
     const st = {straat, nr: v("nr"), postcode: v("postcode").replace(/^[A-Z]\s+/, ""), plaats: v("plaats"), route: "Route " + rit, bron: ""};
     const key = [st.route, kern(st.straat), st.nr, st.postcode].join("|");
     if (!gezien.has(key)) { gezien.add(key); stops.push(st); }
   }
-  return {stops, overgeslagen: [], datums: [...datums].sort()};
+  return {stops, overgeslagen: [], datums: [...datums].sort(), ritKop: String(rijen[k][col.route]).trim()};
 }
 function leesTabel(rijen, plaatsen) {
   const opt = leesOptimiser(rijen); if (opt) return opt;

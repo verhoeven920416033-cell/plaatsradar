@@ -47,6 +47,7 @@ Knop **Planning** op de site, of `planning.html`. Voor de planners: kies een rij
 - **Download Excel** met beide overzichten.
 
 Meldingen krijgen hun postcodegebied uit de openbare CBS-postcodevlakken (PDOK, maandelijks ververst). Gemeenteblad-meldingen zonder coördinaten staan apart onder *Zonder exacte plek*. Het Excel blijft op je computer; voor de werk-pc is er `Planning-werk.html` (zelfde werkwijze als de routecheck).
+- **Geplande route of stamroute:** heeft de export beide kolommen, dan gebruikt Planning (en de Routecheck) de **geplande route**: dat is wat er die dag rijdt. Wisselen kan bij *Rit uit*. Herkende namen: *Geplande route/rit*, *GRit*, *SRit*, *Stamroute*, *Rit*, *Route*, *Tour*. Worden de kolommen niet herkend, dan verschijnt een keuzescherm waarin je zelf aanwijst welke kolom de rit, postcode, plaats, straat, datum en klantcode is (*Kolommen aanpassen* opent het later ook).
 - **Optimiser-export kan ook:** sleep de export uit de optimiser erin in plaats van het geogroepen-Excel. Dan worden de ritten de "diensten" (knoppen *Rit …*), met de postcodegebieden van hun stops op de datum uit *Vroegste laden*. De rijdag springt naar die datum. Alleen rit, klantcode, adres en datum worden gelezen. *Ritten overslaan* staat standaard op 442 en 443.
 - **Klantcodes (optimiser):** tab *Klantcodes* koppelt de meldingen aan de adressen uit de export. *Straat* = de melding noemt de straat van de stop; met *Ook zelfde postcodegebied* zie je ook klanten in hetzelfde gebied. De klantcode komt standaard uit kolom E (*Laad-losplaats kenmerk*); een andere kolom kies je in de lijst. Ook in het zoekveld en de Excel (blad *Klantcodes*). Volgorde: eerst hinder, dan postcode. Filteren op postcode: klik op een postcodeknop (getal = aantal klantcodes) of typ het begin van een postcode (56, 5611, 5611AB). Klik op een kolomkop om anders te sorteren; het getal *klantcodes met hinder* bovenaan opent deze tab.
 - **Dashboard:** bovenaan klikbare kerncijfers (hoge hinder, meldingen, klantcodes, plaatsen, gebieden) en drie overzichten: verdeling hoog/middel/laag, drukste postcodegebieden en hinder per dienst of rit. Klik op een balk om daarop te filteren; nog een klik zet het filter weer uit.
@@ -66,6 +67,24 @@ GitHub voert geplande taken vaak uren te laat uit. Een gratis timer (bijv. cron-
 3. Headers: `Authorization: Bearer <token>`, `Accept: application/vnd.github+json`. Body: `{"ref":"main"}`.
 4. Test: in tab Actions verschijnt een run met *workflow_dispatch*.
 De token kan alleen workflows starten in deze repo. Lekt hij, trek hem in bij GitHub.
+
+## Bediening (alle pagina's)
+- Navigatiebalk bovenaan: Overzicht · Planning · Routecheck, plus **? Hulp** met uitleg per pagina en *Wat is nieuw*.
+- Sneltoetsen: `/` naar het zoekveld, `?` hulp, `Esc` sluiten of zoekveld leegmaken.
+- Filters en gekozen tab worden onthouden in de browser (nooit route-, klant- of planningsgegevens). *Filters wissen* zet alles terug.
+- Gaat er iets mis in de pagina, dan verschijnt bovenaan een rode balk met de fout in plaats van een pagina die stil niets doet.
+- Startpagina, onderaan: **Status van de bronnen** (hoe vers, NDW, Gemeenteblad per gemeente, postcodes, postcodeplekken).
+
+## Projectopbouw (voor wie het onderhoudt)
+| Pad | Wat |
+|---|---|
+| `scripts/ophalen.py` | Haalt NDW, Gemeenteblad, markten, postcodevlakken, gemeentegrenzen en postcodeplekken op → `site/data.json`, `kaart.json`, `pc6.json`, `woonplaatsen.json`. Cache in `.cache/`. |
+| `scripts/offline.py` | Bouwt de werk-pc-bestanden (`*-offline.html`): alles in één bestand, netwerk alleen naar de eigen site. |
+| `site/route-kern.js`, `site/plan-kern.js` | Rekenkern van Routecheck en Planning (lezen, vergelijken). Geen DOM, getest in Node. |
+| `site/hulp.js` | Postcodeplek, afstand tot een melding, tijdvak, nieuw, verwerkt. |
+| `site/kaart.js` | Kaart als SVG zonder kaartdienst. |
+| `site/app.js` | Navigatie, hulp, sneltoetsen, foutbalk, voorkeuren, versie. |
+| `tests/` | Rekenkern, parsers en een controle dat alle pagina-scripts geldig zijn en de werk-pc-bestanden alleen naar de eigen site verbinden. Draait bij elke update; faalt een test, dan gaat er niets live. |
 
 ## Goed om te weten
 

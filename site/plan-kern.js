@@ -13,43 +13,79 @@ function datumVan(v) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t) || /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/.exec(t);
   return !m ? "" : m[1].length === 4 ? `${m[1]}-${m[2]}-${m[3]}` : `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
 }
+// Routekolommen in de optimiser-export. Gepland gaat voor stam: dat is wat er die dag echt rijdt.
+const RIT_GEPLAND = /^(g\.?\s?rit|geplande?\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?gepland\)?|route\s*\(?gepland\)?|planned\s*(trip|route)|plan\s*(rit|route))$/i;
+const RIT_STAM = /^(s\.?\s?rit|stam\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?stam\)?|route\s*\(?stam\)?|master\s*route)$/i;
+const RIT_ALG = /^(rit|route|ritnummer|routenummer|rit\s*nr|route\s*nr|tour|trip)$/i;
+const KOL = {pc: /laad-?losplaats\s*postcode|^post\s?code$|postcode|^pc[46]?$/i, plaats: /laad-?losplaats\s*plaats|^(woon)?plaats$|^stad$|^city$/i,
+  straat: /laad-?losplaats\s*straat|^straat(naam)?$|^adres$|^street$/i, nr: /laad-?losplaats\s*huisn|^huis\s?n|^nr\.?$/i,
+  datum: /vroegste\s*laden|^(lever|rij|plan|uitvoer)?\s?(datum|dag)$|^date$/i, klant: /^klant\s?(code|nr|nummer)$|laad-?losplaats\s*kenmerk|^debiteur/i};
+const kopTekst = h => String(h ?? "").trim();
+/** Alle kolommen die een rit kunnen zijn, met soort, gesorteerd: gepland, stam, algemeen. */
+function ritKolommen(kop) {
+  const o = [];
+  kop.forEach((h, i) => { const t = kopTekst(h); if (RIT_GEPLAND.test(t)) o.push({i, kop: t, soort: "gepland"}); else if (RIT_STAM.test(t)) o.push({i, kop: t, soort: "stam"}); else if (RIT_ALG.test(t)) o.push({i, kop: t, soort: "rit"}); });
+  const orde = {gepland: 0, rit: 1, stam: 2};
+  return o.sort((a, b) => orde[a.soort] - orde[b.soort] || a.i - b.i);
+}
+/** Koprij van een optimiser-export: een routekolom én een postcodekolom. */
+function optimiserKop(rijen) {
+  for (let k = 0; k < Math.min(15, rijen.length); k++) {
+    const r = rijen[k].map(kopTekst);
+    if (ritKolommen(r).length && r.some(c => KOL.pc.test(c))) return k;
+  }
+  return -1;
+}
+/** Optimiser-export -> gebieden per rit, postcodegebied en rijdag, plus stops.
+    Alleen rit, klantcode, adres, postcode, plaats en datum worden gelezen; naam, waarde en tijden niet.
+    opt.kaart = {kop, rit, pc, plaats, straat, nr, datum, klant} (kolomnummers) om zelf te kiezen. */
 function leesOptimiserPlan(rijen, opt) {
-  const kop = h => String(h ?? "").trim();
-  const k = rijen.slice(0, 10).findIndex(r => r.some(c => /^s?rit$/i.test(kop(c))) && r.some(c => /laad-?losplaats (postcode|straat)/i.test(kop(c))));
+  opt = opt || {};
+  const m0 = opt.kaart || {};
+  const k = Number.isInteger(m0.kop) ? m0.kop : optimiserKop(rijen);
   if (k < 0) return null;
-  const ci = re => rijen[k].findIndex(c => re.test(kop(c)));
-  const c = {rit: ci(/^s?rit$/i), pc: ci(/laad-?losplaats postcode|^postcode$/i), plaats: ci(/laad-?losplaats plaats|^plaats$/i), datum: ci(/vroegste laden|^datum$/i),
-    straat: ci(/laad-?losplaats straat|^straat$/i), nr: ci(/laad-?losplaats huisn|^huisn/i)};
-  // klantcode: standaard kolom 'Laad-losplaats kenmerk' (kolom E in de export), anders te kiezen
-  const kolommen = rijen[k].map(kop);
-  let kk = opt && Number.isInteger(opt.klantKolom) ? opt.klantKolom : ci(/^klant ?(code|nr|nummer)$|laad-?losplaats kenmerk/i);
-  if (kk < 0 && kolommen.length > 4) kk = 4;
-  if (c.pc < 0) throw new Error("Optimiser-export zonder kolom 'Laad-losplaats postcode'.");
-  const skip = new Set(((opt || {}).skip || []).map(String)), per = new Map(), datums = new Set(), fout = [], overgeslagen = new Set(), stops = [], gezien = new Set();
+  const kolommen = rijen[k].map(kopTekst), ci = re => kolommen.findIndex(c => re.test(c));
+  const ritOpties = ritKolommen(kolommen);
+  const kies = (n, standaard) => Number.isInteger(m0[n]) ? m0[n] : Number.isInteger(opt[n + "Kolom"]) ? opt[n + "Kolom"] : standaard;
+  const c = {rit: kies("rit", ritOpties.length ? ritOpties[0].i : -1), pc: kies("pc", ci(KOL.pc)), plaats: kies("plaats", ci(KOL.plaats)),
+    straat: kies("straat", ci(KOL.straat)), nr: kies("nr", ci(KOL.nr)), datum: kies("datum", ci(KOL.datum)), klant: kies("klant", ci(KOL.klant))};
+  if (c.klant < 0 && !Number.isInteger(m0.klant) && kolommen.length > 4 && /kenmerk/i.test(kolommen[4])) c.klant = 4;  // kolom E in de standaardexport
+  const kiesFout = t => { const e = new Error(t + " Kies hieronder zelf de kolommen."); e.kiezen = true; return e; };
+  if (c.rit < 0) throw kiesFout("Geen routekolom gevonden.");
+  if (c.pc < 0) throw kiesFout("Geen postcodekolom gevonden.");
+  const skip = new Set((opt.skip || []).map(String)), per = new Map(), datums = new Set(), fout = [], overgeslagen = new Set(), stops = [], gezien = new Set();
+  let leeg = 0;
   for (const r of rijen.slice(k + 1)) {
-    const rit = kop(r[c.rit]); if (!rit) continue;
+    const rit = kopTekst(r[c.rit]).replace(/\.0$/, ""); if (!rit) { if (r.some(v => kopTekst(v))) leeg++; continue; }
     if (skip.has(rit)) { overgeslagen.add(rit); continue; }
-    const m = /(\d{4})\s*[A-Z]{0,2}\s*$/i.exec(kop(r[c.pc]));
+    const pc = kopTekst(r[c.pc]).toUpperCase(), m = /(\d{4})\s*[A-Z]{0,2}\s*$/.exec(pc);
     if (!m) { fout.push("Rit " + rit + ": geen postcode"); continue; }
     const d = c.datum >= 0 ? datumVan(r[c.datum]) : ""; if (d) datums.add(d);
     const wd = d ? (new Date(d + "T12:00:00Z").getUTCDay() + 6) % 7 : -1;
     const key = rit + "|" + m[1];
-    if (!per.has(key)) per.set(key, {groep: "Rit " + rit, plaats: c.plaats >= 0 ? kop(r[c.plaats]) : "", van: m[1], tot: m[1], pc4: [m[1]], dagen: Array(7).fill(false)});
+    if (!per.has(key)) per.set(key, {groep: "Rit " + rit, plaats: c.plaats >= 0 ? kopTekst(r[c.plaats]) : "", van: m[1], tot: m[1], pc4: [m[1]], dagen: Array(7).fill(false)});
     const g = per.get(key); if (wd < 0) g.dagen.fill(true); else g.dagen[wd] = true;
-    const st = {rit: "Rit " + rit, klant: kk >= 0 ? kop(r[kk]) : "", straat: c.straat >= 0 ? kop(r[c.straat]) : "", nr: c.nr >= 0 ? kop(r[c.nr]) : "",
-      postcode: kop(r[c.pc]).replace(/^[A-Z]\s+/, ""), pc4: m[1], plaats: c.plaats >= 0 ? kop(r[c.plaats]) : "", datum: d, wd};
+    const st = {rit: "Rit " + rit, klant: c.klant >= 0 ? kopTekst(r[c.klant]) : "", straat: c.straat >= 0 ? kopTekst(r[c.straat]) : "", nr: c.nr >= 0 ? kopTekst(r[c.nr]) : "",
+      postcode: pc.replace(/^[A-Z]+\s+(?=\d)/, ""), pc4: m[1], plaats: c.plaats >= 0 ? kopTekst(r[c.plaats]) : "", datum: d, wd};
     const sk = [st.rit, st.klant, st.straat, st.nr, st.postcode, d].join("|");
     if (!gezien.has(sk)) { gezien.add(sk); stops.push(st); }
   }
   const gebieden = [...per.values()], groepen = [...new Set(gebieden.map(g => g.groep))].sort((a, b) => a.localeCompare(b, "nl", {numeric: true}));
-  return {gebieden, fout, groepen, datums: [...datums].sort(), bron: "optimiser", overgeslagen: [...overgeslagen], stops, kolommen, klantKolom: kk};
+  return {gebieden, fout, groepen, datums: [...datums].sort(), bron: "optimiser", overgeslagen: [...overgeslagen], stops, kolommen, klantKolom: c.klant,
+    kaart: {kop: k, ...c}, ritOpties, zonderRit: leeg, ritKop: kolommen[c.rit] || ""};
+}
+/** Voor de keuze-schermpje als niets herkend is: de rij met de meeste gevulde tekstcellen in de eerste 15 rijen. */
+function waarschijnlijkeKop(rijen) {
+  let best = 0, n = -1;
+  for (let k = 0; k < Math.min(15, rijen.length); k++) { const t = rijen[k].filter(v => /[a-z]/i.test(kopTekst(v))).length; if (t > n) { n = t; best = k; } }
+  return best;
 }
 
 /** Rijen uit het Excel -> gebieden {groep, plaats, van, tot, pc4[], dagen[7]}. Kolommen op kopnaam. */
 function leesGeogroepen(rijen, opt) {
   const o = leesOptimiserPlan(rijen, opt); if (o) return o;
   const k = rijen.slice(0, 20).findIndex(r => r.some(c => /locatie ?groep|^groep$/i.test(String(c).trim())) && r.some(c => /^van$/i.test(String(c).trim())));
-  if (k < 0) throw new Error("Kolommen niet herkend. Kies het geogroepen-Excel ('Locatie groep', 'Omschrijving', 'Van', 'Tot' en de weekdagen) of de optimiser-export ('SRit', 'Laad-losplaats postcode').");
+  if (k < 0) { const e = new Error("Kolommen niet herkend. Kies hieronder zelf welke kolom de rit en de postcode is, of gebruik het geogroepen-Excel ('Locatie groep', 'Van', 'Tot' en de weekdagen)."); e.kiezen = true; throw e; }
   const kop = rijen[k].map(c => String(c).trim().toLowerCase()), zoek = re => kop.findIndex(c => re.test(c));
   const ci = {groep: zoek(/locatie ?groep|^groep$/), plaats: zoek(/^omschrijving|^plaats/), van: zoek(/^van$/), tot: zoek(/^tot$/), dag: DAGEN.map(d => kop.indexOf(d))};
   const gebieden = [], fout = [];
@@ -189,5 +225,5 @@ function synchronisatie(gebieden, groepen, f) {
   }
   return uit.filter(r => !f || pcIn(f, r.pc4) || tekstIn(f, r.plaats)).sort((a, b) => a.plaats.localeCompare(b.plaats) || a.pc4.localeCompare(b.pc4));
 }
-return {DAGEN, KORT, maakFilter, leesGeogroepen, leesOptimiserPlan, klantHinder, straatKern, planDag, synchronisatie, weekdag, actief};
+return {DAGEN, KORT, maakFilter, leesGeogroepen, leesOptimiserPlan, ritKolommen, waarschijnlijkeKop, klantHinder, straatKern, planDag, synchronisatie, weekdag, actief};
 });

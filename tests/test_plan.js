@@ -97,3 +97,18 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
   if (r.map(x => x.klant).join() !== "C,A,B") { console.error("volgorde FOUT", r.map(x => x.klant)); process.exit(1); }
   console.log("volgorde OK");
 }
+// optimiser met geplande route én stamroute: gepland gaat voor; onbekende koppen → zelf kiezen
+{
+  const P = require("../site/plan-kern.js"), fout = m => { console.error("geplande route FOUT", m); process.exit(1); };
+  const kop = ["Kenmerk 1","SRit","Geplande route","Laad-losplaats kenmerk","Laad-losplaats straat","Laad-losplaats postcode","Laad-losplaats plaats","Vroegste laden"];
+  const g = P.leesGeogroepen([kop, ["a","100","6634","K1","Kerkstraat","5611 AB","Eindhoven","2026-11-23"], ["b","100","6635","K2","Markt","5612 AB","Eindhoven","2026-11-23"]], {});
+  if (g.groepen.join() !== "Rit 6634,Rit 6635" || g.ritKop !== "Geplande route" || g.ritOpties.length !== 2 || g.stops[0].klant !== "K1") fout("gepland " + JSON.stringify(g.groepen) + g.ritKop);
+  const s = P.leesOptimiserPlan([kop, ["a","100","6634","K1","Kerkstraat","5611 AB","Eindhoven","2026-11-23"]], {kaart:{...g.kaart, rit:1}});
+  if (s.groepen.join() !== "Rit 100") fout("stam kiezen");
+  let e = null; try { P.leesGeogroepen([["Nummer","Code postaal","Adres"], ["1","5611AB","X"]], {}); } catch (x) { e = x; }
+  if (!e || !e.kiezen) fout("onbekend moet kiezen geven");
+  const z = P.leesOptimiserPlan([["Nummer","Code postaal","Adres"], ["7","5611AB","Kerkstraat 1"]], {kaart:{kop:0, rit:0, pc:1, straat:2}});
+  if (z.groepen.join() !== "Rit 7" || z.stops[0].pc4 !== "5611") fout("handmatig " + JSON.stringify(z.groepen));
+  if (P.waarschijnlijkeKop([["", ""], ["Rit","Postcode","Plaats"], ["1","5611AB","X"]]) !== 1) fout("koprij");
+  console.log("geplande route OK");
+}

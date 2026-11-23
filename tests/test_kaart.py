@@ -26,7 +26,7 @@ assert "sinds" not in b[0] and b[1]["sinds"].startswith("2026-11-10T15:00"), b
 # pc6: per pc4 ophalen, compact wegschrijven
 c.d["kaart"]["pc4lijst"] = ["5611"]
 antw = {"response": {"docs": [{"postcode": "5611AB", "centroide_ll": "POINT(5.4710 51.4320)"}, {"postcode": "5611AC", "centroide_ll": "POINT(5.4700 51.4300)"}]}}
-o.http_get = lambda url, timeout=30: json.dumps(antw).encode()
+o.http_get = lambda url, timeout=30, tries=3: json.dumps(antw).encode()
 uit = Path(tempfile.mkdtemp()) / "pc6.json"
 st = o.pc6_punten(uit, c, 1e9)
 d = json.loads(uit.read_text())

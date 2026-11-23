@@ -1054,8 +1054,10 @@ def pc6_punten(uit: Path, cache: Cache, nu: float, budget_s=240, ttl_dagen=90):
         punten = []
         try:
             for start in range(0, 2000, 100):
+                if time.monotonic() - t0 > budget_s + 60:  # harde grens: nooit de hele run ophouden
+                    raise TimeoutError("tijdbudget op")
                 q = urllib.parse.urlencode({"q": "*:*", "rows": 100, "start": start, "wt": "json", "fl": "postcode,centroide_ll"})
-                docs = json.loads(http_get(f"{PDOK}?{q}&fq=type:postcode&fq=postcode:{c}*", timeout=30))["response"]["docs"]
+                docs = json.loads(http_get(f"{PDOK}?{q}&fq=type:postcode&fq=postcode:{c}*", timeout=20, tries=2))["response"]["docs"]
                 for d in docs:
                     m = re.search(r"POINT\(([\d.]+) ([\d.]+)\)", d.get("centroide_ll", ""))
                     pc = str(d.get("postcode", ""))
@@ -1065,6 +1067,8 @@ def pc6_punten(uit: Path, cache: Cache, nu: float, budget_s=240, ttl_dagen=90):
                     break
         except Exception as e:
             log(f"  pc6 {c} FOUT", str(e)[:100])
+            if isinstance(e, TimeoutError):
+                break
             continue
         w["d"][c], w["t"][c] = punten, nu
         opgehaald += 1

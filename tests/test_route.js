@@ -101,3 +101,10 @@ console.log("routecheck OK");
   if (!(Kaart.px(5) === 0 && Kaart.py(51.6) === 0 && Kaart.py(51.5) > 0)) { console.error("projectie FOUT"); process.exit(1); }
   console.log("kaart-velden OK");
 }
+// routecheck: geplande route gaat voor stamroute
+{
+  const K3 = require("../site/route-kern.js");
+  const r = K3.leesOptimiser([["SRit","Geplande route","Laad-losplaats straat","Laad-losplaats huisnr.","Laad-losplaats postcode","Laad-losplaats plaats"], ["100","6634","Kerkstraat","1","5611 AB","Eindhoven"]]);
+  if (!r || r.stops[0].route !== "Route 6634" || r.ritKop !== "Geplande route") { console.error("routecheck gepland FOUT", JSON.stringify(r)); process.exit(1); }
+  console.log("routecheck gepland OK");
+}
