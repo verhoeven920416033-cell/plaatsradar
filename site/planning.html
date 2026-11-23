@@ -77,6 +77,7 @@ button.kpi em{position:absolute;right:10px;top:9px;font-style:normal;font-size:1
 .item{grid-template-columns:190px 1fr auto auto}
 .wk td{text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;min-width:62px}.wk td.nm{text-align:left;font-weight:600;cursor:default}.wk td b{display:block;font-size:15px}.wk td small{color:inherit;opacity:.8}
 .wk th{text-align:center}.wk th.vandaag{color:var(--red)}
+.tw tr.ritkop td{background:#eef2f7;border-top:2px solid #9fb0c3;color:var(--navy);font-size:13px;padding:6px 10px}
 .leeg{color:var(--mut);font-size:13px;padding:6px 0}
 .tab{display:inline-flex;align-items:center;gap:7px;border-radius:10px;padding:8px 14px}.tab i{font-style:normal;font-size:11.5px;font-weight:700;background:#e8eef6;color:var(--navy);border-radius:999px;padding:1px 7px}.tab.on i{background:rgba(255,255,255,.22);color:#fff}
 .tabs{position:sticky;top:0;z-index:5;background:#eef1f5;padding:8px 0;margin-bottom:4px;overflow-x:auto}.tab{white-space:nowrap;flex:0 0 auto}
@@ -355,17 +356,23 @@ function toon(){
     $("#kpChips").innerHTML = perPc.size ? `<span class="chip ${KPC ? "" : "on"}" data-kp="">Alle</span>` + [...perPc].sort((a, b) => a[0].localeCompare(b[0])).map(([c, k]) => `<span class="chip ${KPC && KPC.has(c) ? "on" : ""}" data-kp="${c}">${c}<i>${k.size}</i></span>`).join("") : "";
     const pref = KPREF.replace(/\s/g, "").toUpperCase(), nKR = KR.length;
     KR = KR.filter(r => (!KPC || KPC.has(r.pc4)) && (!pref || r.postcode.replace(/\s/g, "").toUpperCase().startsWith(pref)));
-    if (KSORT) { const ho = {hoog:0, middel:1, laag:2, geen:2}, w = (r, k) => k === "hinder" ? ho[r.x.hinder] : k === "postcode" ? r.postcode.replace(/\s/g, "") : k === "soort" ? r.x.label : k === "titel" ? r.x.titel : k === "wanneer" ? (r.x.start || "9") : k === "nr" ? (parseInt(r.nr, 10) || 0) : String(r[k] || "");
+    // met echte ritten: standaard per rit (makkelijk bespreken in de huddle), daarbinnen hinder en postcode
+    const metRit = KR.some(r => r.rit !== "Zonder rit"), hoS = {hoog:0, middel:1, laag:2, geen:2}, ritNr = r => r.rit === "Zonder rit" ? "~" : r.rit.replace(/^Rit /, "");
+    if (!KSORT && metRit) KR.sort((a, b) => ritNr(a).localeCompare(ritNr(b), "nl", {numeric:true}) || hoS[a.x.hinder] - hoS[b.x.hinder] || a.postcode.replace(/\s/g, "").localeCompare(b.postcode.replace(/\s/g, "")));
+    const perRit = (!KSORT && metRit) || (KSORT && KSORT.k === "rit");
+    if (KSORT) { const ho = {hoog:0, middel:1, laag:2, geen:2}, w = (r, k) => k === "rit" ? ritNr(r) : k === "hinder" ? ho[r.x.hinder] : k === "postcode" ? r.postcode.replace(/\s/g, "") : k === "soort" ? r.x.label : k === "titel" ? r.x.titel : k === "wanneer" ? (r.x.start || "9") : k === "nr" ? (parseInt(r.nr, 10) || 0) : String(r[k] || "");
       KR.sort((a, b) => { const x = w(a, KSORT.k), y = w(b, KSORT.k), c = typeof x === "number" ? x - y : String(x).localeCompare(String(y), "nl", {numeric:true}); return KSORT.op ? c : -c; }); }
-    const kkol = [["klant","Transportcode"],["plaats","Plaats"],["straat","Straat"],["nr","Nr"],["postcode","Postcode"],["rit","Rit"],["hinder","Hinder"],["titel","Melding"],["wanneer","Wanneer"],["niveau","Match"]];
-    const kkop = kkol.map(([k, t]) => `<th data-ks="${k}" class="${KSORT && KSORT.k === k ? "s" + (KSORT.op ? "" : " op") : ""}">${t}</th>`).join("");
+    const kkol = [...(metRit ? [["rit","Rit"]] : []), ["klant","Transportcode"],["plaats","Plaats"],["straat","Straat"],["nr","Nr"],["postcode","Postcode"],["hinder","Hinder"],["titel","Melding"],["wanneer","Wanneer"],["niveau","Match"]];
+    const kkop = kkol.map(([k, t]) => `<th data-ks="${k}" class="${KSORT ? (KSORT.k === k ? "s" + (KSORT.op ? "" : " op") : "") : (metRit && k === "rit" ? "s" : !metRit && k === "hinder" ? "s" : "")}">${t}</th>`).join("");
+    const ritKop = r => { const z = KR.filter(x => x.rit === r.rit), h = z.filter(x => x.x.hinder === "hoog").length, n = new Set(z.map(x => x.klant)).size;
+      return `<tr class="ritkop"><td colspan="${kkol.length + 1}"><b>${esc(r.rit === "Zonder rit" ? "Zonder rit" : r.rit)}</b> · ${n} transportcode${n === 1 ? "" : "s"} · ${z.length} melding${z.length === 1 ? "" : "en"}${h ? ` · <b style="color:var(--red)">${h} hoog</b>` : ""}</td></tr>`; };
     const gefilterd = KPC || pref ? ` Postcodefilter: ${KR.length} van ${nKR} regels.` : "";
     $("#klantKol").innerHTML = G.kolommen.map((k, i) => `<option value="${i}" ${i === G.klantKolom ? "selected" : ""}>${String.fromCharCode(65 + (i % 26))}${i >= 26 ? "+" : ""}: ${esc(k || "(leeg)")}</option>`).join("");
     $("#fGebied").classList.toggle("on", GEBIED); $("#fHoek").classList.toggle("on", HOEK);
     const kl = new Set(KR.map(r => r.klant)), klS = new Set(KR.filter(r => r.niveau !== "gebied").map(r => r.klant)), klH = new Set(KR.filter(r => r.niveau === "dichtbij").map(r => r.klant));
     $("#klantUit").innerHTML = KR.length ? `<p class="meta"><b>${klS.size}</b> transportcode(s) met een melding in hun straat${HOEK ? ` of om de hoek (waarvan ${klH.size} alleen om de hoek)` : ""}${GEBIED ? `, <b>${kl.size}</b> in totaal incl. zelfde postcodegebied` : ""} op ${esc(fmtD(datum))}.${gefilterd}</p>
-      <div class="tw"><table><thead><tr>${kkop}<th title="Verwerkt">✓</th></tr></thead><tbody>${KR.map(r => `<tr class="${vr(r.x)}">
-        <td><b>${esc(r.klant || "?")}</b></td><td>${esc(r.plaats)}</td><td>${esc(r.straat)}</td><td>${esc(r.nr)}</td><td>${esc(r.postcode || r.pc4)}</td><td>${esc(r.rit === "Zonder rit" ? "–" : r.rit.replace(/^Rit /, ""))}</td>
+      <div class="tw"><table><thead><tr>${kkop}<th title="Verwerkt">✓</th></tr></thead><tbody>${KR.map((r, i) => `${perRit && (!i || KR[i - 1].rit !== r.rit) ? ritKop(r) : ""}<tr class="${vr(r.x)}">
+        ${metRit ? `<td><b>${esc(r.rit === "Zonder rit" ? "–" : r.rit.replace(/^Rit /, ""))}</b></td>` : ""}<td><b>${esc(r.klant || "?")}</b></td><td>${esc(r.plaats)}</td><td>${esc(r.straat)}</td><td>${esc(r.nr)}</td><td>${esc(r.postcode || r.pc4)}</td>
         <td><span class="h h-${r.x.hinder}">${r.x.hinder}</span></td><td>${esc(r.x.titel)}${nw(r.x)}<div class="meta">${esc(r.x.label)}</div></td><td>${esc(wanneer(r.x))}</td>
         <td>${r.niveau === "straat" ? "<b>straat</b>" : r.niveau === "dichtbij" ? `<b>om de hoek</b> · ${r.afstand} m` : "postcodegebied"}${r.x.url ? ` · <a href="${esc(r.x.url)}" target="_blank" rel="noopener noreferrer">bron</a>` : ""}</td><td>${vk(r.x)}</td></tr>`).join("")}</tbody></table></div>`
       : nKR ? `<div class="panel">Geen transportcodes in deze postcode. <button class="btn" id="kpWis">Postcodefilter wissen</button></div>`
@@ -431,8 +438,8 @@ function excel(){
   R.zonder.forEach(z => z.rijen.forEach(x => h.push([R.datum, z.plaatsen.join(", "), "", "gemeente-breed", x.hinder, x.label, x.titel, wanneer(x), ...nv(x), x.bron, x.url || ""])));
   const s = [["Plaats","PC4", ...R.gs, "Samen"], ...R.sync.map(r => [r.plaats, r.pc4, ...R.gs.map(g => r.diensten[g] ?? ""), r.samen])];
   const bladen = [{naam:"Hinder " + R.datum, rijen:h}, {naam:"Samenvoegen", rijen:s}];
-  if (KR.length) bladen.splice(1, 0, {naam:"Opdrachten", rijen:[["Transportcode","Plaats","Straat","Huisnummer","Postcode","Rit","Hinder","Soort","Melding","Wanneer","Match","Link"],
-    ...KR.map(r => [r.klant, r.plaats, r.straat, r.nr, r.postcode, r.rit === "Zonder rit" ? "" : r.rit.replace(/^Rit /, ""), r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.niveau === "dichtbij" ? `om de hoek (${r.afstand} m)` : r.niveau === "gebied" ? "postcodegebied" : "straat", r.x.url || ""])]});
+  if (KR.length) bladen.splice(1, 0, {naam:"Opdrachten", rijen:[["Rit","Transportcode","Plaats","Straat","Huisnummer","Postcode","Hinder","Soort","Melding","Wanneer","Match","Link"],
+    ...KR.map(r => [r.rit === "Zonder rit" ? "" : r.rit.replace(/^Rit /, ""), r.klant, r.plaats, r.straat, r.nr, r.postcode, r.x.hinder, r.x.label, r.x.titel, wanneer(r.x), r.niveau === "dichtbij" ? `om de hoek (${r.afstand} m)` : r.niveau === "gebied" ? "postcodegebied" : "straat", r.x.url || ""])]});
   const a = document.createElement("a"); a.href = URL.createObjectURL(X.schrijf(bladen));
   a.download = `planning-${R.datum}${FILTER ? "-filter" : ""}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }

@@ -3,6 +3,7 @@
 "use strict";
 const VERSIE = "2026-11-23";
 const NIEUW = [
+  ["2026-11-23", "Opdrachten met routenummers: standaard per rit gesorteerd (dan hinder, dan postcode), met een kopregel per rit. Handig voor de huddle. Excel volgt dezelfde volgorde."],
   ["2026-11-23", "Export met Plan-SRit (werkelijk routenummer) wordt herkend, met plaatsnaam en rijdag uit Aankomst ritstop; ook in de Routecheck."],
   ["2026-11-23", "Routenummer onder een andere kolomnaam (bijv. 'Werkelijk routenummer') wordt herkend of op inhoud geraden; bij 'Rit uit' kun je elke kolom kiezen. Plaats ook bij 'woonplaats'."],
   ["2026-11-23", "Ochtendexport zonder rit werkt: tab Opdrachten met per transportcode plaats, straat, huisnummer en hinder. Grafieken standaard uit (knop Grafieken)."],
