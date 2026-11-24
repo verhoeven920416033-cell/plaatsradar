@@ -1,8 +1,11 @@
 /* PlaatsRadar app-schil: navigatie, hulp, sneltoetsen, foutmelding, voorkeuren, versie. Geen netwerk. */
 (function (root, f) { if (typeof module === "object" && module.exports) module.exports = f(); else root.PR_App = f(); })(this, function () {
 "use strict";
-const VERSIE = "2026-11-23";
+const VERSIE = "2026-11-24";
 const NIEUW = [
+  ["2026-11-24", "Werkelijke planning printen per route: 'Print per route' zet elke rit op een eigen A4; 🖨 bij een rit print alleen die route."],
+  ["2026-11-24", "Werkelijke planning standaard alleen hoog (kortere briefing); middel en laag zet je zelf aan."],
+  ["2026-11-23", "Opdrachten: per lijst hoog / middel / laag aan en uit (met aantallen, wordt onthouden). Melding volledig leesbaar met soort, uitleg en bron; andere meldingen op dezelfde plek uitklapbaar."],
   ["2026-11-23", "Opdrachten: laad beide exports tegelijk. Links 'Opdrachten gedurende planning' (per postcode, alleen hoog), rechts 'Werkelijke planning' (per rit, geclusterd op postcode, hoog en middel). Knop: naast elkaar of één lijst. ⇄ zet een bestand in de andere lijst."],
   ["2026-11-23", "Opdrachten met routenummers: standaard per rit gesorteerd (dan hinder, dan postcode), met een kopregel per rit. Handig voor de huddle. Excel volgt dezelfde volgorde."],
   ["2026-11-23", "Export met Plan-SRit (werkelijk routenummer) wordt herkend, met plaatsnaam en rijdag uit Aankomst ritstop; ook in de Routecheck."],

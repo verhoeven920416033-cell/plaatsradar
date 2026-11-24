@@ -32,3 +32,11 @@ st = o.pc6_punten(uit, c, 1e9)
 d = json.loads(uit.read_text())
 assert st["compleet"] == 1 and d["5611"] == [54700, 514300, "AB", 10, 20, "AC", 0, 0], d
 print("nieuw + pc6 OK")
+
+# markten, kermissen en braderieen altijd hoog
+from ophalen import markten_hoog
+_its = [{"cat": "markt", "label": "Weekmarkt", "hinder": "laag"}, {"cat": "weg", "label": "Snelheidsbeperking (markt)", "hinder": "laag"},
+        {"cat": "kermis", "label": "Publicatie", "hinder": "middel"}, {"cat": "weg", "label": "Werkzaamheden", "hinder": "middel"},
+        {"cat": "evenement", "label": "Melding", "hinder": "laag"}]
+assert markten_hoog(_its) == 3 and [i["hinder"] for i in _its] == ["hoog", "hoog", "hoog", "middel", "laag"], _its
+print("markten hoog OK")

@@ -426,6 +426,19 @@ def parse_ndw(stream, gemeenten, now, horizon_end, stats):
     return out
 
 
+RE_ALTIJD_HOOG = re.compile(r"markt|kermis|braderie", re.I)
+
+
+def markten_hoog(items) -> int:
+    """Markten, kermissen en braderieën altijd hoge hinder: daar sta je met de wagen vast (eis planning)."""
+    n = 0
+    for it in items:
+        if it.get("hinder") != "hoog" and (it.get("cat") in ("markt", "kermis") or RE_ALTIJD_HOOG.search(it.get("label") or "")):
+            it["hinder"] = "hoog"
+            n += 1
+    return n
+
+
 def reverse_geocode(items, cache: Cache, max_calls=80):
     calls = 0
     for it in items:
@@ -1180,6 +1193,8 @@ def main():
             it["pts"] = [v for la, lo in pts[::stap][:16] for v in (round(lo * 1e4), round(la * 1e4))]
     log(f"  postcodes: {status['postcodes']}")
     status["nieuw"] = markeer_nieuw(items, cache, now)
+
+    status["markt_hoog"] = markten_hoog(items)
 
     order = {"hoog": 0, "middel": 1, "laag": 2, "geen": 3}
     items.sort(key=lambda x: (x["plaats"], order.get(x["hinder"], 9), x["start"] or "0"))
