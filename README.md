@@ -100,6 +100,6 @@ De token kan alleen workflows starten in deze repo. Lekt hij, trek hem in bij Gi
 - Gemeente-indeling NDW: op de bron ("Gemeente Arnhem"), anders dichtstbijzijnde gemeentecentrum (max. 15 km). Bij RWS-wegen op een gemeentegrens kan een melding bij de buurgemeente staan.
 
 ## Aankomsttijd, tijdvenster en "geen last" (Werkelijke planning)
-- **⏱ op aankomsttijd** (standaard aan): met kolom *Aankomst ritstop lossen* telt alleen hinder die rond de aankomst (±30 min) speelt.
+- Hinder telt voor de hele rijdag, niet per aankomsttijd: routes worden bij bijzonderheden anders gereden.
 - **⏰ Tijdvenster** per rit: aankomst buiten *Van Tijd*–*Tot Tijd*, of buiten de eigen lijst **Openingstijden** (`N31560 ma-vr 08:00-17:00; za 09:00-12:00; zo dicht`). Die lijst staat alleen in de browser van de planner (localStorage), nooit in de repo; delen via *Bewaar als bestand* / *Laden*.
 - **🚫 geen last**: melding niet meer tonen (120 dagen, alleen in die browser). Een weekmarkt geldt voor alle weken op die plek.
