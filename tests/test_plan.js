@@ -163,5 +163,7 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
   if (o.fout.length !== 1 || o.lijst.get("N2")[5].join() !== "09:00,12:00" || o.lijst.get("N2")[6] !== null || o.lijst.get("N2")[2].join() !== "08:00,17:00") fout(JSON.stringify(o.fout));
   if (P.tijdControle(b, o.lijst).map(x => x.soort).join() !== "open,afwijkend") fout(JSON.stringify(P.tijdControle(b, o.lijst)));
   if (P.tijdControle(a, o.lijst).map(x => x.soort).join() !== "venster,dicht") fout("dicht");
+  if (P.tijdControle({klant:"N2", wd:5, tijd:"", van:"", tot:""}, o.lijst).map(x => x.soort).join() !== "info") fout("info zonder tijd");
+  if (P.tijdControle({klant:"N1", wd:5, tijd:"", van:"", tot:""}, o.lijst).map(x => x.soort).join() !== "dicht") fout("dicht zonder tijd");
   console.log("tijd + openingstijden OK");
 }

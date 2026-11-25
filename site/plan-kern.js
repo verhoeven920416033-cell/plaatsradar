@@ -299,6 +299,7 @@ function tijdControle(st, open) {
     if (!w) uit.push({soort: "dicht", tekst: `Volgens eigen lijst gesloten op ${DAGK[wd]}`});
     else {
       if (t && (t < w[0] || t > w[1])) uit.push({soort: "open", tekst: `Aankomst ${t}, open ${DAGK[wd]} ${w[0]}–${w[1]} (eigen lijst)`});
+      if (!t && !st.van) uit.push({soort: "info", tekst: `Open ${DAGK[wd]} ${w[0]}–${w[1]} (eigen lijst): binnen dit venster plannen`});
       if (st.van && st.tot && (st.van !== w[0] || st.tot !== w[1])) uit.push({soort: "afwijkend", tekst: `Venster in systeem ${st.van}–${st.tot}, eigen lijst ${DAGK[wd]} ${w[0]}–${w[1]}`});
     }
   }
