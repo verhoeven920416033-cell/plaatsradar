@@ -1,8 +1,9 @@
 /* PlaatsRadar app-schil: navigatie, hulp, sneltoetsen, foutmelding, voorkeuren, versie. Geen netwerk. */
 (function (root, f) { if (typeof module === "object" && module.exports) module.exports = f(); else root.PR_App = f(); })(this, function () {
 "use strict";
-const VERSIE = "2026-11-24";
+const VERSIE = "2026-11-25";
 const NIEUW = [
+  ["2026-11-25", "Printen: elke route altijd op een eigen A4, ook met maar één of twee bijzonderheden. Geldt voor Print per route, 🖨 per rit én gewoon Ctrl+P. Om uit te delen bij de huddle."],
   ["2026-11-24", "Werkelijke planning printen per route: 'Print per route' zet elke rit op een eigen A4; 🖨 bij een rit print alleen die route."],
   ["2026-11-24", "Werkelijke planning standaard alleen hoog (kortere briefing); middel en laag zet je zelf aan."],
   ["2026-11-23", "Opdrachten: per lijst hoog / middel / laag aan en uit (met aantallen, wordt onthouden). Melding volledig leesbaar met soort, uitleg en bron; andere meldingen op dezelfde plek uitklapbaar."],

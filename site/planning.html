@@ -85,11 +85,14 @@ details.meer{margin-top:5px}details.meer summary{cursor:pointer;color:#003366;fo
 .codes{display:flex;flex-wrap:wrap;gap:3px;max-width:190px}.codes span{background:#eef2f7;border-radius:5px;padding:1px 6px;font:600 12px ui-monospace,monospace}
 #printvak{display:none}.prrit{float:right;padding:2px 8px;font-size:12px}
 @media print{body.prroute>*:not(#printvak){display:none!important}body.prroute #printvak{display:block}
-  .prpag{break-after:page;page-break-after:always;font-size:11.5pt}.prpag:last-child{break-after:auto;page-break-after:auto}
+  .prpag{display:block;break-before:page;page-break-before:always;font-size:11.5pt}.prpag:first-child{break-before:auto;page-break-before:auto}
+  #klantUit .ritsectie{display:block;break-before:page;page-break-before:always}#klantUit .opl:first-child .ritsectie:first-of-type{break-before:auto;page-break-before:auto}
+  #klantUit .ritkop2{font-size:16pt;border-bottom:2px solid #000}#klantUit .vkk{display:none}#klantUit .split{display:block}
   .prkop{border-bottom:2px solid #000;margin-bottom:8px;padding-bottom:4px}.prkop h2{margin:0;font-size:20pt}
   #printvak table{width:100%;border-collapse:collapse}#printvak th,#printvak td{border-bottom:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top}
   #printvak tr{break-inside:avoid}#printvak tr.ritkop td{background:#eee;font-weight:600}#printvak a{color:#000;text-decoration:none}#printvak details summary{display:none}
   #printvak .codes span{border:1px solid #999;background:none}#printvak .h{border:1px solid #000;color:#000;background:none}}
+.ritsectie{margin-bottom:10px}.ritkop2{background:#eef2f7;border:1px solid #d5dde8;border-bottom:0;border-radius:8px 8px 0 0;color:var(--navy);font-size:13px;padding:7px 10px}.ritsectie .tw{border-top-left-radius:0;border-top-right-radius:0}
 .tw tr.sep td{padding:0;border-top:2px solid #e3e8ef}.tw details summary{cursor:pointer}
 .tw tr.ritkop td{background:#eef2f7;border-top:2px solid #9fb0c3;color:var(--navy);font-size:13px;padding:6px 10px}
 .leeg{color:var(--mut);font-size:13px;padding:6px 0}
@@ -413,10 +416,12 @@ function toon(){
     const meldCel = c => eenMelding(c.m[0], true) + (c.m.length > 1 ? `<details class="meer"><summary>+${c.m.length - 1} andere melding${c.m.length > 2 ? "en" : ""} hier</summary>${c.m.slice(1).map(m => eenMelding(m, false)).join("")}</details>` : "");
     const t1 = `<div class="tw"><table class="kort"><thead><tr><th>Postcode</th><th>Transportcodes</th><th>Hinder</th><th>Melding</th><th title="Verwerkt">✓</th></tr></thead><tbody>${KR1.map(c => `<tr class="${vr(c.m[0].x)}">
       <td><b>${esc(c.postcode)}</b><div class="meta">${esc(c.plaats)}</div></td><td>${codes(c)}</td><td><span class="h h-${c.h}">${c.h}</span></td><td>${meldCel(c)}</td><td>${vk(c.m[0].x)}</td></tr>`).join("")}</tbody></table></div>`;
-    const ritKop2 = c => { const z = KR2.filter(x => x.rit === c.rit), h = z.filter(x => x.h === "hoog").length, n = z.reduce((t, x) => t + x.klanten.size, 0);
-      return `<tr class="ritkop"><td colspan="5"><button type="button" class="btn prrit geenprint" data-prrit="${esc(c.rit)}" title="Alleen deze route printen (eigen A4)">🖨 Print</button><b>${esc(c.rit)}</b> · ${z.length} postcode${z.length === 1 ? "" : "s"} · ${n} transportcode${n === 1 ? "" : "s"}${h ? ` · <b style="color:var(--red)">${h}× hoog</b>` : ""}</td></tr>`; };
-    const t2 = `<div class="tw"><table class="kort"><thead><tr><th>Postcode</th><th>Transportcodes</th><th>Hinder</th><th>Melding</th><th title="Verwerkt">✓</th></tr></thead>${KR2.map((c, i) => `${!i || KR2[i - 1].rit !== c.rit ? (i ? "</tbody>" : "") + `<tbody class="ritblok" data-rit="${esc(c.rit)}">` + ritKop2(c) : ""}<tr class="${vr(c.m[0].x)}">
-      <td><b>${esc(c.postcode)}</b><div class="meta">${esc(c.plaats)}</div></td><td>${codes(c)}</td><td><span class="h h-${c.h}">${c.h}</span></td><td>${meldCel(c)}</td><td>${vk(c.m[0].x)}</td></tr>`).join("")}${KR2.length ? "</tbody>" : ""}</table></div>`;
+    // werkelijke planning: per rit een eigen blok (eigen tabel) → op papier altijd een nieuwe A4 per route
+    const ritten = []; KR2.forEach(c => { const l = ritten[ritten.length - 1]; if (l && l.rit === c.rit) l.c.push(c); else ritten.push({rit:c.rit, c:[c]}); });
+    const kopW = `<thead><tr><th>Postcode</th><th>Transportcodes</th><th>Hinder</th><th>Melding</th><th class="vkk" title="Verwerkt">✓</th></tr></thead>`;
+    const t2 = ritten.map(({rit, c}) => { const h = c.filter(x => x.h === "hoog").length, n = c.reduce((t, x) => t + x.klanten.size, 0);
+      return `<div class="ritsectie" data-rit="${esc(rit)}"><div class="ritkop2"><button type="button" class="btn prrit geenprint" data-prrit="${esc(rit)}" title="Alleen deze route printen (eigen A4)">🖨 Print</button><b class="ritnaam">${esc(rit)}</b> · ${c.length} postcode${c.length === 1 ? "" : "s"} · ${n} transportcode${n === 1 ? "" : "s"}${h ? ` · <b style="color:var(--red)">${h}× hoog</b>` : ""}<span class="prmeta"></span></div>
+        <div class="tw"><table class="kort">${kopW}<tbody>${c.map(x => `<tr class="${vr(x.m[0].x)}"><td><b>${esc(x.postcode)}</b><div class="meta">${esc(x.plaats)}</div></td><td>${codes(x)}</td><td><span class="h h-${x.h}">${x.h}</span></td><td>${meldCel(x)}</td><td class="vkk">${vk(x.m[0].x)}</td></tr>`).join("")}</tbody></table></div></div>`; }).join("");
     const beide = SETS.opdr && SETS.werk, modus = beide ? OPMODUS : SETS.werk ? "werk" : "opdr";
     const knop = (m, t) => `<button type="button" class="tab ${modus === m ? "on" : ""}" data-opm="${m}">${t}</button>`;
     $("#klantUit").innerHTML = (beide ? `<div class="row geenprint" style="gap:6px;margin-bottom:10px"><span class="lbl">Lijst</span>${knop("beide", "Naast elkaar")}${knop("opdr", `Opdrachten gedurende planning <i>${KR1.length}</i>`)}${knop("werk", `Werkelijke planning <i>${KR2.length}</i>`)}</div>` : "") +
@@ -550,18 +555,16 @@ $("#excel").addEventListener("click", excel);
 $("#print").addEventListener("click", () => window.print());
 // printen per route: elke rit op een eigen A4, met kop (rit, rijdag, hinderniveaus)
 function printRoutes(rit){
-  const tab = document.querySelector("#klantUit .ritblok") && document.querySelector("#klantUit .ritblok").closest("table"); if (!tab) return;
-  const blokken = [...tab.querySelectorAll("tbody.ritblok")].filter(b => rit === "*" || b.dataset.rit === rit); if (!blokken.length) return;
+  const blokken = [...document.querySelectorAll("#klantUit .ritsectie")].filter(b => rit === "*" || b.dataset.rit === rit); if (!blokken.length) return;
+  document.getElementById("printvak")?.remove();
   const vak = document.createElement("div"); vak.id = "printvak";
   const dag = fmtD($("#datum").value), niv = [...HF.werk].join(" + ") || "—", nu = new Date().toLocaleString("nl-NL", {dateStyle:"short", timeStyle:"short"});
-  vak.innerHTML = blokken.map(b => { const t = b.cloneNode(true); t.querySelectorAll(".prrit,.vk").forEach(e => e.remove()); t.querySelectorAll("details").forEach(d => d.open = true);
-    return `<section class="prpag"><div class="prkop"><h2>${esc(b.dataset.rit)}</h2><div>Werkelijke planning · rijdag ${esc(dag)} · hinder: ${esc(niv)}</div><div class="meta">PlaatsRadar · geprint ${esc(nu)} · vertrouwelijk, na gebruik vernietigen</div></div>
-      <table class="kort"><thead><tr><th>Postcode</th><th>Transportcodes</th><th>Hinder</th><th>Melding</th></tr></thead>${t.outerHTML}</table></section>`; }).join("");
-  vak.querySelectorAll("td:last-child").forEach(td => { if (!td.querySelector(".mld") && !td.closest("tr.ritkop")) td.remove(); });
-  vak.querySelectorAll("tr.ritkop td").forEach(td => td.colSpan = 4);
+  vak.innerHTML = blokken.map(b => { const t = b.querySelector("table").cloneNode(true); t.querySelectorAll(".vkk").forEach(e => e.remove()); t.querySelectorAll("details").forEach(d => d.open = true);
+    const sam = b.querySelector(".ritkop2").textContent.replace("🖨 Print", "").replace(b.dataset.rit, "").replace(/^\s*·\s*/, "").trim();
+    return `<section class="prpag"><div class="prkop"><h2>${esc(b.dataset.rit)}</h2><div>${esc(sam)}</div><div>Werkelijke planning · rijdag ${esc(dag)} · hinder: ${esc(niv)}</div><div class="meta">PlaatsRadar · geprint ${esc(nu)} · vertrouwelijk, na gebruik vernietigen</div></div>${t.outerHTML}</section>`; }).join("");
   document.body.appendChild(vak); document.body.classList.add("prroute");
   const klaar = () => { document.body.classList.remove("prroute"); vak.remove(); window.removeEventListener("afterprint", klaar); };
-  window.addEventListener("afterprint", klaar); window.print(); setTimeout(() => { if (!matchMedia("print").matches && document.body.contains(vak)) klaar(); }, 1500);
+  window.addEventListener("afterprint", klaar); window.print();
 }
 document.addEventListener("click", e => { const b = e.target.closest("[data-prrit]"); if (b) printRoutes(b.dataset.prrit); });
 $("#wis").addEventListener("click", () => { $("#kies").hidden = true; SETS = {opdr:null, werk:null}; $("#stappen").hidden = false; $("#drop").classList.remove("klein"); G = null; R = null; RUW = null; KR = []; $("#uit").hidden = true; ["hinder","sync","kpis","tabel","klantUit"].forEach(i => $("#"+i).innerHTML = ""); fout(""); });
