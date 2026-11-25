@@ -147,3 +147,21 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
   if (!o || o.ritKop !== "Plan-SRit" || o.stops.length !== 3 || o.stops[0].plaats !== "TILBURG") fout("routecheck " + JSON.stringify(o && o.stops[0]));
   console.log("Plan-SRit OK");
 }
+
+// aankomsttijd, tijdvenster en eigen openingstijden (gegevens verzonnen)
+{
+  const P = require("../site/plan-kern.js"), fout = m => { console.error("tijd FOUT", m); process.exit(1); };
+  if (P.tijdVan("46336.395833333336") !== "09:30" || P.tijdVan("10-11-2026 09:30") !== "09:30" || P.tijdVan("46336") !== "" || P.tijdVan("0.5") !== "12:00") fout("tijdVan");
+  const kop = ["Ritkenmerk 2","Volgordenr","Plan-SRit","Laad-losplaats kenmerk","Losplaats servicetijdtoeslag","Klantnaam","Laad-losplaats straat","Laad-losplaats huisnr.","Postcode","Plaatsnaam","Aankomst ritstop lossen","Van Tijd","Tot Tijd","Status"];
+  // za 14-11-2026 = 46340
+  const g = P.leesGeogroepen([kop, ["1","1","6634","N1","","x","Kerkstraat","1","5014 HG","TILBURG","46340.3125","46340.333333333336","46340.708333333336","Gepland"],
+                                   ["1","2","6634","N2","","x","Kerkstraat","2","5014 HK","TILBURG","46340.5416666667","46340.333333333336","46340.708333333336","Gepland"]], {});
+  const a = g.stops[0], b = g.stops[1];
+  if (a.tijd !== "07:30" || a.van !== "08:00" || a.tot !== "17:00" || a.wd !== 5) fout(JSON.stringify(a));
+  if (P.tijdControle(a, null).map(x => x.soort).join() !== "venster") fout("venster");
+  const o = P.leesOpeningstijden("N2 ma-vr 08:00-17:00; za 09:00-12:00; zo dicht\nN1 za dicht\nfout");
+  if (o.fout.length !== 1 || o.lijst.get("N2")[5].join() !== "09:00,12:00" || o.lijst.get("N2")[6] !== null || o.lijst.get("N2")[2].join() !== "08:00,17:00") fout(JSON.stringify(o.fout));
+  if (P.tijdControle(b, o.lijst).map(x => x.soort).join() !== "open,afwijkend") fout(JSON.stringify(P.tijdControle(b, o.lijst)));
+  if (P.tijdControle(a, o.lijst).map(x => x.soort).join() !== "venster,dicht") fout("dicht");
+  console.log("tijd + openingstijden OK");
+}

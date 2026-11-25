@@ -75,5 +75,18 @@ function verwerkt() {
   return {has: id => !!d[id], wissel: id => { if (d[id]) delete d[id]; else d[id] = Date.now(); bewaar(); return !!d[id]; }, aantal: () => Object.keys(d).length};
 }
 
-return {maakPc6, plek, pcSleutel, punten, afstand, tijdOk, isNieuw, verwerkt};
+/** Weggedrukt ("geen last"): melding niet meer tonen in de opdrachtenlijsten. Alleen in deze browser, 120 dagen.
+    Een weekmarkt telt als reeks: alle weken van dezelfde markt op dezelfde plek. */
+const SG = "plaatsradar-genegeerd";
+const negeerSleutel = x => x.cat === "markt" && /^markt-/.test(x.id) ? x.id.replace(/-\d{4}-\d{2}-\d{2}$/, "") : x.id;
+function genegeerd() {
+  let d = {};
+  try { d = JSON.parse(localStorage.getItem(SG) || "{}") || {}; } catch { d = {}; }
+  const grens = Date.now() - 120 * 864e5;
+  for (const k in d) if (!(d[k] > grens)) delete d[k];
+  const bewaar = () => { try { localStorage.setItem(SG, JSON.stringify(d)); } catch {} };
+  return {has: x => !!d[negeerSleutel(x)], wissel: x => { const k = negeerSleutel(x); if (d[k]) delete d[k]; else d[k] = Date.now(); bewaar(); return !!d[k]; }, aantal: () => Object.keys(d).length, sleutel: negeerSleutel};
+}
+
+return {maakPc6, plek, pcSleutel, punten, afstand, tijdOk, isNieuw, verwerkt, genegeerd, negeerSleutel};
 });

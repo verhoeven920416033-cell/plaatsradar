@@ -3,6 +3,7 @@
 "use strict";
 const VERSIE = "2026-11-25";
 const NIEUW = [
+  ["2026-11-25", "Werkelijke planning: hinder alleen rond de aankomsttijd van de stop (⏱), per rit een blok ⏰ Tijdvenster (aankomst buiten venster of buiten eigen openingstijden, ook zaterdag), en 🚫 geen last om een melding weg te drukken. Ook op het routeblaadje en in Excel."],
   ["2026-11-25", "Printen: elke route altijd op een eigen A4, ook met maar één of twee bijzonderheden. Geldt voor Print per route, 🖨 per rit én gewoon Ctrl+P. Om uit te delen bij de huddle."],
   ["2026-11-24", "Werkelijke planning printen per route: 'Print per route' zet elke rit op een eigen A4; 🖨 bij een rit print alleen die route."],
   ["2026-11-24", "Werkelijke planning standaard alleen hoog (kortere briefing); middel en laag zet je zelf aan."],

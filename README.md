@@ -98,3 +98,8 @@ De token kan alleen workflows starten in deze repo. Lekt hij, trek hem in bij Gi
 - Lokaal testen: `python3 tests/test_gemeenteblad.py && python3 tests/test_ndw.py`, dan `python3 scripts/ophalen.py` en daarna `python3 -m http.server -d site` openen op http://localhost:8000.
 - De eerste runs lezen 250 publicaties per run; tot die klaar zijn kan bij sommige evenementen "datum onbekend" staan. Het Gemeenteblad wordt per gemeente elke 6 uur bevraagd, NDW elke run.
 - Gemeente-indeling NDW: op de bron ("Gemeente Arnhem"), anders dichtstbijzijnde gemeentecentrum (max. 15 km). Bij RWS-wegen op een gemeentegrens kan een melding bij de buurgemeente staan.
+
+## Aankomsttijd, tijdvenster en "geen last" (Werkelijke planning)
+- **⏱ op aankomsttijd** (standaard aan): met kolom *Aankomst ritstop lossen* telt alleen hinder die rond de aankomst (±30 min) speelt.
+- **⏰ Tijdvenster** per rit: aankomst buiten *Van Tijd*–*Tot Tijd*, of buiten de eigen lijst **Openingstijden** (`N31560 ma-vr 08:00-17:00; za 09:00-12:00; zo dicht`). Die lijst staat alleen in de browser van de planner (localStorage), nooit in de repo; delen via *Bewaar als bestand* / *Laden*.
+- **🚫 geen last**: melding niet meer tonen (120 dagen, alleen in die browser). Een weekmarkt geldt voor alle weken op die plek.

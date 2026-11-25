@@ -6,13 +6,22 @@ const ja = v => /^(ja|j|yes|y|x|1|waar|true)$/i.test(String(v ?? "").trim());
 const kern = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
 
 /** Optimiser-export (SRit + Laad-losplaats postcode/plaats + Vroegste laden) -> gebieden per rit, postcodegebied en rijdag.
-    Alleen rit, klantcode, adres, postcode, plaats en datum worden gelezen; naam, waarde en tijden niet. */
+    Alleen rit, klantcode, adres, postcode, plaats, datum, aankomsttijd en tijdvenster worden gelezen; naam en waarde niet. */
 function datumVan(v) {
   const t = String(v ?? "").trim();
   if (/^\d+(\.\d+)?$/.test(t) && +t > 30000) return new Date(Date.UTC(1899, 11, 30) + Math.floor(+t) * 864e5).toISOString().slice(0, 10);
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t) || /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/.exec(t);
   return !m ? "" : m[1].length === 4 ? `${m[1]}-${m[2]}-${m[3]}` : `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
 }
+/** Tijd "HH:MM" uit een Excel-getal (fractie van de dag), "dd-mm-jjjj uu:mm" of "uu:mm". Leeg als er geen tijd in staat. */
+function tijdVan(v) {
+  const t = String(v ?? "").trim(); if (!t) return "";
+  if (/^\d+(\.\d+)?$/.test(t)) { const f = +t % 1; if (!f && +t >= 1) return ""; const m = Math.round(f * 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
+  const m = /(\d{1,2})[:.](\d{2})(?::\d{2})?\s*$/.exec(t) || /T(\d{2}):(\d{2})/.exec(t);
+  return m && +m[1] < 24 ? m[1].padStart(2, "0") + ":" + m[2] : "";
+}
+const TIJD = {aankomst: /aankomst\s*(rit)?stop|^aankomst(\s*tijd)?$|^eta$/i, van: /^(van|begin|open)\s*tijd$|^venster\s*van$|^tijdvenster\s*van$/i, tot: /^(tot|eind|sluit)\s*tijd$|^venster\s*tot$|^tijdvenster\s*tot$/i};
+
 // Routekolommen in de optimiser-export. Gepland gaat voor stam: dat is wat er die dag echt rijdt.
 const RIT_GEPLAND = /^(g\.?\s?rit|geplande?\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?gepland\)?|route\s*\(?gepland\)?|planned\s*(trip|route)|plan\s*(rit|route))$/i;
 const RIT_STAM = /^(s\.?\s?rit|stam\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?stam\)?|route\s*\(?stam\)?|master\s*route)$/i;
@@ -57,7 +66,8 @@ function leesOptimiserPlan(rijen, opt) {
   const kies = (n, standaard) => Number.isInteger(m0[n]) ? m0[n] : Number.isInteger(opt[n + "Kolom"]) ? opt[n + "Kolom"] : standaard;
   const zelfRit = Number.isInteger(m0.rit) || Number.isInteger(opt.ritKolom);
   const c = {rit: kies("rit", ritOpties.length ? ritOpties[0].i : -1), pc: kies("pc", ci(KOL.pc)), plaats: kies("plaats", ci(KOL.plaats)),
-    straat: kies("straat", ci(KOL.straat)), nr: kies("nr", ci(KOL.nr)), datum: kies("datum", ci(KOL.datum)), klant: kies("klant", ci(KOL.klant))};
+    straat: kies("straat", ci(KOL.straat)), nr: kies("nr", ci(KOL.nr)), datum: kies("datum", ci(KOL.datum)), klant: kies("klant", ci(KOL.klant)),
+    aankomst: ci(TIJD.aankomst), van: ci(TIJD.van), tot: ci(TIJD.tot)};
   if (c.klant < 0 && !Number.isInteger(m0.klant) && kolommen.length > 4 && /kenmerk/i.test(kolommen[4])) c.klant = 4;  // kolom E in de standaardexport
   const kiesFout = t => { const e = new Error(t + " Kies hieronder zelf de kolommen."); e.kiezen = true; return e; };
   if (c.pc < 0) throw kiesFout("Geen postcodekolom gevonden.");
@@ -80,7 +90,8 @@ function leesOptimiserPlan(rijen, opt) {
     if (!per.has(key)) per.set(key, {groep, plaats: c.plaats >= 0 ? kopTekst(r[c.plaats]) : "", van: m[1], tot: m[1], pc4: [m[1]], dagen: Array(7).fill(false)});
     const g = per.get(key); if (wd < 0) g.dagen.fill(true); else g.dagen[wd] = true;
     const st = {rit: groep, klant: c.klant >= 0 ? kopTekst(r[c.klant]) : "", straat: c.straat >= 0 ? kopTekst(r[c.straat]) : "", nr: c.nr >= 0 ? kopTekst(r[c.nr]) : "",
-      postcode: pc.replace(/^[A-Z]+\s+(?=\d)/, ""), pc4: m[1], plaats: c.plaats >= 0 ? kopTekst(r[c.plaats]) : "", datum: d, wd};
+      postcode: pc.replace(/^[A-Z]+\s+(?=\d)/, ""), pc4: m[1], plaats: c.plaats >= 0 ? kopTekst(r[c.plaats]) : "", datum: d, wd,
+      tijd: c.aankomst >= 0 ? tijdVan(r[c.aankomst]) : "", van: c.van >= 0 ? tijdVan(r[c.van]) : "", tot: c.tot >= 0 ? tijdVan(r[c.tot]) : ""};
     const sk = [st.rit, st.klant, st.straat, st.nr, st.postcode, d].join("|");
     if (!gezien.has(sk)) { gezien.add(sk); stops.push(st); }
   }
@@ -255,5 +266,44 @@ function synchronisatie(gebieden, groepen, f) {
   }
   return uit.filter(r => !f || pcIn(f, r.pc4) || tekstIn(f, r.plaats)).sort((a, b) => a.plaats.localeCompare(b.plaats) || a.pc4.localeCompare(b.pc4));
 }
-return {DAGEN, KORT, maakFilter, leesGeogroepen, leesOptimiserPlan, ritKolommen, waarschijnlijkeKop, klantHinder, straatKern, planDag, synchronisatie, weekdag, actief};
+/** Eigen lijst openingstijden (alleen op deze computer). Per regel: klantcode, dan dagen en tijden.
+    Voorbeeld: "N31560 ma-vr 08:00-17:00; za 09:00-12:00; zo dicht". Dagindex 0 = maandag. */
+const DAGK = ["ma", "di", "wo", "do", "vr", "za", "zo"];
+function leesOpeningstijden(tekst) {
+  const m = new Map(), fout = [];
+  String(tekst || "").split(/\r?\n/).forEach((regel, n) => {
+    const t = regel.replace(/#.*/, "").trim(); if (!t) return;
+    const [, klant, rest] = /^(\S+)\s+(.*)$/.exec(t) || []; if (!klant) { fout.push(`regel ${n + 1}: geen tijden`); return; }
+    const dagen = m.get(klant.toUpperCase()) || {};
+    rest.split(/[;|]/).forEach(deel => {
+      const d = deel.trim().toLowerCase(); if (!d) return;
+      const mt = /^([a-z,\s-]+?)\s+(dicht|gesloten|(\d{1,2})[:.](\d{2})\s*[-–]\s*(\d{1,2})[:.](\d{2}))$/.exec(d);
+      if (!mt) { fout.push(`regel ${n + 1}: "${deel.trim()}" niet begrepen`); return; }
+      const idx = new Set();
+      mt[1].replace(/\s/g, "").split(",").forEach(stuk => { const [a, b] = stuk.split("-"), i = DAGK.indexOf(a), j = b ? DAGK.indexOf(b) : i;
+        if (i < 0 || j < 0) { fout.push(`regel ${n + 1}: dag "${stuk}" onbekend`); return; } for (let k = i; ; k = (k + 1) % 7) { idx.add(k); if (k === j) break; } });
+      const w = mt[3] ? [mt[3].padStart(2, "0") + ":" + mt[4], mt[5].padStart(2, "0") + ":" + mt[6]] : null;
+      idx.forEach(i => { dagen[i] = w; });
+    });
+    m.set(klant.toUpperCase(), dagen);
+  });
+  return {lijst: m, fout};
+}
+/** Tijdcontrole van één stop: aankomst buiten het venster uit de export of buiten de eigen openingstijden. */
+function tijdControle(st, open) {
+  const uit = [], t = st.tijd, wd = Number.isInteger(st.wd) && st.wd >= 0 ? st.wd : -1;
+  if (t && st.van && st.tot && st.van !== st.tot && (t < st.van || t > st.tot)) uit.push({soort: "venster", tekst: `Aankomst ${t} buiten venster ${st.van}–${st.tot}`});
+  const eigen = open && st.klant ? open.get(String(st.klant).toUpperCase()) : null;
+  if (eigen && wd >= 0 && wd in eigen) {
+    const w = eigen[wd];
+    if (!w) uit.push({soort: "dicht", tekst: `Volgens eigen lijst gesloten op ${DAGK[wd]}`});
+    else {
+      if (t && (t < w[0] || t > w[1])) uit.push({soort: "open", tekst: `Aankomst ${t}, open ${DAGK[wd]} ${w[0]}–${w[1]} (eigen lijst)`});
+      if (st.van && st.tot && (st.van !== w[0] || st.tot !== w[1])) uit.push({soort: "afwijkend", tekst: `Venster in systeem ${st.van}–${st.tot}, eigen lijst ${DAGK[wd]} ${w[0]}–${w[1]}`});
+    }
+  }
+  return uit;
+}
+
+return {DAGEN, KORT, maakFilter, tijdVan, leesOpeningstijden, tijdControle, leesGeogroepen, leesOptimiserPlan, ritKolommen, waarschijnlijkeKop, klantHinder, straatKern, planDag, synchronisatie, weekdag, actief};
 });
