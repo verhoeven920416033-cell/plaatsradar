@@ -165,5 +165,9 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
   if (P.tijdControle(a, o.lijst).map(x => x.soort).join() !== "venster,dicht") fout("dicht");
   if (P.tijdControle({klant:"N2", wd:5, tijd:"", van:"", tot:""}, o.lijst).map(x => x.soort).join() !== "info") fout("info zonder tijd");
   if (P.tijdControle({klant:"N1", wd:5, tijd:"", van:"", tot:""}, o.lijst).map(x => x.soort).join() !== "dicht") fout("dicht zonder tijd");
+  // 15 min speling, 00:01–00:00 = hele dag
+  const c = (tijd, van, tot) => P.tijdControle({tijd, van, tot, wd:-1}, null).length;
+  if (c("08:40", "00:01", "00:00") || c("09:59", "10:00", "17:00") || c("11:59", "12:00", "18:00") || c("17:15", "10:00", "17:00")) fout("speling/hele dag");
+  if (!c("09:44", "10:00", "17:00") || !c("17:16", "10:00", "17:00") || !c("23:30", "10:00", "00:00") === false) fout("buiten");
   console.log("tijd + openingstijden OK");
 }

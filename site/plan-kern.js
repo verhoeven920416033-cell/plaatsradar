@@ -290,17 +290,24 @@ function leesOpeningstijden(tekst) {
   return {lijst: m, fout};
 }
 /** Tijdcontrole van één stop: aankomst buiten het venster uit de export of buiten de eigen openingstijden. */
+const SPELING = 15;  // minuten speling rond het venster
+const minuut = t => +t.slice(0, 2) * 60 + +t.slice(3);
+/** Venster als minuten; "tot" 00:00 (of vóór "van") = einde van de dag (23:59). 00:00/00:01–23:59 = hele dag. */
+function venster(van, tot) { const a = minuut(van), b0 = minuut(tot), b = b0 <= a ? 1439 : b0; return {a, b, heleDag: a <= 1 && b >= 1439}; }
+const buiten = (t, van, tot) => { const v = venster(van, tot); if (v.heleDag) return false; const m = minuut(t); return m < v.a - SPELING || m > v.b + SPELING; };
+const toonTot = (van, tot) => minuut(tot) <= minuut(van) ? "23:59" : tot;
 function tijdControle(st, open) {
   const uit = [], t = st.tijd, wd = Number.isInteger(st.wd) && st.wd >= 0 ? st.wd : -1;
-  if (t && st.van && st.tot && st.van !== st.tot && (t < st.van || t > st.tot)) uit.push({soort: "venster", tekst: `Aankomst ${t} buiten venster ${st.van}–${st.tot}`});
+  if (t && st.van && st.tot && buiten(t, st.van, st.tot)) uit.push({soort: "venster", tekst: `Aankomst ${t} buiten venster ${st.van}–${toonTot(st.van, st.tot)} (meer dan ${SPELING} min)`});
   const eigen = open && st.klant ? open.get(String(st.klant).toUpperCase()) : null;
   if (eigen && wd >= 0 && wd in eigen) {
     const w = eigen[wd];
     if (!w) uit.push({soort: "dicht", tekst: `Volgens eigen lijst gesloten op ${DAGK[wd]}`});
     else {
-      if (t && (t < w[0] || t > w[1])) uit.push({soort: "open", tekst: `Aankomst ${t}, open ${DAGK[wd]} ${w[0]}–${w[1]} (eigen lijst)`});
+      if (t && buiten(t, w[0], w[1])) uit.push({soort: "open", tekst: `Aankomst ${t}, open ${DAGK[wd]} ${w[0]}–${w[1]} (eigen lijst)`});
       if (!t && !st.van) uit.push({soort: "info", tekst: `Open ${DAGK[wd]} ${w[0]}–${w[1]} (eigen lijst): binnen dit venster plannen`});
-      if (st.van && st.tot && (st.van !== w[0] || st.tot !== w[1])) uit.push({soort: "afwijkend", tekst: `Venster in systeem ${st.van}–${st.tot}, eigen lijst ${DAGK[wd]} ${w[0]}–${w[1]}`});
+      const sv = st.van && st.tot ? venster(st.van, st.tot) : null, ev = venster(w[0], w[1]);
+      if (sv && !sv.heleDag && (sv.a !== ev.a || sv.b !== ev.b)) uit.push({soort: "afwijkend", tekst: `Venster in systeem ${st.van}–${st.tot}, eigen lijst ${DAGK[wd]} ${w[0]}–${w[1]}`});
     }
   }
   return uit;
