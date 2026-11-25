@@ -87,7 +87,7 @@ details.meer{margin-top:5px}details.meer summary{cursor:pointer;color:#003366;fo
 @media print{body.prroute>*:not(#printvak){display:none!important}body.prroute #printvak{display:block}
   .prpag{display:block;break-before:page;page-break-before:always;font-size:11.5pt}.prpag:first-child{break-before:auto;page-break-before:auto}
   #klantUit .ritsectie{display:block;break-before:page;page-break-before:always}#klantUit .opl:first-child .ritsectie:first-of-type{break-before:auto;page-break-before:auto}
-  #klantUit .ritkop2{font-size:16pt;border-bottom:2px solid #000}#klantUit .vkk{display:none}#klantUit .split{display:block}
+  #klantUit .ritkop2{font-size:16pt;border-bottom:2px solid #000}#klantUit .vkk,#klantUit .tptw,#klantUit .tpk,#klantUit .alleentijd{display:none!important}#klantUit .split{display:block}
   .prkop{border-bottom:2px solid #000;margin-bottom:8px;padding-bottom:4px}.prkop h2{margin:0;font-size:20pt}
   #printvak table{width:100%;border-collapse:collapse}#printvak th,#printvak td{border-bottom:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top}
   #printvak tr{break-inside:avoid}#printvak tr.ritkop td{background:#eee;font-weight:600}#printvak a{color:#000;text-decoration:none}#printvak details summary{display:none}
@@ -209,7 +209,7 @@ if (pv.tab) TAB = pv.tab; if (pv.fh && pv.fh.length) FH = new Set(pv.fh); if (pv
 let GRAF = pv.graf === true, OPMODUS = pv.opmodus || "beide";
 // hinderniveaus per lijst aan/uit (laag = laag + geen); standaard beide lijsten alleen hoog (korte briefing)
 const HNIV = ["hoog", "middel", "laag"], hn = x => x.hinder === "geen" ? "laag" : x.hinder;
-let TOONWEG = false;
+let TOONWEG = false, TOONTIJD = pv.toontijd !== false;
 const NG = H.genegeerd(), OPEN_K = "plaatsradar-openingstijden";
 const leesOpenTekst = () => { try { return localStorage.getItem(OPEN_K) || ""; } catch { return ""; } };
 let OPEN = K.leesOpeningstijden(leesOpenTekst());
@@ -428,7 +428,7 @@ function toon(){
     const match = (n, a) => n === "straat" ? "<b>straat</b>" : n === "dichtbij" ? `om de hoek · ${a} m` : "postcodegebied";
     const kaartje = (k, titel, uitleg, n, inhoud) => { const st = SETS[k];
       return `<section class="krt opl"><div class="opk"><div><h3>${titel}</h3><p class="sub">${st ? `${esc(st.naam)} · ${uitleg}` : "Nog geen bestand: sleep de export in het vak bovenaan."}</p></div>
-        ${st ? `<div class="row" style="gap:6px">${HNIV.map(h => `<span class="chip hc-${h} ${HF[k].has(h) ? "on" : ""}" data-hf="${k}:${h}" title="${h} aan/uit · getal = transportcodes met deze hinder">${h}<i>${HT[k][h] ? HT[k][h].size : 0}</i></span>`).join("")}<span class="sp"></span>${NW[k].size ? `<span class="chip ${TOONWEG ? "on" : ""}" data-toonweg="1" title="Weggedrukte meldingen (geen last) tonen">🚫 ${NW[k].size} weggedrukt</span>` : ""}${k === "werk" || !SETS.werk ? `<button class="btn" type="button" data-open="1" title="Eigen lijst openingstijden (alleen op deze computer)">⏰ Openingstijden${OPEN.lijst.size ? ` <i>${OPEN.lijst.size}</i>` : ""}</button>` : ""}${k === "werk" && n ? `<button class="btn" type="button" data-prrit="*" title="Elke route op een eigen A4">🖨 Print per route</button>` : ""}<button class="btn" type="button" data-wissel="${k}" title="Dit bestand in de andere lijst zetten">⇄ ${k === "opdr" ? "is werkelijke planning" : "is opdrachtenlijst"}</button><button class="btn" type="button" data-weg="${k}" title="Bestand uit deze lijst halen">×</button></div>` : ""}</div>
+        ${st ? `<div class="row" style="gap:6px">${HNIV.map(h => `<span class="chip hc-${h} ${HF[k].has(h) ? "on" : ""}" data-hf="${k}:${h}" title="${h} aan/uit · getal = transportcodes met deze hinder">${h}<i>${HT[k][h] ? HT[k][h].size : 0}</i></span>`).join("")}<span class="sp"></span>${NW[k].size ? `<span class="chip ${TOONWEG ? "on" : ""}" data-toonweg="1" title="Weggedrukte meldingen (geen last) tonen">🚫 ${NW[k].size} weggedrukt</span>` : ""}${k === "werk" || !SETS.werk ? `<span class="chip ${TOONTIJD ? "on" : ""}" data-toontijd="1" title="Venstertijden en openingstijden tonen (alleen voor de planning; gaan nooit mee op het routeblaadje)">⏰ Venstertijden ${TOONTIJD ? "aan" : "uit"}</span>` : ""}${k === "werk" || !SETS.werk ? `<button class="btn" type="button" data-open="1" title="Eigen lijst openingstijden (alleen op deze computer)">⏰ Openingstijden${OPEN.lijst.size ? ` <i>${OPEN.lijst.size}</i>` : ""}</button>` : ""}${k === "werk" && n ? `<button class="btn" type="button" data-prrit="*" title="Elke route op een eigen A4">🖨 Print per route</button>` : ""}<button class="btn" type="button" data-wissel="${k}" title="Dit bestand in de andere lijst zetten">⇄ ${k === "opdr" ? "is werkelijke planning" : "is opdrachtenlijst"}</button><button class="btn" type="button" data-weg="${k}" title="Bestand uit deze lijst halen">×</button></div>` : ""}</div>
         ${st ? (n ? inhoud : `<div class="leeg" style="padding:10px 0">Geen ${HF[k].size ? [...HF[k]].join("/") : "(kies een niveau)"} hinder bij deze opdrachten op ${esc(fmtD(datum))}${FILTER || KPC || pref ? " binnen dit filter" : ""}.</div>`) : ""}</section>`; };
     const codes = c => `<div class="codes">${[...c.klanten].map(([k, a]) => `<span title="${esc(a)}">${esc(k)}</span>`).join("")}</div>`;
     const uitleg = x => { const t = String(x.toelichting || "").replace(/\s+/g, " ").trim(); return t && !x.titel.includes(t) ? (t.length > 220 ? t.slice(0, 218) + "…" : t) : ""; };
@@ -438,28 +438,29 @@ function toon(){
     const meldCel = c => eenMelding(c.m[0], true) + (c.m.length > 1 ? `<details class="meer"><summary>+${c.m.length - 1} andere melding${c.m.length > 2 ? "en" : ""} hier</summary>${c.m.slice(1).map(m => eenMelding(m, false)).join("")}</details>` : "");
     const toTabel = TO.length ? `<div class="tw tptw"><table class="kort tpt"><thead><tr><th colspan="3">⏰ Openingstijden (eigen lijst) op ${esc(fmtD(datum))}</th></tr><tr><th>Transportcode</th><th>Adres</th><th>Let op</th></tr></thead><tbody>${TO.map(t =>
       `<tr><td><b>${esc(t.klant || "?")}</b></td><td>${esc(`${t.straat} ${t.nr}`.trim())}<div class="meta">${esc(t.postcode)} ${esc(t.plaats)}</div></td><td>${t.p.map(q => `<div class="tp tp-${q.soort}">${esc(q.tekst)}</div>`).join("")}</td></tr>`).join("")}</tbody></table></div>` : "";
-    const t1 = toTabel + (KR1.length ? "" : "<!--geen hinder-->") + `<div class="tw"${KR1.length ? "" : " hidden"}><table class="kort"><thead><tr><th>Postcode</th><th>Transportcodes</th><th>Hinder</th><th>Melding</th><th title="Verwerkt">✓</th></tr></thead><tbody>${KR1.map(c => `<tr class="${vr(c.m[0].x)}">
+    const t1 = (TOONTIJD ? toTabel : "") + (KR1.length ? "" : "<!--geen hinder-->") + `<div class="tw"${KR1.length ? "" : " hidden"}><table class="kort"><thead><tr><th>Postcode</th><th>Transportcodes</th><th>Hinder</th><th>Melding</th><th title="Verwerkt">✓</th></tr></thead><tbody>${KR1.map(c => `<tr class="${vr(c.m[0].x)}">
       <td><b>${esc(c.postcode)}</b><div class="meta">${esc(c.plaats)}</div></td><td>${codes(c)}</td><td><span class="h h-${c.h}">${c.h}</span></td><td>${meldCel(c)}</td><td>${vk(c.m[0].x)}</td></tr>`).join("")}</tbody></table></div>`;
     // werkelijke planning: per rit een eigen blok (eigen tabel) → op papier altijd een nieuwe A4 per route
     const ritten = []; KR2.forEach(c => { const l = ritten[ritten.length - 1]; if (l && l.rit === c.rit) l.c.push(c); else ritten.push({rit:c.rit, c:[c]}); });
-    TP.forEach((_, rit) => { if (!ritten.some(x => x.rit === rit)) ritten.push({rit, c:[]}); });
+    if (TOONTIJD) TP.forEach((_, rit) => { if (!ritten.some(x => x.rit === rit)) ritten.push({rit, c:[]}); });
     ritten.sort((a, b) => ritNr(a.rit).localeCompare(ritNr(b.rit), "nl", {numeric:true}));
     const tpTabel = l => `<div class="tw tptw"><table class="kort tpt"><thead><tr><th colspan="4">⏰ Tijdvenster / openingstijden</th></tr><tr><th>Aankomst</th><th>Transportcode</th><th>Adres</th><th>Let op</th></tr></thead><tbody>${l.map(t =>
       `<tr><td><b>${esc(t.tijd || "–")}</b>${t.van ? `<div class="meta">venster ${esc(t.van)}–${esc(t.tot && t.tot <= t.van ? "23:59" : t.tot)}</div>` : ""}</td><td><b>${esc(t.klant || "?")}</b></td><td>${esc(`${t.straat} ${t.nr}`.trim())}<div class="meta">${esc(t.postcode)} ${esc(t.plaats)}</div></td><td>${t.p.map(q => `<div class="tp tp-${q.soort}">${esc(q.tekst)}</div>`).join("")}</td></tr>`).join("")}</tbody></table></div>`;
     const kopW = `<thead><tr><th>Postcode</th><th>Transportcodes</th><th>Hinder</th><th>Melding</th><th class="vkk" title="Verwerkt">✓</th></tr></thead>`;
-    const t2 = ritten.map(({rit, c}) => { const h = c.filter(x => x.h === "hoog").length, n = c.reduce((t, x) => t + x.klanten.size, 0), tp = TP.get(rit) || [];
-      return `<div class="ritsectie" data-rit="${esc(rit)}"><div class="ritkop2"><button type="button" class="btn prrit geenprint" data-prrit="${esc(rit)}" title="Alleen deze route printen (eigen A4)">🖨 Print</button><b class="ritnaam">${esc(rit)}</b>${c.length ? ` · ${c.length} postcode${c.length === 1 ? "" : "s"} · ${n} transportcode${n === 1 ? "" : "s"}` : " · geen hinder"}${h ? ` · <b style="color:var(--red)">${h}× hoog</b>` : ""}${tp.length ? ` · <b class="tpk">⏰ ${tp.length}× tijd</b>` : ""}<span class="prmeta"></span></div>
+    const t2 = ritten.map(({rit, c}) => { const h = c.filter(x => x.h === "hoog").length, n = c.reduce((t, x) => t + x.klanten.size, 0), tp = TOONTIJD ? TP.get(rit) || [] : [];
+      return `<div class="ritsectie${c.length ? "" : " alleentijd"}" data-rit="${esc(rit)}"><div class="ritkop2">${c.length ? `<button type="button" class="btn prrit geenprint" data-prrit="${esc(rit)}" title="Alleen deze route printen (eigen A4, zonder venstertijden)">🖨 Print</button>` : ""}<b class="ritnaam">${esc(rit)}</b>${c.length ? ` · ${c.length} postcode${c.length === 1 ? "" : "s"} · ${n} transportcode${n === 1 ? "" : "s"}` : " · geen hinder"}${h ? ` · <b style="color:var(--red)">${h}× hoog</b>` : ""}${tp.length ? ` · <b class="tpk">⏰ ${tp.length}× tijd</b>` : ""}<span class="prmeta"></span></div>
         ${tp.length ? tpTabel(tp) : ""}${c.length ? `<div class="tw"><table class="kort">${kopW}<tbody>${c.map(x => `<tr class="${vr(x.m[0].x)}"><td><b>${esc(x.postcode)}</b><div class="meta">${esc(x.plaats)}</div></td><td>${codes(x)}</td><td><span class="h h-${x.h}">${x.h}</span></td><td>${meldCel(x)}</td><td class="vkk">${vk(x.m[0].x)}</td></tr>`).join("")}</tbody></table></div>` : ""}</div>`; }).join("");
     const beide = SETS.opdr && SETS.werk, modus = beide ? OPMODUS : SETS.werk ? "werk" : "opdr";
     const knop = (m, t) => `<button type="button" class="tab ${modus === m ? "on" : ""}" data-opm="${m}">${t}</button>`;
     const nDo = TO.filter(t => t.p.some(q => q.soort === "dicht")).length, nW = TEL.venster + TEL.dicht + TEL.open + TEL.afwijkend + nDo;
     const za = new Date(datum + "T12:00").getDay() === 6;
-    const banner = nW ? `<div class="tpban" role="alert"><b>⚠ Let op tijden${za ? " (zaterdag)" : ""}:</b> ${[TEL.venster && `${TEL.venster} geplande stop${TEL.venster > 1 ? "s" : ""} buiten het venster`, TEL.dicht && `${TEL.dicht} gesloten volgens eigen lijst`, TEL.open && `${TEL.open} buiten de eigen openingstijden`, TEL.afwijkend && `${TEL.afwijkend}× venster in systeem wijkt af van eigen lijst`, nDo && `${nDo} opdracht${nDo > 1 ? "en" : ""} bij een gesloten klant`].filter(Boolean).join(" · ")}. Zie de gele blokken.</div>`
-      : za && !OPEN.lijst.size ? `<div class="tpban zacht">Zaterdag: vul bij <b>⏰ Openingstijden</b> de zaterdagtijden van je klanten in, dan waarschuwt de planning als een stop buiten de openingstijd valt.</div>` : "";
+    const banner = !TOONTIJD ? (nW ? `<div class="tpban zacht geenprint">⏰ Venstertijden staan uit (${nW} waarschuwing${nW > 1 ? "en" : ""}). Zet <b>⏰ Venstertijden</b> aan om ze te zien.</div>` : "")
+      : nW ? `<div class="tpban geenprint" role="alert"><b>⚠ Let op tijden${za ? " (zaterdag)" : ""}:</b> ${[TEL.venster && `${TEL.venster} geplande stop${TEL.venster > 1 ? "s" : ""} buiten het venster`, TEL.dicht && `${TEL.dicht} gesloten volgens eigen lijst`, TEL.open && `${TEL.open} buiten de eigen openingstijden`, TEL.afwijkend && `${TEL.afwijkend}× venster in systeem wijkt af van eigen lijst`, nDo && `${nDo} opdracht${nDo > 1 ? "en" : ""} bij een gesloten klant`].filter(Boolean).join(" · ")}. Zie de gele blokken.</div>`
+      : za && !OPEN.lijst.size ? `<div class="tpban zacht geenprint">Zaterdag: vul bij <b>⏰ Openingstijden</b> de zaterdagtijden van je klanten in, dan waarschuwt de planning als een stop buiten de openingstijd valt.</div>` : "";
     $("#klantUit").innerHTML = banner + (beide ? `<div class="row geenprint" style="gap:6px;margin-bottom:10px"><span class="lbl">Lijst</span>${knop("beide", "Naast elkaar")}${knop("opdr", `Opdrachten gedurende planning <i>${KR1.length}</i>`)}${knop("werk", `Werkelijke planning <i>${KR2.length}</i>`)}</div>` : "") +
       `<div class="${modus === "beide" ? "split" : ""}">` +
-      (modus !== "werk" ? kaartje("opdr", "Opdrachten gedurende planning", `${KR1.length} postcodes · ${new Set(KR.map(r => r.klant)).size} transportcodes · ${[...HF.opdr].join(" + ") || "geen niveau gekozen"}${TO.length ? ` · ${TO.length}× openingstijden` : ""}`, KR.length + TO.length, t1) : "") +
-      (modus !== "opdr" ? kaartje("werk", "Werkelijke planning", `${KR2.length} postcodes in ${new Set(KR2.map(c => c.rit)).size} ritten · per rit, geclusterd op postcode · ${[...HF.werk].join(" + ") || "geen niveau gekozen"}${TP.size ? ` · ${[...TP.values()].reduce((t, l) => t + l.length, 0)} tijdpunten` : ""}`, KR2.length + TP.size, t2) : "") +
+      (modus !== "werk" ? kaartje("opdr", "Opdrachten gedurende planning", `${KR1.length} postcodes · ${new Set(KR.map(r => r.klant)).size} transportcodes · ${[...HF.opdr].join(" + ") || "geen niveau gekozen"}${TOONTIJD && TO.length ? ` · ${TO.length}× openingstijden` : ""}`, KR.length + (TOONTIJD ? TO.length : 0), t1) : "") +
+      (modus !== "opdr" ? kaartje("werk", "Werkelijke planning", `${KR2.length} postcodes in ${new Set(KR2.map(c => c.rit)).size} ritten · per rit, geclusterd op postcode · ${[...HF.werk].join(" + ") || "geen niveau gekozen"}${TOONTIJD && TP.size ? ` · ${[...TP.values()].reduce((t, l) => t + l.length, 0)} tijdpunten` : ""}`, KR2.length + (TOONTIJD ? TP.size : 0), t2) : "") +
       `</div>` + (!beide ? `<p class="meta">Laad ook de ${SETS.werk ? "opdrachtenexport" : "export met werkelijke planning (geplande route)"} om beide lijsten naast elkaar te zien.</p>` : "");
   }
   $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#klant").hidden = TAB !== "klant"; $("#kaartvak").hidden = TAB !== "kaart"; $("#tabel").hidden = TAB !== "tabel"; $("#week").hidden = TAB !== "week"; if (TAB === "week") toonWeek(datum);
@@ -467,7 +468,7 @@ function toon(){
   $("#nHinder").textContent = R.plaatsen.length; $("#nTabel").textContent = rijen.length; $("#nSync").textContent = S.length; $("#nKlant").textContent = nKl === null ? "" : new Set([...KR.map(r => r.klant), ...KR2.flatMap(c => [...c.klanten.keys()])]).size;
   $("#stappen").hidden = true; $("#drop").classList.add("klein");
   $("#blik").hidden = !GRAF; $("#grafKnop").classList.toggle("on", GRAF);
-  PREF.bewaar({hfo:[...HF.opdr], hfw2:[...HF.werk], opmodus:OPMODUS, graf:GRAF, tab:TAB, fh:[...FH], fs:[...FS], tv:TV, tt:TT, hoek:HOEK, skip:$("#skip").value});
+  PREF.bewaar({toontijd:TOONTIJD, hfo:[...HF.opdr], hfw2:[...HF.werk], opmodus:OPMODUS, graf:GRAF, tab:TAB, fh:[...FH], fs:[...FS], tv:TV, tt:TT, hoek:HOEK, skip:$("#skip").value});
   $("#uit").hidden = false; R.sync = S; R.gs = gs; R.datum = datum;
   if (TAB === "kaart") tekenKaart();
 }
@@ -546,6 +547,7 @@ $("#klantUit").addEventListener("click", e => {
   const m = e.target.closest("[data-opm]"), hf = e.target.closest("[data-hf]"), w = e.target.closest("[data-wissel]"), x = e.target.closest("[data-weg]");
   const wd = e.target.closest("[data-wd]");
   if (wd) { const it = D.items.find(i => i.id === wd.dataset.wd); if (it) { NG.wissel(it); toon(); } return; }
+  if (e.target.closest("[data-toontijd]")) { TOONTIJD = !TOONTIJD; toon(); return; }
   if (e.target.closest("[data-toonweg]")) { TOONWEG = !TOONWEG; toon(); return; }
   if (e.target.closest("[data-open]")) { openDialoog(); return; }
   if (m) { OPMODUS = m.dataset.opm; toon(); }
@@ -614,12 +616,14 @@ N40211 za dicht   # zaterdag geen levering</pre>
 }
 // printen per route: elke rit op een eigen A4, met kop (rit, rijdag, hinderniveaus)
 function printRoutes(rit){
-  const blokken = [...document.querySelectorAll("#klantUit .ritsectie")].filter(b => rit === "*" || b.dataset.rit === rit); if (!blokken.length) return;
+  // routeblaadje is voor de transporteurs: venstertijden gaan nooit mee (alleen heads-up voor de planning)
+  const blokken = [...document.querySelectorAll("#klantUit .ritsectie")].filter(b => (rit === "*" || b.dataset.rit === rit) && b.querySelector("table:not(.tpt)")); if (!blokken.length) return;
   document.getElementById("printvak")?.remove();
   const vak = document.createElement("div"); vak.id = "printvak";
   const dag = fmtD($("#datum").value), niv = [...HF.werk].join(" + ") || "—", nu = new Date().toLocaleString("nl-NL", {dateStyle:"short", timeStyle:"short"});
-  vak.innerHTML = blokken.map(b => { const t = document.createElement("div"); b.querySelectorAll("table").forEach(x => t.appendChild(x.cloneNode(true))); t.querySelectorAll(".vkk,.wd,.isweg").forEach(e => e.remove()); t.querySelectorAll("details").forEach(d => d.open = true);
-    const sam = b.querySelector(".ritkop2").textContent.replace("🖨 Print", "").replace(b.dataset.rit, "").replace(/^\s*·\s*/, "").trim();
+  vak.innerHTML = blokken.map(b => { const t = document.createElement("div"); b.querySelectorAll("table:not(.tpt)").forEach(x => t.appendChild(x.cloneNode(true))); t.querySelectorAll(".vkk,.wd,.isweg").forEach(e => e.remove()); t.querySelectorAll("details").forEach(d => d.open = true);
+    const kop = b.querySelector(".ritkop2").cloneNode(true); kop.querySelectorAll(".prrit,.tpk").forEach(e => e.remove());
+    const sam = kop.textContent.replace(b.dataset.rit, "").replace(/·\s*$/, "").replace(/^\s*·\s*/, "").trim();
     return `<section class="prpag"><div class="prkop"><h2>${esc(b.dataset.rit)}</h2><div>${esc(sam)}</div><div>Werkelijke planning · rijdag ${esc(dag)} · hinder: ${esc(niv)}</div><div class="meta">PlaatsRadar · geprint ${esc(nu)} · vertrouwelijk, na gebruik vernietigen</div></div>${t.innerHTML}</section>`; }).join("");
   document.body.appendChild(vak); document.body.classList.add("prroute");
   const klaar = () => { document.body.classList.remove("prroute"); vak.remove(); window.removeEventListener("afterprint", klaar); };

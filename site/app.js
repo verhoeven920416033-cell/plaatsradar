@@ -3,6 +3,7 @@
 "use strict";
 const VERSIE = "2026-11-25";
 const NIEUW = [
+  ["2026-11-25", "Knop ⏰ Venstertijden aan/uit: alleen heads-up voor de planning. Op het routeblaadje voor de transporteurs staan venstertijden nooit."],
   ["2026-11-25", "Tijdvenster: 15 minuten speling, en venster 00:01–00:00 telt als hele dag (tot 23:59), dus geen onterechte waarschuwing meer."],
   ["2026-11-25", "Waarschuwing bovenaan Opdrachten bij tijdproblemen: geplande stop buiten het venster, klant gesloten of buiten de eigen openingstijden (zaterdag!), venster in systeem wijkt af. Ook in de opdrachtenlijst tijdens de planning."],
   ["2026-11-25", "Hinder telt weer voor de hele rijdag (geen filter op aankomsttijd): routes worden bij bijzonderheden anders gereden."],
