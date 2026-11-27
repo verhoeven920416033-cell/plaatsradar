@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; connect-src https://places.googleapis.com; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
-<meta name="referrer" content="no-referrer">
+<meta name="referrer" content="origin">
 <title>PlaatsRadar · Openingstijden (Google)</title>
 <style>
 :root{--navy:#003366;--red:#c8102e}
@@ -68,7 +68,8 @@ function dagen(oh) {
 
 async function zoek(s, sleutel) {
   const q = [s.naam, `${s.straat || ""} ${s.nr || ""}`.trim(), s.postcode, s.plaats].filter(Boolean).join(" ");
-  const r = await fetch("https://places.googleapis.com/v1/places:searchText", {method: "POST", referrerPolicy: "no-referrer",
+  const r = await fetch("https://places.googleapis.com/v1/places:searchText", {method: "POST", referrerPolicy: "origin",  // sleutel is beperkt tot deze website; alleen het domein gaat mee, geen pad
+   
     headers: {"Content-Type": "application/json", "X-Goog-Api-Key": sleutel, "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.regularOpeningHours"},
     body: JSON.stringify({textQuery: q, languageCode: "nl", regionCode: "NL", pageSize: 1})});
   const j = await r.json().catch(() => ({}));
