@@ -152,7 +152,13 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
 {
   const P = require("../site/plan-kern.js"), fout = m => { console.error("tijd FOUT", m); process.exit(1); };
   if (P.tijdVan("46336.395833333336") !== "09:30" || P.tijdVan("10-11-2026 09:30") !== "09:30" || P.tijdVan("46336") !== "" || P.tijdVan("0.5") !== "12:00") fout("tijdVan");
-  const kop = ["Ritkenmerk 2","Volgordenr","Plan-SRit","Laad-losplaats kenmerk","Losplaats servicetijdtoeslag","Klantnaam","Laad-losplaats straat","Laad-losplaats huisnr.","Postcode","Plaatsnaam","Aankomst ritstop lossen","Van Tijd","Tot Tijd","Status"];
+  // "Aankomst ritstop lossen" = eind van de rit: geen aankomsttijd bij de stop
+  {
+    const k0 = ["Plan-SRit","Laad-losplaats kenmerk","Postcode","Aankomst ritstop lossen","Van Tijd","Tot Tijd"];
+    const g0 = P.leesGeogroepen([k0, ["6634","N1","5014 HG","46340.65","46340.375","46340.5625"]], {});
+    if (g0.stops[0].tijd !== "" || g0.stops[0].van !== "09:00" || P.tijdControle(g0.stops[0], null).length) fout("lossen is geen aankomst");
+  }
+  const kop = ["Ritkenmerk 2","Volgordenr","Plan-SRit","Laad-losplaats kenmerk","Losplaats servicetijdtoeslag","Klantnaam","Laad-losplaats straat","Laad-losplaats huisnr.","Postcode","Plaatsnaam","Aankomst ritstop laden","Van Tijd","Tot Tijd","Status"];
   // za 14-11-2026 = 46340
   const g = P.leesGeogroepen([kop, ["1","1","6634","N1","","x","Kerkstraat","1","5014 HG","TILBURG","46340.3125","46340.333333333336","46340.708333333336","Gepland"],
                                    ["1","2","6634","N2","","x","Kerkstraat","2","5014 HK","TILBURG","46340.5416666667","46340.333333333336","46340.708333333336","Gepland"]], {});

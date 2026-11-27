@@ -20,7 +20,8 @@ function tijdVan(v) {
   const m = /(\d{1,2})[:.](\d{2})(?::\d{2})?\s*$/.exec(t) || /T(\d{2}):(\d{2})/.exec(t);
   return m && +m[1] < 24 ? m[1].padStart(2, "0") + ":" + m[2] : "";
 }
-const TIJD = {aankomst: /aankomst\s*(rit)?stop|^aankomst(\s*tijd)?$|^eta$/i, van: /^(van|begin|open)\s*tijd$|^venster\s*van$|^tijdvenster\s*van$/i, tot: /^(tot|eind|sluit)\s*tijd$|^venster\s*tot$|^tijdvenster\s*tot$/i};
+// Aankomst bij de klant = laden. "Aankomst ritstop lossen" is het lossen (eind van de rit) en telt dus NIET als aankomst bij de stop.
+const TIJD = {aankomst: /aankomst\s*(rit)?stop\s*laden|^aankomst\s*(klant|stop)$|^aankomst(\s*tijd)?$|^eta$/i, van: /^(van|begin|open)\s*tijd$|^venster\s*van$|^tijdvenster\s*van$/i, tot: /^(tot|eind|sluit)\s*tijd$|^venster\s*tot$|^tijdvenster\s*tot$/i};
 
 // Routekolommen in de optimiser-export. Gepland gaat voor stam: dat is wat er die dag echt rijdt.
 const RIT_GEPLAND = /^(g\.?\s?rit|geplande?\s*(rit|route)\s*(nr|nummer)?|rit\s*\(?gepland\)?|route\s*\(?gepland\)?|planned\s*(trip|route)|plan\s*(rit|route))$/i;
