@@ -3,6 +3,7 @@
 "use strict";
 const VERSIE = "2026-11-25";
 const NIEUW = [
+  ["2026-11-27", "Werkelijke planning: dezelfde melding op meerdere postcodes in één rit staat nu op één regel met alle postcodes en transportcodes."],
   ["2026-11-27", "'Aankomst ritstop lossen' is het eind van de rit, niet de aankomst bij de klant: geen onterechte 'buiten venster' meer. Controle op aankomst werkt alleen als de export een aankomsttijd bij de klant heeft (bijv. 'Aankomst ritstop laden'). Eigen openingstijden (gesloten, venster wijkt af) blijven."],
   ["2026-11-25", "Knop ⏰ Venstertijden aan/uit: alleen heads-up voor de planning. Op het routeblaadje voor de transporteurs staan venstertijden nooit."],
   ["2026-11-25", "Tijdvenster: 15 minuten speling, en venster 00:01–00:00 telt als hele dag (tot 23:59), dus geen onterechte waarschuwing meer."],

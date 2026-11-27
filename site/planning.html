@@ -412,6 +412,16 @@ function toon(){
     const ritNr = rit => rit === "Zonder rit" ? "~" : rit.replace(/^Rit /, "");
     KR2 = groep(r2.filter(pcOk), r => r.rit + "|" + pcK(r))
       .sort((a, b) => ritNr(a.rit).localeCompare(ritNr(b.rit), "nl", {numeric:true}) || hoS[a.h] - hoS[b.h] || pcK(a).localeCompare(pcK(b)));
+    // binnen een rit: postcodes met dezelfde hoofdmelding samenvoegen tot één regel (korter voor de huddle)
+    { const sam = new Map();
+      KR2.forEach(c => { const k = c.rit + "|" + c.m[0].x.id;
+        if (!sam.has(k)) { sam.set(k, {...c, pcs:[c.postcode], plaatsen:new Set([c.plaats]), straten:new Set(c.straten), klanten:new Map(c.klanten), tijden:new Set(c.tijden), mm:new Map(c.m.map(m => [m.x.id, m]))}); return; }
+        const t = sam.get(k); t.pcs.push(c.postcode); t.plaatsen.add(c.plaats); c.straten.forEach(x => t.straten.add(x)); c.klanten.forEach((v, kk) => t.klanten.set(kk, v)); c.tijden.forEach(x => t.tijden.add(x));
+        c.m.forEach(m => { const o = t.mm.get(m.x.id); if (!o || nvS[m.niveau] < nvS[o.niveau]) t.mm.set(m.x.id, m); }); });
+      const kort = l => { const z = [...new Set(l)].sort(), u = []; let vorige = ""; z.forEach(p => { const q = p.replace(/\s/g, ""), v = q.slice(0, 4); u.push(v === vorige && q.length > 4 ? q.slice(4) : p); vorige = v; }); return u.join(", "); };
+      KR2 = [...sam.values()].map(t => { const m = [...t.mm.values()].sort((a, b) => hoS[a.x.hinder] - hoS[b.x.hinder] || nvS[a.niveau] - nvS[b.niveau]);
+        return {...t, m, h:m[0].x.hinder, postcode:kort(t.pcs), plaats:[...t.plaatsen].join(", "), npc:new Set(t.pcs).size}; })
+        .sort((a, b) => ritNr(a.rit).localeCompare(ritNr(b.rit), "nl", {numeric:true}) || hoS[a.h] - hoS[b.h] || pcK(a).localeCompare(pcK(b))); }
     // 2. tijdvenster en eigen openingstijden per stop (werkelijke planning); los van hinder
     // waarschuwingen tellen altijd mee (niet weg te filteren met hinderniveaus of postcodeknoppen)
     const TP = new Map(), TO = [], TEL = {venster:0, dicht:0, open:0, afwijkend:0, info:0};
@@ -447,8 +457,8 @@ function toon(){
     const tpTabel = l => `<div class="tw tptw"><table class="kort tpt"><thead><tr><th colspan="4">⏰ Tijdvenster / openingstijden</th></tr><tr><th>${l.some(t => t.tijd) ? "Aankomst" : "Venster"}</th><th>Transportcode</th><th>Adres</th><th>Let op</th></tr></thead><tbody>${l.map(t =>
       `<tr><td><b>${esc(t.tijd || "")}</b>${t.van ? `<div class="meta">venster ${esc(t.van)}–${esc(t.tot && t.tot <= t.van ? "23:59" : t.tot)}</div>` : ""}</td><td><b>${esc(t.klant || "?")}</b></td><td>${esc(`${t.straat} ${t.nr}`.trim())}<div class="meta">${esc(t.postcode)} ${esc(t.plaats)}</div></td><td>${t.p.map(q => `<div class="tp tp-${q.soort}">${esc(q.tekst)}</div>`).join("")}</td></tr>`).join("")}</tbody></table></div>`;
     const kopW = `<thead><tr><th>Postcode</th><th>Transportcodes</th><th>Hinder</th><th>Melding</th><th class="vkk" title="Verwerkt">✓</th></tr></thead>`;
-    const t2 = ritten.map(({rit, c}) => { const h = c.filter(x => x.h === "hoog").length, n = c.reduce((t, x) => t + x.klanten.size, 0), tp = TOONTIJD ? TP.get(rit) || [] : [];
-      return `<div class="ritsectie${c.length ? "" : " alleentijd"}" data-rit="${esc(rit)}"><div class="ritkop2">${c.length ? `<button type="button" class="btn prrit geenprint" data-prrit="${esc(rit)}" title="Alleen deze route printen (eigen A4, zonder venstertijden)">🖨 Print</button>` : ""}<b class="ritnaam">${esc(rit)}</b>${c.length ? ` · ${c.length} postcode${c.length === 1 ? "" : "s"} · ${n} transportcode${n === 1 ? "" : "s"}` : " · geen hinder"}${h ? ` · <b style="color:var(--red)">${h}× hoog</b>` : ""}${tp.length ? ` · <b class="tpk">⏰ ${tp.length}× tijd</b>` : ""}<span class="prmeta"></span></div>
+    const t2 = ritten.map(({rit, c}) => { const h = c.filter(x => x.h === "hoog").length, n = new Set(c.flatMap(x => [...x.klanten.keys()])).size, np = c.reduce((t, x) => t + (x.npc || 1), 0), tp = TOONTIJD ? TP.get(rit) || [] : [];
+      return `<div class="ritsectie${c.length ? "" : " alleentijd"}" data-rit="${esc(rit)}"><div class="ritkop2">${c.length ? `<button type="button" class="btn prrit geenprint" data-prrit="${esc(rit)}" title="Alleen deze route printen (eigen A4, zonder venstertijden)">🖨 Print</button>` : ""}<b class="ritnaam">${esc(rit)}</b>${c.length ? ` · ${np} postcode${np === 1 ? "" : "s"} · ${n} transportcode${n === 1 ? "" : "s"}${c.length < np ? ` · ${c.length} melding${c.length === 1 ? "" : "en"}` : ""}` : " · geen hinder"}${h ? ` · <b style="color:var(--red)">${h}× hoog</b>` : ""}${tp.length ? ` · <b class="tpk">⏰ ${tp.length}× tijd</b>` : ""}<span class="prmeta"></span></div>
         ${tp.length ? tpTabel(tp) : ""}${c.length ? `<div class="tw"><table class="kort">${kopW}<tbody>${c.map(x => `<tr class="${vr(x.m[0].x)}"><td><b>${esc(x.postcode)}</b><div class="meta">${esc(x.plaats)}</div></td><td>${codes(x)}</td><td><span class="h h-${x.h}">${x.h}</span></td><td>${meldCel(x)}</td><td class="vkk">${vk(x.m[0].x)}</td></tr>`).join("")}</tbody></table></div>` : ""}</div>`; }).join("");
     const beide = SETS.opdr && SETS.werk, modus = beide ? OPMODUS : SETS.werk ? "werk" : "opdr";
     const knop = (m, t) => `<button type="button" class="tab ${modus === m ? "on" : ""}" data-opm="${m}">${t}</button>`;
@@ -460,7 +470,7 @@ function toon(){
     $("#klantUit").innerHTML = banner + (beide ? `<div class="row geenprint" style="gap:6px;margin-bottom:10px"><span class="lbl">Lijst</span>${knop("beide", "Naast elkaar")}${knop("opdr", `Opdrachten gedurende planning <i>${KR1.length}</i>`)}${knop("werk", `Werkelijke planning <i>${KR2.length}</i>`)}</div>` : "") +
       `<div class="${modus === "beide" ? "split" : ""}">` +
       (modus !== "werk" ? kaartje("opdr", "Opdrachten gedurende planning", `${KR1.length} postcodes · ${new Set(KR.map(r => r.klant)).size} transportcodes · ${[...HF.opdr].join(" + ") || "geen niveau gekozen"}${TOONTIJD && TO.length ? ` · ${TO.length}× openingstijden` : ""}`, KR.length + (TOONTIJD ? TO.length : 0), t1) : "") +
-      (modus !== "opdr" ? kaartje("werk", "Werkelijke planning", `${KR2.length} postcodes in ${new Set(KR2.map(c => c.rit)).size} ritten · per rit, geclusterd op postcode · ${[...HF.werk].join(" + ") || "geen niveau gekozen"}${TOONTIJD && TP.size ? ` · ${[...TP.values()].reduce((t, l) => t + l.length, 0)} tijdpunten` : ""}`, KR2.length + (TOONTIJD ? TP.size : 0), t2) : "") +
+      (modus !== "opdr" ? kaartje("werk", "Werkelijke planning", `${KR2.reduce((t, c) => t + (c.npc || 1), 0)} postcodes in ${new Set(KR2.map(c => c.rit)).size} ritten · ${KR2.length} regels · per rit, zelfde melding samengevoegd · ${[...HF.werk].join(" + ") || "geen niveau gekozen"}${TOONTIJD && TP.size ? ` · ${[...TP.values()].reduce((t, l) => t + l.length, 0)} tijdpunten` : ""}`, KR2.length + (TOONTIJD ? TP.size : 0), t2) : "") +
       `</div>` + (!beide ? `<p class="meta">Laad ook de ${SETS.werk ? "opdrachtenexport" : "export met werkelijke planning (geplande route)"} om beide lijsten naast elkaar te zien.</p>` : "");
   }
   $("#hinder").hidden = TAB !== "hinder"; $("#sync").hidden = TAB !== "sync"; $("#klant").hidden = TAB !== "klant"; $("#kaartvak").hidden = TAB !== "kaart"; $("#tabel").hidden = TAB !== "tabel"; $("#week").hidden = TAB !== "week"; if (TAB === "week") toonWeek(datum);
