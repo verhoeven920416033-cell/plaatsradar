@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; connect-src https://places.googleapis.com; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>PlaatsRadar · Openingstijden (Google)</title>
+<style>
+:root{--navy:#003366;--red:#c8102e}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:#1a2330;background:#f3f5f8}
+header{background:linear-gradient(120deg,#001a35,#003366);color:#fff;padding:14px 18px}header h1{margin:0;font-size:17px}
+main{padding:14px 18px;max-width:640px}
+.krt{background:#fff;border:1px solid #e3e8ef;border-radius:10px;padding:12px 14px;margin-bottom:12px}
+input[type=password],input[type=text]{width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid #c9d3df;border-radius:7px;font:13px ui-monospace,monospace}
+button{border:1px solid #c9d3df;background:#fff;border-radius:7px;padding:6px 12px;font:600 13px system-ui;cursor:pointer}button.hoofd{background:var(--navy);color:#fff;border-color:var(--navy)}
+.meta{color:#5b6878;font-size:12.5px}.fout{color:var(--red);font-weight:600}
+progress{width:100%;height:14px}
+ol{padding-left:18px}li{margin:3px 0}
+</style>
+</head>
+<body>
+<header><h1>Openingstijden ophalen (Google)</h1></header>
+<main>
+<div class="krt">
+  <b>Google-sleutel</b>
+  <p class="meta">Eenmalig invullen op deze computer. De sleutel blijft alleen in deze browser en gaat nergens anders heen dan naar Google.</p>
+  <input type="password" id="sleutel" autocomplete="off" placeholder="AIza…">
+  <p style="margin:8px 0 0"><button type="button" id="bewaar">Bewaar sleutel</button> <button type="button" id="wis">Wis sleutel</button> <span id="sm" class="meta"></span></p>
+  <details style="margin-top:8px"><summary class="meta">Hoe kom ik aan een sleutel?</summary><ol class="meta">
+    <li>Ga naar console.cloud.google.com en maak een project (bijv. "PlaatsRadar").</li>
+    <li>Koppel een betaalaccount (verplicht bij Google; de eerste 1000 opzoekingen per maand zijn gratis).</li>
+    <li>Zet <b>Places API (New)</b> aan (APIs &amp; Services → Library).</li>
+    <li>Credentials → Create credentials → API key. Beperk de sleutel tot <b>Places API (New)</b>.</li>
+    <li>Zet bij Quotas een daglimiet (bijv. 100 per dag), dan kan het nooit duur worden.</li>
+  </ol></details>
+</div>
+<div class="krt">
+  <b>Status</b>
+  <p id="status">Wacht op de planning…</p>
+  <progress id="pg" value="0" max="1" hidden></progress>
+  <p class="meta">Dit venster gaat vanzelf dicht als het klaar is. De uitkomsten staan daarna bij de planning (geel blok Tijdvenster / openingstijden).</p>
+</div>
+</main>
+<script>
+"use strict";
+const SK = "plaatsradar-google-sleutel", $ = s => document.querySelector(s);
+const leesS = () => { try { return localStorage.getItem(SK) || ""; } catch { return ""; } };
+const st = (t, fout) => { $("#status").textContent = t; $("#status").className = fout ? "fout" : ""; };
+$("#sleutel").value = leesS(); $("#sm").textContent = leesS() ? "Sleutel staat erin." : "";
+$("#bewaar").onclick = () => { try { localStorage.setItem(SK, $("#sleutel").value.trim()); } catch {} $("#sm").textContent = "Bewaard."; if (wacht) start(wacht); };
+$("#wis").onclick = () => { try { localStorage.removeItem(SK); } catch {} $("#sleutel").value = ""; $("#sm").textContent = "Gewist."; };
+
+const ouder = window.opener;
+const stuur = m => { try { ouder && ouder.postMessage(m, "*"); } catch {} };  // alleen uitkomsten van Google, geen gegevens van de planning
+const pc4 = p => (String(p || "").match(/\d{4}/) || [""])[0];
+
+/** periods (dag 0 = zondag) -> {0..6 (ma..zo): [van, tot] | null} */
+function dagen(oh) {
+  const p = oh && oh.periods; if (!p || !p.length) return null;
+  const t = o => String(o.hour || 0).padStart(2, "0") + ":" + String(o.minute || 0).padStart(2, "0");
+  const d = {}; for (let i = 0; i < 7; i++) d[i] = null;
+  if (p.length === 1 && p[0].open && !p[0].close) { for (let i = 0; i < 7; i++) d[i] = ["00:00", "23:59"]; return d; }
+  p.forEach(q => { if (!q.open) return; const i = (q.open.day + 6) % 7, a = t(q.open), b = !q.close || q.close.day !== q.open.day ? "23:59" : t(q.close);
+    d[i] = d[i] ? [a < d[i][0] ? a : d[i][0], b > d[i][1] ? b : d[i][1]] : [a, b]; });
+  return d;
+}
+
+async function zoek(s, sleutel) {
+  const q = [s.naam, `${s.straat || ""} ${s.nr || ""}`.trim(), s.postcode, s.plaats].filter(Boolean).join(" ");
+  const r = await fetch("https://places.googleapis.com/v1/places:searchText", {method: "POST", referrerPolicy: "no-referrer",
+    headers: {"Content-Type": "application/json", "X-Goog-Api-Key": sleutel, "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.regularOpeningHours"},
+    body: JSON.stringify({textQuery: q, languageCode: "nl", regionCode: "NL", pageSize: 1})});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error((j.error && j.error.message) || ("HTTP " + r.status)); e.stop = r.status === 400 || r.status === 401 || r.status === 403 || r.status === 429; throw e; }
+  const p = (j.places || [])[0]; if (!p) return {gevonden: false};
+  const adres = p.formattedAddress || "", klopt = pc4(s.postcode) && adres.includes(pc4(s.postcode));
+  const dg = dagen(p.regularOpeningHours);
+  return {gevonden: !!(klopt && dg), naam: p.displayName && p.displayName.text || "", adres, dagen: klopt ? dg : null};
+}
+
+let wacht = null, bezig = false;
+async function start(lijst) {
+  const sleutel = leesS();
+  if (!sleutel) { wacht = lijst; st(`${lijst.length} klanten klaar om op te zoeken. Vul eerst de Google-sleutel in en klik Bewaar sleutel.`, true); return; }
+  if (bezig) return; bezig = true; wacht = null;
+  const pg = $("#pg"); pg.hidden = false; pg.max = lijst.length; let n = 0, g = 0;
+  for (const s of lijst) {
+    try { const res = await zoek(s, sleutel); if (res.gevonden) g++; stuur({type: "pr-uitslag", k: s.k, res}); }
+    catch (e) { st("Google gaf een fout: " + e.message, true); stuur({type: "pr-fout", tekst: e.message}); if (e.stop) break; }
+    n++; pg.value = n; if (!$("#status").classList.contains("fout")) st(`${n} / ${lijst.length} opgezocht · ${g} gevonden`);
+    await new Promise(r => setTimeout(r, 120));
+  }
+  stuur({type: "pr-einde"}); bezig = false;
+  if (!$("#status").classList.contains("fout")) { st(`Klaar: ${n} opgezocht, ${g} gevonden. Dit venster sluit…`); setTimeout(() => window.close(), 2500); }
+}
+
+window.addEventListener("message", e => {
+  if (!ouder || e.source !== ouder || !e.data || e.data.type !== "pr-zoek" || !Array.isArray(e.data.stops)) return;
+  const lijst = e.data.stops.slice(0, 2000).filter(s => s && typeof s.k === "string").map(s => ({k: s.k, naam: String(s.naam || ""), straat: String(s.straat || ""), nr: String(s.nr || ""), postcode: String(s.postcode || ""), plaats: String(s.plaats || "")}));
+  start(lijst);
+});
+if (ouder) stuur({type: "pr-klaar"}); else st("Open dit venster via de planning: knop 🌐 Google-tijden. Hier kun je alleen de sleutel instellen.");
+</script>
+</body>
+</html>

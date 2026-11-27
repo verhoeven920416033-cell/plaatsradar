@@ -85,7 +85,12 @@ function genegeerd() {
   const grens = Date.now() - 120 * 864e5;
   for (const k in d) if (!(d[k] > grens)) delete d[k];
   const bewaar = () => { try { localStorage.setItem(SG, JSON.stringify(d)); } catch {} };
-  return {has: x => !!d[negeerSleutel(x)], wissel: x => { const k = negeerSleutel(x); if (d[k]) delete d[k]; else d[k] = Date.now(); bewaar(); return !!d[k]; }, aantal: () => Object.keys(d).length, sleutel: negeerSleutel};
+  // per locatie (transportcode): "transporteur meldt geen hinder" geldt alleen voor die code + die melding
+  const kk = (klant, x) => "k:" + String(klant).toUpperCase() + "|" + negeerSleutel(x);
+  return {has: x => !!d[negeerSleutel(x)], wissel: x => { const k = negeerSleutel(x); if (d[k]) delete d[k]; else d[k] = Date.now(); bewaar(); return !!d[k]; }, aantal: () => Object.keys(d).length, sleutel: negeerSleutel,
+    hasK: (klant, x) => !!klant && !!d[kk(klant, x)], zetK: (klant, x, aan) => { const k = kk(klant, x); if (aan) d[k] = Date.now(); else delete d[k]; bewaar(); },
+    wisK: (klant, sleutel) => { delete d["k:" + String(klant).toUpperCase() + "|" + sleutel]; bewaar(); },
+    lijstK: () => Object.keys(d).filter(k => k.startsWith("k:")).map(k => { const [c, ...r] = k.slice(2).split("|"); return {klant: c, sleutel: r.join("|"), sinds: d[k]}; })};
 }
 
 return {maakPc6, plek, pcSleutel, punten, afstand, tijdOk, isNieuw, verwerkt, genegeerd, negeerSleutel};

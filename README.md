@@ -103,3 +103,6 @@ De token kan alleen workflows starten in deze repo. Lekt hij, trek hem in bij Gi
 - Hinder telt voor de hele rijdag, niet per aankomsttijd: routes worden bij bijzonderheden anders gereden.
 - **⏰ Tijdvenster** per rit: aankomst buiten *Van Tijd*–*Tot Tijd*, of buiten de eigen lijst **Openingstijden** (`N31560 ma-vr 08:00-17:00; za 09:00-12:00; zo dicht`). Die lijst staat alleen in de browser van de planner (localStorage), nooit in de repo; delen via *Bewaar als bestand* / *Laden*.
 - **🚫 geen last**: melding niet meer tonen (120 dagen, alleen in die browser). Een weekmarkt geldt voor alle weken op die plek.
+- **🌐 Google-tijden**: hulppagina `site/openingstijden.html` (eigen venster, CSP alleen `places.googleapis.com`) zoekt per transportcode naam + adres op via Places API (New) Text Search en stuurt alleen de uitkomst terug (postMessage). De planningpagina zelf blijft zonder netwerk. Sleutel en uitkomsten staan alleen in de browser van de planner (60 dagen). Kosten: Text Search Enterprise, 1000 gratis per maand; zet een daglimiet op de sleutel.
+- **🔎 controleer**: opent Google Maps met naam + adres van die stop.
+- **📋 Geen hinder gemeld**: transportcodes plakken → per code + melding uitvinken (alleen in die browser, 120 dagen); terugzetten via *Eerder uitgevinkt*.

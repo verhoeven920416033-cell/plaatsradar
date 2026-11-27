@@ -175,5 +175,16 @@ assert.deepEqual(s.map(r => [r.pc4, r.samen, r.diensten.GROEP_A, r.diensten.GROE
   const c = (tijd, van, tot) => P.tijdControle({tijd, van, tot, wd:-1}, null).length;
   if (c("08:40", "00:01", "00:00") || c("09:59", "10:00", "17:00") || c("11:59", "12:00", "18:00") || c("17:15", "10:00", "17:00")) fout("speling/hele dag");
   if (!c("09:44", "10:00", "17:00") || !c("17:16", "10:00", "17:00") || !c("23:30", "10:00", "00:00") === false) fout("buiten");
+  // Google-openingstijden: za 09-12, zo dicht, ma-vr 08-18 (dag 0 = zondag)
+  const per = [1,2,3,4,5].map(d => ({open:{day:d, hour:8, minute:0}, close:{day:d, hour:18, minute:0}})).concat([{open:{day:6, hour:9, minute:0}, close:{day:6, hour:12, minute:0}}]);
+  const gd = P.googleDagen({periods:per});
+  if (gd[5].join() !== "09:00,12:00" || gd[6] !== null || gd[0].join() !== "08:00,18:00") fout("googleDagen " + JSON.stringify(gd));
+  if (P.googleDagen({periods:[{open:{day:0, hour:0, minute:0}}]})[3].join() !== "00:00,23:59") fout("24/7");
+  const G = new Map([["N9", {dagen:gd, naam:"Testwinkel"}]]);
+  const ga = P.tijdControle({klant:"N9", wd:5, tijd:"", van:"08:00", tot:"17:00"}, null, G);
+  if (ga.map(x => x.soort).join() !== "g-afwijkend") fout(JSON.stringify(ga));
+  if (P.tijdControle({klant:"N9", wd:6, tijd:"", van:"", tot:""}, null, G).map(x => x.soort).join() !== "g-dicht") fout("g-dicht");
+  if (P.tijdControle({klant:"N9", wd:5, tijd:"", van:"09:00", tot:"12:00"}, null, G).length) fout("binnen google");
+  if (P.tijdControle({klant:"N9", wd:5, tijd:"", van:"08:00", tot:"17:00"}, new Map([["N9", {5:["08:00","17:00"]}]]), G).some(x => x.soort.startsWith("g-"))) fout("eigen lijst gaat voor");
   console.log("tijd + openingstijden OK");
 }

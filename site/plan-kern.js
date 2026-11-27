@@ -6,7 +6,8 @@ const ja = v => /^(ja|j|yes|y|x|1|waar|true)$/i.test(String(v ?? "").trim());
 const kern = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
 
 /** Optimiser-export (SRit + Laad-losplaats postcode/plaats + Vroegste laden) -> gebieden per rit, postcodegebied en rijdag.
-    Alleen rit, klantcode, adres, postcode, plaats, datum, aankomsttijd en tijdvenster worden gelezen; naam en waarde niet. */
+    Alleen rit, klantcode, klantnaam, adres, postcode, plaats, datum, aankomsttijd en tijdvenster worden gelezen; waarde niet.
+    De klantnaam blijft in de browser; hij wordt alleen gebruikt om openingstijden op te zoeken als de planner dat zelf start. */
 function datumVan(v) {
   const t = String(v ?? "").trim();
   if (/^\d+(\.\d+)?$/.test(t) && +t > 30000) return new Date(Date.UTC(1899, 11, 30) + Math.floor(+t) * 864e5).toISOString().slice(0, 10);
@@ -68,7 +69,7 @@ function leesOptimiserPlan(rijen, opt) {
   const zelfRit = Number.isInteger(m0.rit) || Number.isInteger(opt.ritKolom);
   const c = {rit: kies("rit", ritOpties.length ? ritOpties[0].i : -1), pc: kies("pc", ci(KOL.pc)), plaats: kies("plaats", ci(KOL.plaats)),
     straat: kies("straat", ci(KOL.straat)), nr: kies("nr", ci(KOL.nr)), datum: kies("datum", ci(KOL.datum)), klant: kies("klant", ci(KOL.klant)),
-    aankomst: ci(TIJD.aankomst), van: ci(TIJD.van), tot: ci(TIJD.tot)};
+    aankomst: ci(TIJD.aankomst), van: ci(TIJD.van), tot: ci(TIJD.tot), naam: ci(/^klant\s*naam$|laad-?losplaats\s*naam|^naam$/i)};
   if (c.klant < 0 && !Number.isInteger(m0.klant) && kolommen.length > 4 && /kenmerk/i.test(kolommen[4])) c.klant = 4;  // kolom E in de standaardexport
   const kiesFout = t => { const e = new Error(t + " Kies hieronder zelf de kolommen."); e.kiezen = true; return e; };
   if (c.pc < 0) throw kiesFout("Geen postcodekolom gevonden.");
@@ -92,7 +93,7 @@ function leesOptimiserPlan(rijen, opt) {
     const g = per.get(key); if (wd < 0) g.dagen.fill(true); else g.dagen[wd] = true;
     const st = {rit: groep, klant: c.klant >= 0 ? kopTekst(r[c.klant]) : "", straat: c.straat >= 0 ? kopTekst(r[c.straat]) : "", nr: c.nr >= 0 ? kopTekst(r[c.nr]) : "",
       postcode: pc.replace(/^[A-Z]+\s+(?=\d)/, ""), pc4: m[1], plaats: c.plaats >= 0 ? kopTekst(r[c.plaats]) : "", datum: d, wd,
-      tijd: c.aankomst >= 0 ? tijdVan(r[c.aankomst]) : "", van: c.van >= 0 ? tijdVan(r[c.van]) : "", tot: c.tot >= 0 ? tijdVan(r[c.tot]) : ""};
+      naam: c.naam >= 0 ? kopTekst(r[c.naam]) : "", tijd: c.aankomst >= 0 ? tijdVan(r[c.aankomst]) : "", van: c.van >= 0 ? tijdVan(r[c.van]) : "", tot: c.tot >= 0 ? tijdVan(r[c.tot]) : ""};
     const sk = [st.rit, st.klant, st.straat, st.nr, st.postcode, d].join("|");
     if (!gezien.has(sk)) { gezien.add(sk); stops.push(st); }
   }
@@ -297,7 +298,19 @@ const minuut = t => +t.slice(0, 2) * 60 + +t.slice(3);
 function venster(van, tot) { const a = minuut(van), b0 = minuut(tot), b = b0 <= a ? 1439 : b0; return {a, b, heleDag: a <= 1 && b >= 1439}; }
 const buiten = (t, van, tot) => { const v = venster(van, tot); if (v.heleDag) return false; const m = minuut(t); return m < v.a - SPELING || m > v.b + SPELING; };
 const toonTot = (van, tot) => minuut(tot) <= minuut(van) ? "23:59" : tot;
-function tijdControle(st, open) {
+/** Google-openingstijden (regularOpeningHours.periods, dag 0 = zondag) -> {wd: [van, tot] | null} met dagindex 0 = maandag.
+    Per dag de vroegste opening en laatste sluiting. Dag zonder periode = gesloten. */
+function googleDagen(oh) {
+  const p = oh && oh.periods; if (!p || !p.length) return null;
+  const t = o => String(o.hour || 0).padStart(2, "0") + ":" + String(o.minute || 0).padStart(2, "0");
+  if (p.length === 1 && p[0].open && !p[0].close) { const d = {}; for (let i = 0; i < 7; i++) d[i] = ["00:00", "23:59"]; return d; }  // 24/7
+  const d = {}; for (let i = 0; i < 7; i++) d[i] = null;
+  p.forEach(q => { if (!q.open) return; const i = (q.open.day + 6) % 7, a = t(q.open);
+    const b = !q.close ? "23:59" : q.close.day !== q.open.day ? "23:59" : t(q.close);
+    d[i] = d[i] ? [a < d[i][0] ? a : d[i][0], b > d[i][1] ? b : d[i][1]] : [a, b]; });
+  return d;
+}
+function tijdControle(st, open, google) {
   const uit = [], t = st.tijd, wd = Number.isInteger(st.wd) && st.wd >= 0 ? st.wd : -1;
   if (t && st.van && st.tot && buiten(t, st.van, st.tot)) uit.push({soort: "venster", tekst: `Aankomst ${t} buiten venster ${st.van}–${toonTot(st.van, st.tot)} (meer dan ${SPELING} min)`});
   const eigen = open && st.klant ? open.get(String(st.klant).toUpperCase()) : null;
@@ -310,9 +323,23 @@ function tijdControle(st, open) {
       const sv = st.van && st.tot ? venster(st.van, st.tot) : null, ev = venster(w[0], w[1]);
       if (sv && !sv.heleDag && (sv.a !== ev.a || sv.b !== ev.b)) uit.push({soort: "afwijkend", tekst: `Venster in systeem ${st.van}–${st.tot}, eigen lijst ${DAGK[wd]} ${w[0]}–${w[1]}`});
     }
+  } else {
+    // geen eigen lijst: Google (alleen als de planner het heeft opgehaald en het adres klopt)
+    const g = google && st.klant ? google.get(String(st.klant).toUpperCase()) : null;
+    if (g && g.dagen && wd >= 0) {
+      const w = g.dagen[wd], wie = g.naam ? ` (${g.naam})` : "";
+      if (!w) uit.push({soort: "g-dicht", tekst: `Gesloten op ${DAGK[wd]} volgens Google${wie}`});
+      else if (!(w[0] <= "00:01" && w[1] >= "23:59")) {
+        if (t && buiten(t, w[0], w[1])) uit.push({soort: "g-open", tekst: `Aankomst ${t}, Google: open ${DAGK[wd]} ${w[0]}–${w[1]}${wie}`});
+        const sv = st.van && st.tot ? venster(st.van, st.tot) : null, ev = venster(w[0], w[1]);
+        if (sv && !sv.heleDag && (sv.a < ev.a - SPELING || sv.b > ev.b + SPELING))
+          uit.push({soort: "g-afwijkend", tekst: `Venster ${st.van}–${toonTot(st.van, st.tot)} valt buiten openingstijd Google ${DAGK[wd]} ${w[0]}–${w[1]}${wie}`});
+        if (!t && !st.van && wd >= 5) uit.push({soort: "info", tekst: `Google: open ${DAGK[wd]} ${w[0]}–${w[1]}${wie}: binnen dit venster plannen`});
+      }
+    }
   }
   return uit;
 }
 
-return {DAGEN, KORT, maakFilter, tijdVan, leesOpeningstijden, tijdControle, leesGeogroepen, leesOptimiserPlan, ritKolommen, waarschijnlijkeKop, klantHinder, straatKern, planDag, synchronisatie, weekdag, actief};
+return {DAGEN, KORT, maakFilter, tijdVan, leesOpeningstijden, tijdControle, googleDagen, leesGeogroepen, leesOptimiserPlan, ritKolommen, waarschijnlijkeKop, klantHinder, straatKern, planDag, synchronisatie, weekdag, actief};
 });
