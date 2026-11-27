@@ -101,7 +101,7 @@ window.addEventListener("message", e => {
   const lijst = e.data.stops.slice(0, 2000).filter(s => s && typeof s.k === "string").map(s => ({k: s.k, naam: String(s.naam || ""), straat: String(s.straat || ""), nr: String(s.nr || ""), postcode: String(s.postcode || ""), plaats: String(s.plaats || "")}));
   start(lijst);
 });
-if (ouder) stuur({type: "pr-klaar"}); else st("Open dit venster via de planning: knop 🌐 Google-tijden. Hier kun je alleen de sleutel instellen.");
+if (ouder) { stuur({type: "pr-klaar"}); if (!leesS()) st("Plak hierboven de Google-sleutel en klik Bewaar sleutel."); } else st(leesS() ? "Sleutel staat erin. Je kunt dit venster sluiten en in de planning op Ophalen klikken." : "Plak hierboven de Google-sleutel en klik Bewaar sleutel. Daarna in de planning op Ophalen klikken.");
 </script>
 </body>
 </html>

@@ -654,17 +654,19 @@ function googleDialoog(){
     d.innerHTML = `<div class="hk"><h2>Openingstijden ophalen (Google)</h2><button type="button" data-sluit aria-label="Sluiten">×</button></div><div class="hb">
       <p>Zoekt per klant (transportcode) de openingstijden op bij Google en vergelijkt ze met het venster uit de export. Een eigen lijst gaat altijd voor.</p>
       <p class="meta">Er opent een apart venster dat alleen met Google praat; daar staat ook de Google-sleutel. Naam en adres van de klanten gaan naar Google, niets naar GitHub. Uitkomsten blijven 60 dagen op deze computer. Kosten: Google rekent na 1000 opzoekingen per maand (± € 0,03 per stuk); al bekende klanten worden niet opnieuw opgezocht.</p>
-      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="gWeek" checked> Alleen stops op zaterdag en zondag</label>
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="gWeek"> Alleen stops op zaterdag en zondag</label>
       <p id="gTel" style="font-weight:600"></p><div id="gVoortgang" class="meta"></div>
-      <div class="row" style="gap:6px;margin-top:8px"><button class="btn" type="button" id="gStart" style="background:var(--navy);color:#fff">Ophalen</button><button class="btn" type="button" id="gWis">Google-tijden vergeten</button></div></div>`;
+      <div class="row" style="gap:6px;margin-top:8px"><button class="btn" type="button" id="gStart" style="background:var(--navy);color:#fff">Ophalen</button><button class="btn" type="button" id="gSleutel">Sleutel instellen</button><button class="btn" type="button" id="gWis">Google-tijden vergeten</button></div></div>`;
     document.body.appendChild(d);
     d.addEventListener("click", e => { if (e.target === d || e.target.closest("[data-sluit]")) d.close(); });
     const tel = () => { const l = googleStops(d.querySelector("#gWeek").checked), nieuw = l.filter(x => !(GOOG[x.k] && GOOG[x.k].ts > Date.now() - 60 * 864e5));
-      d.querySelector("#gTel").textContent = `${l.length} klanten op ${fmtD($("#datum").value)} · ${nieuw.length} nog op te zoeken · ${l.length - nieuw.length} al bekend`; return nieuw; };
+      const geen = !SETS.opdr && !SETS.werk ? "Laad eerst een optimiser-export in." : d.querySelector("#gWeek").checked ? `Geen stops op zaterdag of zondag op ${fmtD($("#datum").value)}: haal het vinkje weg of kies een zaterdag als rijdag.` : `Geen stops met transportcode op ${fmtD($("#datum").value)}: kies de rijdag van de export.`;
+      d.querySelector("#gTel").textContent = l.length ? `${l.length} klanten op ${fmtD($("#datum").value)} · ${nieuw.length} nog op te zoeken · ${l.length - nieuw.length} al bekend` : geen; return nieuw; };
     d.querySelector("#gWeek").onchange = tel; d._tel = tel;
+    d.querySelector("#gSleutel").onclick = () => { const w = window.open(hulpUrl(), "plaatsradar-google", "width=620,height=640"); if (!w) d.querySelector("#gVoortgang").textContent = "Pop-up geblokkeerd: sta pop-ups toe voor deze pagina."; };
     d.querySelector("#gWis").onclick = () => { GOOG = {}; try { localStorage.removeItem(GOOG_K); } catch {} GMAP = gmap(); tel(); toon(); };
     d.querySelector("#gStart").onclick = () => {
-      const lijst = tel(), v = d.querySelector("#gVoortgang"); if (!lijst.length) { v.textContent = "Niets nieuws op te zoeken."; return; }
+      const lijst = tel(), v = d.querySelector("#gVoortgang"); if (!lijst.length) { v.textContent = googleStops(d.querySelector("#gWeek").checked).length ? "Alle klanten van deze dag zijn al bekend (60 dagen). Klik 'Google-tijden vergeten' om opnieuw op te zoeken." : d.querySelector("#gTel").textContent; return; }
       const url = hulpUrl(), doel = new URL(url).origin, w = window.open(url, "plaatsradar-google", "width=620,height=640");
       if (!w) { v.textContent = "Pop-up geblokkeerd: sta pop-ups toe voor deze pagina en probeer opnieuw."; return; }
       let n = 0, gevonden = 0; v.textContent = "Hulpvenster openen…";
@@ -679,6 +681,7 @@ function googleDialoog(){
       window.addEventListener("message", op);
     };
   }
+  const wdag = new Date($("#datum").value + "T12:00").getDay(); d.querySelector("#gWeek").checked = wdag === 6 || wdag === 0;
   d._tel(); d.querySelector("#gVoortgang").textContent = ""; d.showModal();
 }
 // ---- transporteurs meldden geen hinder: transportcodes plakken en in één keer uitvinken (per code + melding)
